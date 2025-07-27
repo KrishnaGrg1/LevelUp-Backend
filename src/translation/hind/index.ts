@@ -1,8 +1,8 @@
 import error from './error.json';
 import success from './success.json';
-const nep = {
+const hind = {
   error,
   success,
 };
 
-export default nep;
+export default hind;

@@ -134,7 +134,8 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
       return;
     }
 
-    const JWT_Password = env.JWT_SECRET as string;
+    const JWT_Password = process.env.JWT_Password as string;
+    console.log('JWT IS ', JWT_Password);
     const token = jwt.sign({ userID: existingUser.id }, JWT_Password, {
       expiresIn: '1h',
     });
