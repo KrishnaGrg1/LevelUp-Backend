@@ -353,7 +353,6 @@ const me = async (req: TranslationRequest, res: Response): Promise<void> => {
         email: true,
         xp: true,
         level: true,
-        streak: true,
         createdAt: true,
       },
     });
