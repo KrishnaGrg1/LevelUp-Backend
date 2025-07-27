@@ -8,7 +8,7 @@ import client from '../helpers/prisma';
 import {
   makeErrorResponse,
   makeSuccessResponse,
-} from '../helpers/standartResponse';
+} from '../helpers/standardResponse';
 import { TranslationRequest } from '../middlewares/translationMiddleware';
 import { Language } from '../translation/translation';
 

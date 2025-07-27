@@ -1,14 +1,14 @@
-import { Router } from 'express';
-import goalControllers from '../controllers/goalController';
-import GoalValidation from '../validations/goalValidation';
-import validate from '../middlewares/validation';
+// import { Router } from 'express';
+// import goalControllers from '../controllers/goalController';
+// import GoalValidation from '../validations/goalValidation';
+// import validate from '../middlewares/validation';
 
-const goalRoute = Router();
+// const goalRoute = Router();
 
-goalRoute.post(
-  '/submit-goals',
-  validate(GoalValidation.submitGoal),
-  goalControllers.submitGoal
-);
+// goalRoute.post(
+//   '/submit-goals',
+//   validate(GoalValidation.submitGoal),
+//   goalControllers.submitGoal
+// );
 
-export default goalRoute;
+// export default goalRoute;
