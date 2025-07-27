@@ -12,7 +12,10 @@ import {
 import { TranslationRequest } from '../middlewares/translationMiddleware';
 import { Language } from '../translation/translation';
 
-const register = async (req: TranslationRequest, res: Response): Promise<void> => {
+const register = async (
+  req: TranslationRequest,
+  res: Response
+): Promise<void> => {
   try {
     const lang = req.language as Language;
     const { UserName, email, password } = req.body;
@@ -22,14 +25,16 @@ const register = async (req: TranslationRequest, res: Response): Promise<void> =
       },
     });
     if (existingUser) {
-      res.status(400).json(
-        makeErrorResponse(
-          new Error('Username already exists'),
-          'error.auth.username_exists',
-          lang,
-          400
-        )
-      );
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Username already exists'),
+            'error.auth.username_exists',
+            lang,
+            400
+          )
+        );
       return;
     }
     const existingEmail = await client.user.findFirst({
@@ -38,14 +43,16 @@ const register = async (req: TranslationRequest, res: Response): Promise<void> =
       },
     });
     if (existingEmail) {
-      res.status(400).json(
-        makeErrorResponse(
-          new Error('Email already exists'),
-          'error.auth.email_exists',
-          lang,
-          400
-        )
-      );
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Email already exists'),
+            'error.auth.email_exists',
+            lang,
+            400
+          )
+        );
       return;
     }
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -56,15 +63,13 @@ const register = async (req: TranslationRequest, res: Response): Promise<void> =
         password: hashedPassword,
       },
     });
-    res.status(200).json(
-      makeSuccessResponse(
-        NewUser,
-        'success.auth.register',
-        lang,
-        200,
-        { 'Content-Type': 'application/json' }
-      )
-    );
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(NewUser, 'success.auth.register', lang, 200, {
+          'Content-Type': 'application/json',
+        })
+      );
     return;
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
@@ -164,7 +169,10 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
   }
 };
 
-const forgetPassword = async (req: TranslationRequest, res: Response): Promise<void> => {
+const forgetPassword = async (
+  req: TranslationRequest,
+  res: Response
+): Promise<void> => {
   try {
     const { email } = req.body;
     const existingUser = await client.user.findFirst({
@@ -173,14 +181,16 @@ const forgetPassword = async (req: TranslationRequest, res: Response): Promise<v
       },
     });
     if (!existingUser) {
-      res.status(400).json(
-        makeErrorResponse(
-          new Error('User does not exist'),
-          'error.auth.user_not_found',
-          req.language as Language,
-          400
-        )
-      );
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('User does not exist'),
+            'error.auth.user_not_found',
+            req.language as Language,
+            400
+          )
+        );
       return;
     }
     const otp = await sendRecoveryEmail(email);
@@ -192,15 +202,17 @@ const forgetPassword = async (req: TranslationRequest, res: Response): Promise<v
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       },
     });
-    res.status(200).json(
-      makeSuccessResponse(
-        { otpId: newOtp.id },
-        'success.auth.otp_sent',
-        req.language as Language,
-        200,
-        { 'Content-Type': 'application/json' }
-      )
-    );
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { otpId: newOtp.id },
+          'success.auth.otp_sent',
+          req.language as Language,
+          200,
+          { 'Content-Type': 'application/json' }
+        )
+      );
     return;
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
@@ -226,7 +238,10 @@ const forgetPassword = async (req: TranslationRequest, res: Response): Promise<v
   }
 };
 
-const verifyPassword = async (req: TranslationRequest, res: Response): Promise<void> => {
+const verifyPassword = async (
+  req: TranslationRequest,
+  res: Response
+): Promise<void> => {
   const { otp, userId, newPassword } = req.body;
   try {
     await client.$transaction(async (tx: any) => {
@@ -236,14 +251,16 @@ const verifyPassword = async (req: TranslationRequest, res: Response): Promise<v
       });
 
       if (!existingUser) {
-        res.status(400).json(
-          makeErrorResponse(
-            new Error('User not found'),
-            'error.auth.user_not_found',
-            req.language as Language,
-            400
-          )
-        );
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('User not found'),
+              'error.auth.user_not_found',
+              req.language as Language,
+              400
+            )
+          );
         return;
       }
 
@@ -256,14 +273,16 @@ const verifyPassword = async (req: TranslationRequest, res: Response): Promise<v
       });
 
       if (!existingOtp) {
-        res.status(400).json(
-          makeErrorResponse(
-            new Error('Invalid OTP'),
-            'error.auth.invalid_otp',
-            req.language as Language,
-            400
-          )
-        );
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('Invalid OTP'),
+              'error.auth.invalid_otp',
+              req.language as Language,
+              400
+            )
+          );
         return;
       }
 
@@ -311,14 +330,16 @@ const me = async (req: TranslationRequest, res: Response): Promise<void> => {
   try {
     const userID = req.userID;
     if (!userID) {
-      res.status(400).json(
-        makeErrorResponse(
-          new Error('User ID is required'),
-          'error.auth.user_id_required',
-          req.language as Language,
-          400
-        )
-      );
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('User ID is required'),
+            'error.auth.user_id_required',
+            req.language as Language,
+            400
+          )
+        );
       return;
     }
     const existingUser = await client.user.findUnique({
@@ -336,25 +357,29 @@ const me = async (req: TranslationRequest, res: Response): Promise<void> => {
       },
     });
     if (!existingUser) {
-      res.status(400).json(
-        makeErrorResponse(
-          new Error('User does not exist'),
-          'error.auth.user_not_found',
-          req.language as Language,
-          400
-        )
-      );
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('User does not exist'),
+            'error.auth.user_not_found',
+            req.language as Language,
+            400
+          )
+        );
       return;
     }
-    res.status(200).json(
-      makeSuccessResponse(
-        existingUser,
-        'success.auth.user_info',
-        req.language as Language,
-        200,
-        { 'Content-Type': 'application/json' }
-      )
-    );
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          existingUser,
+          'success.auth.user_info',
+          req.language as Language,
+          200,
+          { 'Content-Type': 'application/json' }
+        )
+      );
     return;
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';

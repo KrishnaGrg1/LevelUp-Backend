@@ -96,12 +96,12 @@ pnpm dev
 
 ## 🚀 Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run start` / `pnpm dev` | Start the development server |
-| `npx prisma migrate dev` | Run database migrations |
-| `npx prisma generate` | Generate Prisma client |
-| `npx prisma studio` | Open Prisma Studio (database GUI) |
+| Command                      | Description                       |
+| ---------------------------- | --------------------------------- |
+| `npm run start` / `pnpm dev` | Start the development server      |
+| `npx prisma migrate dev`     | Run database migrations           |
+| `npx prisma generate`        | Generate Prisma client            |
+| `npx prisma studio`          | Open Prisma Studio (database GUI) |
 
 ---
 
