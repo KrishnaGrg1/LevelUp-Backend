@@ -1,8 +1,8 @@
 import error from './error.json';
 import success from './success.json';
 const jap = {
-    error,
-    success,
+  error,
+  success,
 };
 
 export default jap;
