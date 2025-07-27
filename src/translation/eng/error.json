@@ -1,12 +1,12 @@
 {
   "auth": {
-    "username_exists": "ユーザー名は既に存在します",
-    "email_exists": "メールアドレスは既に存在します",
-    "user_not_found": "ユーザーが見つかりません",
-    "email_not_found": "メールアドレスが見つかりません",
-    "invalid_otp": "無効なOTPです",
-    "incorrect_password": "パスワードが間違っています",
-    "unauthorized": "認証されていません",
-    "unexpected": "予期しないエラーが発生しました"
+    "username_exists": "उपयोगकर्ता नाम पहले से मौजूद है",
+    "email_exists": "ईमेल पता पहले से मौजूद है",
+    "user_not_found": "उपयोगकर्ता नहीं मिला",
+    "email_not_found": "ईमेल पता नहीं मिला",
+    "invalid_otp": "अमान्य OTP",
+    "incorrect_password": "गलत पासवर्ड",
+    "unauthorized": "अनधिकृत पहुँच",
+    "unexpected": "एक अप्रत्याशित त्रुटि हुई"
   }
 }

@@ -1,0 +1,12 @@
+{
+  "auth": {
+    "username_exists": "प्रयोगकर्ता नाम पहिले नै अवस्थित छ",
+    "email_exists": "इमेल पहिले नै अवस्थित छ",
+    "user_not_found": "प्रयोगकर्ता फेला परेन",
+    "email_not_found": "इमेल फेला परेन",
+    "invalid_otp": "OTP अवैध छ",
+    "incorrect_password": "गलत पासवर्ड",
+    "unauthorized": "अनधिकृत पहुँच",
+    "unexpected": "अप्रत्याशित त्रुटि आएको छ"
+  }
+}
