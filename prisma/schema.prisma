@@ -7,89 +7,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ----------------------------
+// User
+// ----------------------------
 model User {
-  id              Int               @id @default(autoincrement())
-  UserName        String            @unique
-  email           String            @unique
-  password        String
-  isVerified      Boolean           @default(false)
-  xp              Int               @default(0)
-  level           Int               @default(1)
-  // streak           Int                     @default(0)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  Community       Community[]
-  Category        String
-  // completions      CompletionQuest[]
-  // userLeaderboards GlobalUserLeaderboard[]
-  // goals           Goal[]
+  id         Int      @id @default(autoincrement())
+  UserName   String   @unique
+  email      String   @unique
+  password   String
+  isVerified Boolean  @default(false)
+  xp         Int      @default(0)
+  level      Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relationships
+  categoryId      Int?
+  category        Category?         @relation(fields: [categoryId], references: [id])
   otps            Otp[]
-  // quests          Quest[]
-  // UserBadge       UserBadge[]
+  Community       Community[]
   CommunityMember CommunityMember[]
-  // CompletionQuest CompletionQuest[]
-  // GlobalUserLeaderboard GlobalUserLeaderboard[]
-  // Goal            Goal?
-  // Quest           Quest[]
-  Clan            Clan[]
-  Quest           Quest[]
+  Clan            Clan[] // Clans owned by this user
+  Quest           Quest[] // Quests assigned to user
 }
 
-// enum GoalCategory {
-//   Fitness
-//   MentalHealth
-//   Education
-//   Career
-//   Programming
-//   Lifestyle
-//   Finance
-//   Creativity
-//   Social
-// }
+// ----------------------------
+// Category (Dynamic)
+// ----------------------------
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  createdBy   Int? // User who created it
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-// model Goal {
-//   id         Int          @id @default(autoincrement())
-//   userId     Int          @unique
-//   title      String
-//   category   GoalCategory
-//   selfRating Int          @default(0)
-//   createdAt  DateTime     @default(now())
-//   user       User         @relation(fields: [userId], references: [id])
-//   quests     Quest[]
-// }
-
-// enum QuestType {
-//   Daily
-//   Weekly
-//   Monthly
-//   OneTime
-// }
-
-model Quest {
-  id                Int              @id @default(autoincrement())
-  userId            Int
-  description       String
-  xpValue           Int
-  isCompleted       Boolean          @default(false)
-  date              DateTime
-  createdAt         DateTime         @default(now())
-  // completions CompletionQuest[]
-  // type              QuestType        @default(Daily)
-  recurrence        Boolean          @default(false)
-  user              User             @relation(fields: [userId], references: [id])
-  communityMemberId Int?
-  CommunityMember   CommunityMember? @relation(fields: [communityMemberId], references: [id])
+  // Relationships
+  users       User[]
+  communities Community[]
 }
 
-// model CompletionQuest {
-//   id      Int      @id @default(autoincrement())
-//   questId Int
-//   userId  Int
-//   date    DateTime @default(now())
-//   quest   Quest    @relation(fields: [questId], references: [id])
-//   user    User     @relation(fields: [userId], references: [id])
-// }
-
+// ----------------------------
+// OTP (Authentication)
+// ----------------------------
 model Otp {
   id        Int      @id @default(autoincrement())
   otp_code  String
@@ -99,98 +59,104 @@ model Otp {
   user      User     @relation(fields: [userId], references: [id])
 }
 
+// ----------------------------
+// Community
+// ----------------------------
 model Community {
-  id          Int               @id @default(autoincrement())
-  name        String            @unique
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
   description String?
   ownerId     Int
-  // leaderboard CommunityLeaderboard[]
-  clanId      Int
-  members     CommunityMember[]
-  updatedAt   DateTime          @updatedAt
-  createdAt   DateTime          @default(now())
-  owner       User              @relation(fields: [ownerId], references: [id])
-  // CommunityLeaderboard CommunityLeaderboard[]
-  Clan        Clan              @relation(fields: [clanId], references: [id])
+  categoryId  Int?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  // Relationships
+  owner    User              @relation(fields: [ownerId], references: [id])
+  category Category?         @relation(fields: [categoryId], references: [id])
+  members  CommunityMember[]
+  clans    Clan[]
 }
 
+// ----------------------------
+// Clan
+// ----------------------------
 model Clan {
-  id          Int               @id @default(autoincrement())
-  name        String            @unique
-  isPrivate   Boolean           @default(false)
-  xp          Int               @default(0)
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  isPrivate   Boolean  @default(false)
+  xp          Int      @default(0)
   description String?
   ownerId     Int
-  owner       User              @relation(fields: [ownerId], references: [id])
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  communities Community[]
-  members     CommunityMember[]
-  limit       Int               @default(50)
+  communityId Int
+  limit       Int      @default(50)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  owner     User              @relation(fields: [ownerId], references: [id])
+  community Community         @relation(fields: [communityId], references: [id])
+  members   CommunityMember[]
 }
 
+// ----------------------------
+// Community Member
+// ----------------------------
 model CommunityMember {
   id          Int          @id @default(autoincrement())
   userId      Int
   communityId Int
-  status      MemberStatus @default(Beginner) // beginner, intermediate, advanced
+  status      MemberStatus @default(Beginner)
   level       Int          @default(1)
   totalXP     Int          @default(0)
   clanId      Int?
   joinedAt    DateTime     @default(now())
-  quest       Quest[]
-  community   Community    @relation(fields: [communityId], references: [id])
-  user        User         @relation(fields: [userId], references: [id])
-  clan        Clan?        @relation(fields: [clanId], references: [id])
+
+  // Relationships
+  quest     Quest[]
+  community Community @relation(fields: [communityId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+  clan      Clan?     @relation(fields: [clanId], references: [id])
 }
 
+// ----------------------------
+// Quest
+// ----------------------------
+model Quest {
+  id                Int         @id @default(autoincrement())
+  userId            Int
+  description       String
+  xpValue           Int
+  isCompleted       Boolean     @default(false)
+  date              DateTime
+  createdAt         DateTime    @default(now())
+  type              QuestType   @default(Daily)
+  source            QuestSource @default(AI)
+  communityMemberId Int?
+
+  // Relationships
+  user            User             @relation(fields: [userId], references: [id])
+  CommunityMember CommunityMember? @relation(fields: [communityMemberId], references: [id])
+}
+
+// ----------------------------
+// Enums
+// ----------------------------
 enum MemberStatus {
   Beginner
   Intermediate
   Advanced
 }
 
-// model CommunityLeaderboard {
-//   id           Int       @id @default(autoincrement())
-//   communityId  Int
-//   totalXP      Int
-//   rank         Int
-//   period       String
-//   calculatedAt DateTime
-//   community    Community @relation(fields: [communityId], references: [id])
-// }
+enum QuestType {
+  Daily
+  Weekly
+  Monthly
+  OneTime
+}
 
-// model GlobalUserLeaderboard {
-//   id      Int  @id @default(autoincrement())
-//   userId  Int
-//   totalXP Int
-//   rank    Int
-//   user    User @relation(fields: [userId], references: [id])
-// }
-
-// model Badge {
-//   id        Int         @id @default(autoincrement())
-//   name      String
-//   iconUrl   String?
-//   criteria  String // text-based or code-based logic
-//   createdAt DateTime    @default(now())
-//   users     UserBadge[]
-// }
-
-// model UserBadge {
-//   id        Int      @id @default(autoincrement())
-//   userId    Int
-//   badgeId   Int
-//   awardedAt DateTime @default(now())
-//   user      User     @relation(fields: [userId], references: [id])
-//   badge     Badge    @relation(fields: [badgeId], references: [id])
-// }
-
-// model QuestTemplate {
-//   id          Int          @id @default(autoincrement())
-//   title       String
-//   description String
-//   category    GoalCategory
-//   xpValue     Int
-//   createdAt   DateTime     @default(now())
-// }
+enum QuestSource {
+  AI
+  TEMPLATE
+  MANUAL
+}
