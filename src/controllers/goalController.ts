@@ -3,16 +3,29 @@ import IRequest from '../middlewares/authMiddleware';
 import client from '../helpers/prisma';
 import findUser from '../helpers/findUser';
 import { GoalCategory } from '../helpers/goal';
+import { makeErrorResponse } from '../helpers/standartResponse';
+import { Language } from '../translation/translation';
+import { TranslationRequest } from '../middlewares/translationMiddleware';
 
-const submitGoal = async (req: IRequest, res: Response): Promise<void> => {
+const submitGoal = async (
+  req: TranslationRequest,
+  res: Response
+): Promise<void> => {
   try {
     const userID = Number(req.userID);
 
     const existingUser = await findUser(Number(userID));
     if (!existingUser) {
-      res.status(400).json({
-        message: 'User not found',
-      });
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('User doesnot exist'),
+            'error.auth.user_not_found',
+            req.language as Language,
+            400
+          )
+        );
       return;
     }
     const existingGoal = await client.goal.findFirst({
