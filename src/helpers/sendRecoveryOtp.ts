@@ -1,14 +1,16 @@
 import nodemailer from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport'; // 👈 add this
 import env from './config';
+import html, { EmailTopic } from './emailMessage';
+import { number } from 'joi';
 
 const transporter = nodemailer.createTransport({
   host: env.SMTP_HOST,
   port: Number(env.SMTP_PORT),
   secure: Number(env.SMTP_PORT) === 465,
   auth: {
-    user: env.SMTP_USERNAME,
-    pass: env.SMTP_PASSWORD,
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASS,
   },
 } as SMTPTransport.Options);
 
@@ -18,36 +20,39 @@ function generateToken(): string {
 async function sendEmail(
   to: string,
   subject: string,
-  html: string,
-  text: string
-): Promise<void> {
+  htmlMsg: string
+): Promise<any> {
   try {
     const info = await transporter.sendMail({
-      from: `"YaGOo" <${env.SMTP_USERNAME}>`,
+      from: `"LevelUp" `,
       to,
       subject,
-      text,
-      html,
+      html: htmlMsg,
     });
 
     console.log('Message sent: %s', info.messageId);
+    return info;
   } catch (error) {
     console.error('Failed to send email:', error);
     throw new Error('Email service failure');
   }
 }
 
-export async function sendRecoveryEmail(userEmail: string): Promise<string> {
+export async function sendEmailToken(
+  userEmail: string,
+  username: string,
+  topic: EmailTopic,
+  userId?: string | number
+): Promise<string> {
   const token = generateToken();
-  const subject = 'Password Recovery - Verify Your Email';
-  const text = `Hello, use the token to verify your email: ${token}`;
-  const html = `
-    <p>Dear User,</p>
-    <p>Please use the following token to verify your email address:</p>
-    <p><b style="font-size: 20px;">${token}</b></p>
-    <p>Do not share this token with anyone.</p>
-    <p>Thank you,<br />The YaGOo Team</p>`;
 
-  await sendEmail(userEmail, subject, html, text);
+  const htmlMsg = html({
+    token,
+    topic,
+    username,
+    userId,
+  });
+
+  await sendEmail(userEmail, topic, htmlMsg);
   return token;
 }
