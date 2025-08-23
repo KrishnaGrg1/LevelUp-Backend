@@ -51,9 +51,10 @@ model Category {
 // OTP (Authentication)
 // ----------------------------
 model Otp {
-  id        Int      @id @default(autoincrement())
-  otp_code  String
-  userId    Int
+  id       Int    @id @default(autoincrement())
+  otp_code String
+  userId   Int
+
   createdAt DateTime @default(now())
   expiresAt DateTime
   user      User     @relation(fields: [userId], references: [id])

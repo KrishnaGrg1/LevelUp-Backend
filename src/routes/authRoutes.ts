@@ -8,10 +8,18 @@ const authRoutes = Router();
 
 authRoutes.post(
   '/register',
-  validate(authValidation.register),
+
   authController.register
 );
+
+authRoutes.post(
+  '/verify-email',
+
+  authController.verifyOTPLink
+);
+
 authRoutes.post('/login', validate(authValidation.login), authController.login);
+
 authRoutes.post(
   '/forget-password',
   validate(authValidation.forget_password),
@@ -20,7 +28,8 @@ authRoutes.post(
 authRoutes.post(
   '/reset-password',
   validate(authValidation.reset_password),
-  authController.verifyPassword
+  authController.resetPassword
 );
 authRoutes.get('/me', authMiddleware, authController.me);
+authRoutes.post('/verify-otp', authController.verifyOTP);
 export default authRoutes;

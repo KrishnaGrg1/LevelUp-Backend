@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import env from '../helpers/config';
-import { sendRecoveryEmail } from '../helpers/sendRecoveryOtp';
+import { sendEmailToken } from '../helpers/sendRecoveryOtp';
 import IRequest from '../middlewares/authMiddleware';
 import client from '../helpers/prisma';
 import {
@@ -11,21 +11,27 @@ import {
 } from '../helpers/standardResponse';
 import { TranslationRequest } from '../middlewares/translationMiddleware';
 import { Language } from '../translation/translation';
+import { EmailTopic } from '../helpers/emailMessage';
+import { promises } from 'nodemailer/lib/xoauth2';
 
 const register = async (
   req: TranslationRequest,
   res: Response
 ): Promise<void> => {
+  const lang = req.language as Language;
+
   try {
-    const lang = req.language as Language;
-    const { UserName, email, password } = req.body;
-    
-    const existingUser = await client.user.findFirst({
+    const { email, username, password } = req.body;
+    const user = await client.user.findUnique({
       where: {
-        UserName,
+        email,
       },
     });
-    if (existingUser) {
+
+    const existingUserByUsername = await client.user.findUnique({
+      where: { UserName: username },
+    });
+    if (existingUserByUsername) {
       res
         .status(400)
         .json(
@@ -38,18 +44,38 @@ const register = async (
         );
       return;
     }
-    
-    const existingEmail = await client.user.findFirst({
-      where: {
-        email,
-      },
-    });
-    if (existingEmail) {
+
+    if (user) {
+      if (user.isVerified === false) {
+        await client.otp.deleteMany({ where: { userId: user.id } });
+
+        const otp = await sendEmailToken(
+          email,
+          email,
+          EmailTopic.VerifyEmail,
+          user.id
+        );
+        const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
+
+        //create new otp
+        await client.otp.create({
+          data: {
+            otp_code: hashedOTP,
+            userId: user.id,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
+          },
+        });
+        res.status(200).json(
+          makeSuccessResponse(null, 'success.auth.register', lang, 200, {
+            'Content-Type': 'application/json',
+          })
+        );
+      }
       res
         .status(400)
         .json(
           makeErrorResponse(
-            new Error('Email already exists'),
+            new Error('User already exists'),
             'error.auth.email_exists',
             lang,
             400
@@ -57,17 +83,34 @@ const register = async (
         );
       return;
     }
-    
+
+    const otp = await sendEmailToken(email, email, EmailTopic.VerifyEmail);
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const NewUser = await client.user.create({
+
+    //create new user
+    const newUser = await client.user.create({
       data: {
-        UserName,
         email: email,
-        password: hashedPassword,
+        UserName: username, // temporary unique username
+        password: hashedPassword, // placeholder password
+        isVerified: false,
       },
     });
+
+    const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
+
+    //create new otp
+    await client.otp.create({
+      data: {
+        otp_code: hashedOTP,
+        userId: newUser.id,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
+      },
+    });
+
     res.status(200).json(
-      makeSuccessResponse(NewUser, 'success.auth.register', lang, 200, {
+      makeSuccessResponse(null, 'success.auth.register', lang, 200, {
         'Content-Type': 'application/json',
       })
     );
@@ -92,6 +135,125 @@ const register = async (
           )
         );
       return;
+    }
+  }
+};
+
+const verifyOTP = async (
+  req: TranslationRequest,
+  res: Response
+): Promise<void> => {
+  const lang = req.language as Language;
+  const { email, otp } = req.body;
+
+  try {
+    await client.$transaction(async (tx: any) => {
+      // Find user
+      const user = await tx.user.findFirst({
+        where: { email },
+      });
+
+      if (!user) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('User does not exist'),
+              'error.auth.user_not_found',
+              lang,
+              400
+            )
+          );
+        return;
+      }
+
+      const otpDoc = await tx.otp.findFirst({
+        where: { userId: user.id },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!otpDoc) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('Invalid OTP or expired'),
+              'error.auth.invalid_otp',
+              lang,
+              400
+            )
+          );
+        return;
+      }
+
+      // Check expiry
+      if (otpDoc.expiresAt < new Date()) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('OTP expired'),
+              'error.auth.invalid_otp',
+              lang,
+              400
+            )
+          );
+        return;
+      }
+
+      const validOTP = await bcrypt.compare(otp, otpDoc.otp_code);
+      if (!validOTP) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('Invalid OTP or expired'),
+              'error.auth.invalid_otp',
+              lang,
+              400
+            )
+          );
+        return;
+      }
+
+      await client.user.update({
+        where: { id: user.id },
+        data: { isVerified: true },
+      });
+
+      // Delete all OTPs for this user
+      await tx.otp.deleteMany({ where: { userId: user.id } });
+
+      res
+        .status(200)
+        .json(
+          makeSuccessResponse(
+            { email: email },
+            'success.auth.otp_sent',
+            lang,
+            200,
+            { 'Content-Type': 'application/json' }
+          )
+        );
+    });
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+
+    if (e instanceof Error) {
+      res
+        .status(500)
+        .json(makeErrorResponse(e, 'error.auth.unexpected', lang, 500));
+    } else {
+      res
+        .status(500)
+        .json(
+          makeErrorResponse(
+            new Error('Unexpected error'),
+            'error.auth.unexpected',
+            lang,
+            500
+          )
+        );
     }
   }
 };
@@ -132,6 +294,38 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
             'error.auth.incorrect_password',
             lang,
             400
+          )
+        );
+      return;
+    }
+    if (existingUser.isVerified === false) {
+      await client.otp.deleteMany({ where: { userId: existingUser.id } });
+
+      const otp = await sendEmailToken(
+        email,
+        email,
+        EmailTopic.VerifyEmail,
+        existingUser.id
+      );
+      const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
+
+      //create new otp
+      await client.otp.create({
+        data: {
+          otp_code: hashedOTP,
+          userId: existingUser.id,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
+        },
+      });
+
+      res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Email not verified. Verification link resent.'),
+            'error.auth.email_not_verified',
+            lang,
+            403
           )
         );
       return;
@@ -194,8 +388,13 @@ const forgetPassword = async (
         );
       return;
     }
-    const otp = await sendRecoveryEmail(email);
+    const otp = await sendEmailToken(
+      email,
+      existingUser.UserName,
+      EmailTopic.ForgotPassword
+    );
     const hashed_Otp = await bcrypt.hash(otp, 10);
+
     const newOtp = await client.otp.create({
       data: {
         otp_code: hashed_Otp,
@@ -239,11 +438,132 @@ const forgetPassword = async (
   }
 };
 
-const verifyPassword = async (
+const verifyOTPLink = async (
+  req: TranslationRequest,
+  res: Response
+): Promise<void> => {
+  const { id, token } = req.query;
+  const lang = req.language as Language;
+  const userId = Number(id); // convert string to number
+
+  try {
+    await client.$transaction(async (tx: any) => {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('User not found'),
+              'error.auth.user_not_found',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
+
+      const otpDoc = await tx.otp.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!otpDoc) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('Invalid OTP'),
+              'error.auth.invalid_otp',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
+      // Check expiry
+      if (otpDoc.expiresAt < new Date()) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('OTP expired'),
+              'error.auth.invalid_otp',
+              lang,
+              400
+            )
+          );
+        return;
+      }
+      const validOTP = await bcrypt.compare(token as string, otpDoc.otp_code);
+      if (!validOTP) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('Invalid OTP or expired'),
+              'error.auth.invalid_otp',
+              lang,
+              400
+            )
+          );
+        return;
+      }
+
+      const verifiedUser = await tx.user.update({
+        where: { id: user.id },
+        data: {
+          isVerified: true,
+        },
+      });
+
+      // Delete all OTPs for this user
+      await tx.otp.deleteMany({ where: { userId: user.id } });
+
+      res
+        .status(200)
+        .json(
+          makeSuccessResponse(
+            { verifiedUser },
+            'success.auth.otp_sent',
+            lang,
+            200,
+            { 'Content-Type': 'application/json' }
+          )
+        );
+    });
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+
+    if (e instanceof Error) {
+      res
+        .status(500)
+        .json(makeErrorResponse(e, 'error.auth.unexpected', lang, 500));
+      return;
+    } else {
+      res
+        .status(500)
+        .json(
+          makeErrorResponse(
+            new Error('Unexpected error'),
+            'error.auth.unexpected',
+            lang,
+            500
+          )
+        );
+      return;
+    }
+  }
+};
+
+const resetPassword = async (
   req: TranslationRequest,
   res: Response
 ): Promise<void> => {
   const { otp, userId, newPassword } = req.body;
+
   try {
     await client.$transaction(async (tx: any) => {
       // Find user
@@ -409,8 +729,11 @@ const authController = {
   register,
   login,
   forgetPassword,
-  verifyPassword,
+  resetPassword,
   me,
+  verifyOTP,
+
+  verifyOTPLink,
 };
 
 export default authController;
