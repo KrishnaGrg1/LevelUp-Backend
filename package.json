@@ -12,26 +12,31 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
-    "@prisma/client": "^6.11.1",
+    "@lucia-auth/adapter-prisma": "^4.0.1",
+    "@lucia-auth/oauth": "^3.5.3",
+    "@prisma/client": "^6.14.0",
     "@types/bcrypt": "^5.0.2",
-    "@types/express": "^5.0.3",
     "@types/nodemailer": "^6.4.17",
+    "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "helmet": "^8.1.0",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
+    "lucia": "^3.2.2",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.3",
     "nodemon": "^3.1.10",
     "typescript": "^5.8.3"
   },
   "devDependencies": {
+    "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node-cron": "^3.0.11",
     "prettier": "^3.6.2",
-    "prisma": "^6.11.1"
+    "prisma": "^6.14.0"
   }
 }

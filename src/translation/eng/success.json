@@ -1,6 +1,7 @@
 {
   "auth": {
     "register": "User registered successfully",
-    "login": "User login successfully"
+    "login": "User login successfully",
+    "otp_resent": "Email already exists. OTP has been resent to your email"
   }
 }

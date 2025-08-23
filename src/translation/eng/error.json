@@ -1,7 +1,7 @@
 {
   "auth": {
     "username_exists": "Username already exists",
-    "email_not_verified" : "Your Email isnot verfied yet .",
+    "email_not_verified": "Your Email isnot verfied yet .",
     "email_exists": "Email address already exists",
     "user_not_found": "User not found",
     "email_not_found": "Email address not found",
@@ -10,6 +10,5 @@
     "unauthorized": "Unauthorized access",
     "unexpected": "An unexpected error occurred",
     "user_verified": " User  already verified"
-    
   }
 }

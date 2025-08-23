@@ -32,4 +32,5 @@ authRoutes.post(
 );
 authRoutes.get('/me', authMiddleware, authController.me);
 authRoutes.post('/verify-otp', authController.verifyOTP);
+authRoutes.post('/logout', authMiddleware, authController.logout);
 export default authRoutes;

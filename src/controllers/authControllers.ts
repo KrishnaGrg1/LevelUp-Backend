@@ -1,9 +1,8 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import env from '../helpers/config';
 import { sendEmailToken } from '../helpers/sendRecoveryOtp';
-import IRequest from '../middlewares/authMiddleware';
 import client from '../helpers/prisma';
 import {
   makeErrorResponse,
@@ -12,7 +11,8 @@ import {
 import { TranslationRequest } from '../middlewares/translationMiddleware';
 import { Language } from '../translation/translation';
 import { EmailTopic } from '../helpers/emailMessage';
-import { promises } from 'nodemailer/lib/xoauth2';
+import { lucia } from '../middlewares/lucia';
+import { AuthRequest } from '../middlewares/authMiddleware';
 
 const register = async (
   req: TranslationRequest,
@@ -65,11 +65,18 @@ const register = async (
             expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
           },
         });
-        res.status(200).json(
-          makeSuccessResponse(null, 'success.auth.register', lang, 200, {
-            'Content-Type': 'application/json',
-          })
+        res.status(400).json(
+          makeErrorResponse(
+            new Error('OTP has been resent'),
+            'success.auth.otp_resent',
+            lang,
+            400,
+            {
+              'Content-Type': 'application/json',
+            }
+          )
         );
+        return;
       }
       res
         .status(400)
@@ -110,7 +117,7 @@ const register = async (
     });
 
     res.status(200).json(
-      makeSuccessResponse(null, 'success.auth.register', lang, 200, {
+      makeSuccessResponse(newUser, 'success.auth.register', lang, 200, {
         'Content-Type': 'application/json',
       })
     );
@@ -223,18 +230,26 @@ const verifyOTP = async (
 
       // Delete all OTPs for this user
       await tx.otp.deleteMany({ where: { userId: user.id } });
+      const session = await lucia.createSession(user.id, {});
+      const sessionCookie = lucia.createSessionCookie(session.id);
 
-      res
-        .status(200)
-        .json(
-          makeSuccessResponse(
-            { email: email },
-            'success.auth.otp_sent',
-            lang,
-            200,
-            { 'Content-Type': 'application/json' }
-          )
-        );
+      res.setHeader('Set-Cookie', sessionCookie.serialize());
+      res.status(200).json(
+        makeSuccessResponse(
+          {
+            id: user.id,
+            UserName: user.UserName,
+            email: user.email,
+            isVerified: true,
+            xp: user.xp,
+            level: user.level,
+          },
+          'success.auth.verify',
+          lang,
+          200
+        )
+      );
+      return;
     });
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
@@ -280,7 +295,19 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
         );
       return;
     }
-
+    if (!existingUser.password) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Password login not available. Use OAuth.'),
+            'error.auth.password_not_set',
+            lang,
+            400
+          )
+        );
+      return;
+    }
     const comparePassword = await bcrypt.compare(
       password,
       existingUser.password
@@ -331,14 +358,27 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
       return;
     }
 
-    const JWT_Password = env.JWT_Password as string;
-    const token = jwt.sign({ userID: existingUser.id }, JWT_Password, {
-      expiresIn: '1h',
-    });
+    // Create Lucia session instead of JWT
+    const session = await lucia.createSession(existingUser.id, {});
+    const sessionCookie = lucia.createSessionCookie(session.id);
 
-    res
-      .status(200)
-      .json(makeSuccessResponse(token, 'success.auth.login', lang));
+    res.setHeader('Set-Cookie', sessionCookie.serialize());
+
+    res.status(200).json(
+      makeSuccessResponse(
+        {
+          id: existingUser.id,
+          UserName: existingUser.UserName,
+          email: existingUser.email,
+          isVerified: existingUser.isVerified,
+          xp: existingUser.xp,
+          level: existingUser.level,
+        },
+        'success.auth.login',
+        lang,
+        200
+      )
+    );
     return;
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
@@ -384,6 +424,38 @@ const forgetPassword = async (
             'error.auth.user_not_found',
             req.language as Language,
             400
+          )
+        );
+      return;
+    }
+    if (existingUser.isVerified === false) {
+      await client.otp.deleteMany({ where: { userId: existingUser.id } });
+
+      const otp = await sendEmailToken(
+        email,
+        email,
+        EmailTopic.VerifyEmail,
+        existingUser.id
+      );
+      const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
+
+      //create new otp
+      await client.otp.create({
+        data: {
+          otp_code: hashedOTP,
+          userId: existingUser.id,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
+        },
+      });
+
+      res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Email not verified. Verification link resent.'),
+            'error.auth.email_not_verified',
+            req.language as Language,
+            403
           )
         );
       return;
@@ -444,7 +516,7 @@ const verifyOTPLink = async (
 ): Promise<void> => {
   const { id, token } = req.query;
   const lang = req.language as Language;
-  const userId = Number(id); // convert string to number
+  const userId = id;
 
   try {
     await client.$transaction(async (tx: any) => {
@@ -497,6 +569,7 @@ const verifyOTPLink = async (
           );
         return;
       }
+
       const validOTP = await bcrypt.compare(token as string, otpDoc.otp_code);
       if (!validOTP) {
         res
@@ -521,18 +594,26 @@ const verifyOTPLink = async (
 
       // Delete all OTPs for this user
       await tx.otp.deleteMany({ where: { userId: user.id } });
+      const session = await lucia.createSession(user.id, {});
+      const sessionCookie = lucia.createSessionCookie(session.id);
 
-      res
-        .status(200)
-        .json(
-          makeSuccessResponse(
-            { verifiedUser },
-            'success.auth.otp_sent',
-            lang,
-            200,
-            { 'Content-Type': 'application/json' }
-          )
-        );
+      res.setHeader('Set-Cookie', sessionCookie.serialize());
+      res.status(200).json(
+        makeSuccessResponse(
+          {
+            id: user.id,
+            UserName: user.UserName,
+            email: user.email,
+            isVerified: true,
+            xp: user.xp,
+            level: user.level,
+          },
+          'success.auth.email_verified',
+          lang,
+          200
+        )
+      );
+      return;
     });
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
@@ -649,82 +730,85 @@ const resetPassword = async (
 
 const me = async (req: TranslationRequest, res: Response): Promise<void> => {
   try {
-    const userID = req.userID;
-    if (!userID) {
+    const lang = req.language as Language;
+
+    if (!req.user || !req.session) {
       res
-        .status(400)
+        .status(401)
         .json(
           makeErrorResponse(
-            new Error('User ID is required'),
-            'error.auth.user_id_required',
-            req.language as Language,
-            400
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
+            lang,
+            401
           )
         );
       return;
     }
-    const existingUser = await client.user.findUnique({
-      where: {
-        id: Number(userID),
-      },
-      select: {
-        id: true,
-        UserName: true,
-        email: true,
-        xp: true,
-        level: true,
-        createdAt: true,
-      },
-    });
-    if (!existingUser) {
-      res
-        .status(400)
-        .json(
-          makeErrorResponse(
-            new Error('User does not exist'),
-            'error.auth.user_not_found',
-            req.language as Language,
-            400
-          )
-        );
-      return;
-    }
+
     res
       .status(200)
       .json(
-        makeSuccessResponse(
-          existingUser,
-          'success.auth.user_info',
-          req.language as Language,
-          200,
-          { 'Content-Type': 'application/json' }
-        )
+        makeSuccessResponse(req.user, 'success.auth.user_retrieved', lang, 200)
       );
     return;
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to get user'),
+          'error.auth.unexpected',
+          lang,
+          500
+        )
+      );
+    return;
+  }
+};
+const logout = async (
+  req: TranslationRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const lang = req.language as Language;
 
-    if (e instanceof Error) {
+    if (!req.session) {
       res
-        .status(500)
-        .json(makeErrorResponse(e, 'error.auth.unexpected', lang, 500));
-      return;
-    } else {
-      res
-        .status(500)
+        .status(401)
         .json(
           makeErrorResponse(
-            new Error('Unexpected error'),
-            'error.auth.unexpected',
+            new Error('No active session'),
+            'error.auth.no_session',
             lang,
-            500
+            401
           )
         );
       return;
     }
+
+    await lucia.invalidateSession(req.session.id);
+    const sessionCookie = lucia.createBlankSessionCookie();
+    res.setHeader('Set-Cookie', sessionCookie.serialize());
+
+    res
+      .status(200)
+      .json(makeSuccessResponse(null, 'success.auth.logout', lang, 200));
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Logout failed'),
+          'error.auth.logout_failed',
+          lang,
+          500
+        )
+      );
   }
 };
-
 const authController = {
   register,
   login,
@@ -732,8 +816,8 @@ const authController = {
   resetPassword,
   me,
   verifyOTP,
-
   verifyOTPLink,
+  logout,
 };
 
 export default authController;

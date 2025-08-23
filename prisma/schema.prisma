@@ -7,142 +7,127 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ----------------------------
-// User
-// ----------------------------
 model User {
-  id         Int      @id @default(autoincrement())
-  UserName   String   @unique
-  email      String   @unique
-  password   String
-  isVerified Boolean  @default(false)
-  xp         Int      @default(0)
-  level      Int      @default(1)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              String   @id @default(cuid())
+  UserName        String   @unique
+  email           String   @unique
+  password        String?  // nullable for OAuth users
+  provider        String?  // e.g., "github", "google"
+  providerId      String?  // provider-specific user ID
+  xp              Int      @default(0)
+  level           Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  categoryId      String?
+  isVerified      Boolean  @default(false)
 
-  // Relationships
-  categoryId      Int?
-  category        Category?         @relation(fields: [categoryId], references: [id])
-  otps            Otp[]
+  Clan            Clan[]
   Community       Community[]
   CommunityMember CommunityMember[]
-  Clan            Clan[] // Clans owned by this user
-  Quest           Quest[] // Quests assigned to user
+  otps            Otp[]
+  Quest           Quest[]
+  category        Category? @relation(fields: [categoryId], references: [id])
+  sessions        Session[]
+  keys            Key[]
 }
 
-// ----------------------------
-// Category (Dynamic)
-// ----------------------------
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+}
+
+model Key {
+  id             String   @id
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hashedPassword String?
+  expiresAt      DateTime?
+}
+
 model Category {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
+  id          String      @id @default(cuid())
+  name        String      @unique
   description String?
-  createdBy   Int? // User who created it
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relationships
-  users       User[]
+  createdBy   String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   communities Community[]
+  users       User[]
 }
 
-// ----------------------------
-// OTP (Authentication)
-// ----------------------------
 model Otp {
-  id       Int    @id @default(autoincrement())
-  otp_code String
-  userId   Int
-
+  id        String   @id @default(cuid())
+  otp_code  String
+  userId    String
   createdAt DateTime @default(now())
   expiresAt DateTime
   user      User     @relation(fields: [userId], references: [id])
 }
 
-// ----------------------------
-// Community
-// ----------------------------
 model Community {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
+  id          String            @id @default(cuid())
+  name        String            @unique
   description String?
-  ownerId     Int
-  categoryId  Int?
-  updatedAt   DateTime @updatedAt
-  createdAt   DateTime @default(now())
-
-  // Relationships
-  owner    User              @relation(fields: [ownerId], references: [id])
-  category Category?         @relation(fields: [categoryId], references: [id])
-  members  CommunityMember[]
-  clans    Clan[]
+  createdAt   DateTime          @default(now())
+  ownerId     String
+  categoryId  String?
+  updatedAt   DateTime          @updatedAt
+  clans       Clan[]
+  category    Category?         @relation(fields: [categoryId], references: [id])
+  owner       User              @relation(fields: [ownerId], references: [id])
+  members     CommunityMember[]
 }
 
-// ----------------------------
-// Clan
-// ----------------------------
 model Clan {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  isPrivate   Boolean  @default(false)
-  xp          Int      @default(0)
+  id          String            @id @default(cuid())
+  name        String            @unique
+  isPrivate   Boolean           @default(false)
+  xp          Int               @default(0)
   description String?
-  ownerId     Int
-  communityId Int
-  limit       Int      @default(50)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relationships
-  owner     User              @relation(fields: [ownerId], references: [id])
-  community Community         @relation(fields: [communityId], references: [id])
-  members   CommunityMember[]
+  ownerId     String
+  communityId String
+  limit       Int               @default(50)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  community   Community         @relation(fields: [communityId], references: [id])
+  owner       User              @relation(fields: [ownerId], references: [id])
+  members     CommunityMember[]
 }
 
-// ----------------------------
-// Community Member
-// ----------------------------
 model CommunityMember {
-  id          Int          @id @default(autoincrement())
-  userId      Int
-  communityId Int
-  status      MemberStatus @default(Beginner)
-  level       Int          @default(1)
-  totalXP     Int          @default(0)
-  clanId      Int?
+  id          String        @id @default(cuid())
+  userId      String
+  communityId String
   joinedAt    DateTime     @default(now())
+  totalXP     Int          @default(0)
+  clanId      String?
+  level       Int          @default(1)
+  status      MemberStatus @default(Beginner)
 
-  // Relationships
-  quest     Quest[]
-  community Community @relation(fields: [communityId], references: [id])
-  user      User      @relation(fields: [userId], references: [id])
-  clan      Clan?     @relation(fields: [clanId], references: [id])
+  clan        Clan?        @relation(fields: [clanId], references: [id])
+  community   Community    @relation(fields: [communityId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+  quest       Quest[]
 }
 
-// ----------------------------
-// Quest
-// ----------------------------
 model Quest {
-  id                Int         @id @default(autoincrement())
-  userId            Int
-  description       String
+  id                String           @id @default(cuid())
+  userId            String
   xpValue           Int
-  isCompleted       Boolean     @default(false)
+  isCompleted       Boolean          @default(false)
   date              DateTime
-  createdAt         DateTime    @default(now())
-  type              QuestType   @default(Daily)
-  source            QuestSource @default(AI)
-  communityMemberId Int?
+  createdAt         DateTime         @default(now())
+  type              QuestType        @default(Daily)
+  communityMemberId String?
+  description       String
+  source            QuestSource      @default(AI)
 
-  // Relationships
-  user            User             @relation(fields: [userId], references: [id])
-  CommunityMember CommunityMember? @relation(fields: [communityMemberId], references: [id])
+  CommunityMember   CommunityMember? @relation(fields: [communityMemberId], references: [id])
+  user              User             @relation(fields: [userId], references: [id])
 }
 
-// ----------------------------
-// Enums
-// ----------------------------
 enum MemberStatus {
   Beginner
   Intermediate

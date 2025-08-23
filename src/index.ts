@@ -2,17 +2,20 @@ import express from 'express';
 import mainRoutes from './routes/mainRoutes';
 import env from './helpers/config';
 import translationMiddeware from './middlewares/translationMiddleware';
-
+import helmet from 'helmet';
 const app = express();
 const port = env.PORT;
 
 // Basic security headers
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  next();
-});
+// app.use((req, res, next) => {
+//   res.setHeader('X-Content-Type-Options', 'nosniff');
+//   res.setHeader('X-Frame-Options', 'DENY');
+//   res.setHeader('X-XSS-Protection', '1; mode=block');
+//   next();
+// });
+
+//enable security headers instead of basic security headers
+app.use(helmet());
 
 // Simple CORS handling (replace with cors package in production)
 app.use((req, res, next) => {
