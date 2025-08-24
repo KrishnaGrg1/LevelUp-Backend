@@ -3,6 +3,7 @@ import authController from '../controllers/authControllers';
 import validate from '../middlewares/validation';
 import authValidation from '../validations/authValidation';
 import { authMiddleware } from '../middlewares/authMiddleware';
+import oauthController from '../controllers/oauthController';
 
 const authRoutes = Router();
 
@@ -33,4 +34,6 @@ authRoutes.post(
 authRoutes.get('/me', authMiddleware, authController.me);
 authRoutes.post('/verify-otp', authController.verifyOTP);
 authRoutes.post('/logout', authMiddleware, authController.logout);
+
+authRoutes.post('/oauth/register', oauthController.oauthLogin);
 export default authRoutes;

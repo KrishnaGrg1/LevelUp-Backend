@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import env from '../helpers/config';
+
 import { sendEmailToken } from '../helpers/sendRecoveryOtp';
 import client from '../helpers/prisma';
 import {
@@ -12,7 +11,6 @@ import { TranslationRequest } from '../middlewares/translationMiddleware';
 import { Language } from '../translation/translation';
 import { EmailTopic } from '../helpers/emailMessage';
 import { lucia } from '../middlewares/lucia';
-import { AuthRequest } from '../middlewares/authMiddleware';
 
 const register = async (
   req: TranslationRequest,
@@ -31,21 +29,8 @@ const register = async (
     const existingUserByUsername = await client.user.findUnique({
       where: { UserName: username },
     });
-    if (existingUserByUsername) {
-      res
-        .status(400)
-        .json(
-          makeErrorResponse(
-            new Error('Username already exists'),
-            'error.auth.username_exists',
-            lang,
-            400
-          )
-        );
-      return;
-    }
 
-    if (user) {
+    if (user && existingUserByUsername) {
       if (user.isVerified === false) {
         await client.otp.deleteMany({ where: { userId: user.id } });
 
@@ -55,6 +40,7 @@ const register = async (
           EmailTopic.VerifyEmail,
           user.id
         );
+        console.log('OTP sent:', otp);
         const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
 
         //create new otp
@@ -65,16 +51,11 @@ const register = async (
             expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
           },
         });
-        res.status(400).json(
-          makeErrorResponse(
-            new Error('OTP has been resent'),
-            'success.auth.otp_resent',
-            lang,
-            400,
-            {
-              'Content-Type': 'application/json',
-            }
-          )
+
+        res.status(200).json(
+          makeSuccessResponse(user, 'success.auth.otp_resent', lang, 200, {
+            'Content-Type': 'application/json',
+          })
         );
         return;
       }
