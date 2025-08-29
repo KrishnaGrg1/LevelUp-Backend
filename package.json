@@ -7,7 +7,11 @@
     "format": "prettier --write .",
     "build": "tsc -b",
     "start": "nodemon dist/index.js",
-    "dev": "npm run build && npm run start"
+    "dev": "npm run build && npm run start",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
   },
   "keywords": [],
   "author": "",
@@ -15,12 +19,15 @@
   "type": "commonjs",
   "dependencies": {
     "@lucia-auth/adapter-prisma": "^4.0.1",
-    "@lucia-auth/oauth": "^3.5.3",
-    "@prisma/client": "^6.14.0",
+    "@prisma/client": "^6.15.0",
     "@types/bcrypt": "^5.0.2",
+    "@types/config": "^3.3.5",
     "@types/nodemailer": "^6.4.17",
+    "adapter-prisma": "link:@@lucia-auth/adapter-prisma",
+    "arctic": "^2.1.0",
     "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
+    "config": "^4.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
@@ -39,7 +46,9 @@
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node-cron": "^3.0.11",
+    "@types/qs": "^6.14.0",
     "prettier": "^3.6.2",
-    "prisma": "^6.14.0"
+    "prisma": "^6.15.0",
+    "tsx": "^4.19.2"
   }
 }
