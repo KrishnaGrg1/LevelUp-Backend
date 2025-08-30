@@ -9,3 +9,7 @@ dist
 
 .DS_Store/*
 
+pnpm-lock.yaml
+tsconfig.build.json
+
+package-lock.json
