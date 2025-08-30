@@ -24,7 +24,6 @@
     "@types/config": "^3.3.5",
     "@types/nodemailer": "^6.4.17",
     "adapter-prisma": "link:@@lucia-auth/adapter-prisma",
-    "arctic": "^2.1.0",
     "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
     "config": "^4.1.1",
