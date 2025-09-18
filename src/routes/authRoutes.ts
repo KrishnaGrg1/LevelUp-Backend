@@ -9,7 +9,7 @@ const authRoutes = Router();
 
 authRoutes.post(
   '/register',
-
+  validate(authValidation.register),
   authController.register
 );
 

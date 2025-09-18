@@ -3,7 +3,7 @@ import Joi from 'joi';
 const authValidation = {
   register: {
     body: Joi.object().keys({
-      UserName: Joi.string().min(2).max(150).required().messages({
+      username: Joi.string().min(2).max(150).required().messages({
         'string.empty': 'Username is required',
         'string.min': 'Username must contain altleast 2 characters long',
         'string.max': 'Username mustnot exceed 150 characters long',
