@@ -9,6 +9,8 @@
     "incorrect_password": "Incorrect password",
     "unauthorized": "Unauthorized access",
     "unexpected": "An unexpected error occurred",
-    "user_verified": " User  already verified"
+    "user_verified": " User  already verified",
+    "logout_failed": "Logout failed. Please try again.",
+    "session_expired": "Session expired. Please log in again."
   }
 }

@@ -1,12 +1,16 @@
 {
   "auth": {
     "username_exists": "El nombre de usuario ya existe",
-    "email_exists": "El correo electrónico ya existe",
+    "email_not_verified": "Tu correo electrónico aún no ha sido verificado.",
+    "email_exists": "La dirección de correo electrónico ya existe",
     "user_not_found": "Usuario no encontrado",
-    "email_not_found": "Correo electrónico no encontrado",
+    "email_not_found": "Dirección de correo electrónico no encontrada",
     "invalid_otp": "OTP inválido",
     "incorrect_password": "Contraseña incorrecta",
-    "unauthorized": "No autorizado",
-    "unexpected": "Ocurrió un error inesperado"
+    "unauthorized": "Acceso no autorizado",
+    "unexpected": "Ocurrió un error inesperado",
+    "user_verified": "El usuario ya ha sido verificado",
+    "logout_failed": "Error al cerrar sesión. Por favor, inténtalo de nuevo.",
+    "session_expired": "La sesión ha expirado. Por favor, inicia sesión de nuevo."
   }
 }

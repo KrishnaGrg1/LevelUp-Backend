@@ -11,6 +11,7 @@ import { TranslationRequest } from '../middlewares/translationMiddleware';
 import { Language } from '../translation/translation';
 import { EmailTopic } from '../helpers/emailMessage';
 import { lucia } from '../middlewares/lucia';
+import { AuthRequest } from '../middlewares/authMiddleware';
 
 const register = async (
   req: TranslationRequest,
@@ -709,7 +710,7 @@ const resetPassword = async (
   }
 };
 
-const me = async (req: TranslationRequest, res: Response): Promise<void> => {
+const me = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const lang = req.language as Language;
 
@@ -748,30 +749,19 @@ const me = async (req: TranslationRequest, res: Response): Promise<void> => {
     return;
   }
 };
-const logout = async (
-  req: TranslationRequest,
-  res: Response
-): Promise<void> => {
+const logout = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const lang = req.language as Language;
 
-    if (!req.session) {
-      res
-        .status(401)
-        .json(
-          makeErrorResponse(
-            new Error('No active session'),
-            'error.auth.no_session',
-            lang,
-            401
-          )
-        );
-      return;
-    }
+    //getting session cookie
 
-    await lucia.invalidateSession(req.session.id);
-    const sessionCookie = lucia.createBlankSessionCookie();
-    res.setHeader('Set-Cookie', sessionCookie.serialize());
+    const sessionId = req.session.id;
+
+    await lucia.invalidateSession(sessionId); // Invalidate session in DB
+
+    //clear session cookie onclient side
+    const blankCookie = lucia.createBlankSessionCookie();
+    res.setHeader('Set-Cookie', blankCookie.serialize());
 
     res
       .status(200)

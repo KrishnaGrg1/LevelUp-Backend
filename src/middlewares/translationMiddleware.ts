@@ -1,7 +1,7 @@
-import { NextFunction, Response } from 'express';
+import { NextFunction, Response, Request } from 'express';
 import { AuthRequest } from './authMiddleware';
 import { Language } from '../translation/translation';
-export interface TranslationRequest extends AuthRequest {
+export interface TranslationRequest extends Request {
   language?: string;
 }
 

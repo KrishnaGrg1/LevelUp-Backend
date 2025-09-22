@@ -7,6 +7,11 @@
     "format": "prettier --write .",
     "build": "tsc -b",
     "start": "nodemon dist/index.js",
+
+    "start:cron": "nodemon dist/jobs/worker.js",
+      "dev:cron": "npm run build && npm run start:cron",
+   
+
     "dev": "npm run build && npm run start",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",

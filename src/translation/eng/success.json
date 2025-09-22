@@ -2,6 +2,7 @@
   "auth": {
     "register": "User registered successfully",
     "login": "User login successfully",
-    "otp_resent": "Email already exists. OTP has been resent to your email"
+    "otp_resent": "Email already exists. OTP has been resent to your email",
+    "logout": "User logged out successfully"
   }
 }
