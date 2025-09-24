@@ -34,6 +34,7 @@ authRoutes.post(
 authRoutes.get('/me', authMiddleware, authController.me);
 authRoutes.post('/verify-otp', authController.verifyOTP);
 authRoutes.post('/logout', authMiddleware, authController.logout);
+authRoutes.post('/deleteAccount', authMiddleware, authController.deleteAccount);
 
 authRoutes.post('/oauth/register', oauthController.oauthLogin);
 export default authRoutes;

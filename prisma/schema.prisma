@@ -8,25 +8,25 @@ datasource db {
 }
 
 model User {
-  id              String   @id @default(cuid())
-  UserName        String   @unique
-  email           String   @unique
-  password        String?  // nullable for OAuth users
-  provider        String?  // e.g., "github", "google"
-  providerId      String?  // provider-specific user ID
-  xp              Int      @default(0)
-  level           Int      @default(1)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  categoryId      String?
-  isVerified      Boolean  @default(false)
+  id         String   @id @default(cuid())
+  UserName   String   @unique
+  email      String   @unique
+  password   String? // nullable for OAuth users
+  provider   String? // e.g., "github", "google"
+  providerId String? // provider-specific user ID
+  xp         Int      @default(0)
+  level      Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  categoryId String?
+  isVerified Boolean  @default(false)
 
   Clan            Clan[]
   Community       Community[]
   CommunityMember CommunityMember[]
   otps            Otp[]
   Quest           Quest[]
-  category        Category? @relation(fields: [categoryId], references: [id])
+  category        Category?         @relation(fields: [categoryId], references: [id])
   sessions        Session[]
   keys            Key[]
 }
@@ -39,9 +39,9 @@ model Session {
 }
 
 model Key {
-  id             String   @id
+  id             String    @id
   userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   hashedPassword String?
   expiresAt      DateTime?
 }
@@ -63,7 +63,7 @@ model Otp {
   userId    String
   createdAt DateTime @default(now())
   expiresAt DateTime
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Community {
@@ -76,7 +76,7 @@ model Community {
   updatedAt   DateTime          @updatedAt
   clans       Clan[]
   category    Category?         @relation(fields: [categoryId], references: [id])
-  owner       User              @relation(fields: [ownerId], references: [id])
+  owner       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   members     CommunityMember[]
 }
 
@@ -92,12 +92,12 @@ model Clan {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   community   Community         @relation(fields: [communityId], references: [id])
-  owner       User              @relation(fields: [ownerId], references: [id])
+  owner       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   members     CommunityMember[]
 }
 
 model CommunityMember {
-  id          String        @id @default(cuid())
+  id          String       @id @default(cuid())
   userId      String
   communityId String
   joinedAt    DateTime     @default(now())
@@ -106,26 +106,26 @@ model CommunityMember {
   level       Int          @default(1)
   status      MemberStatus @default(Beginner)
 
-  clan        Clan?        @relation(fields: [clanId], references: [id])
-  community   Community    @relation(fields: [communityId], references: [id])
-  user        User         @relation(fields: [userId], references: [id])
-  quest       Quest[]
+  clan      Clan?     @relation(fields: [clanId], references: [id])
+  community Community @relation(fields: [communityId], references: [id])
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest     Quest[]
 }
 
 model Quest {
-  id                String           @id @default(cuid())
+  id                String      @id @default(cuid())
   userId            String
   xpValue           Int
-  isCompleted       Boolean          @default(false)
+  isCompleted       Boolean     @default(false)
   date              DateTime
-  createdAt         DateTime         @default(now())
-  type              QuestType        @default(Daily)
+  createdAt         DateTime    @default(now())
+  type              QuestType   @default(Daily)
   communityMemberId String?
   description       String
-  source            QuestSource      @default(AI)
+  source            QuestSource @default(AI)
 
-  CommunityMember   CommunityMember? @relation(fields: [communityMemberId], references: [id])
-  user              User             @relation(fields: [userId], references: [id])
+  CommunityMember CommunityMember? @relation(fields: [communityMemberId], references: [id])
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum MemberStatus {

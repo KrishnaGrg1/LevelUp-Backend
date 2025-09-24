@@ -780,6 +780,76 @@ const logout = async (req: AuthRequest, res: Response): Promise<void> => {
       );
   }
 };
+const deleteAccount = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const lang = req.language as Language;
+    const userId = req.user?.id;
+    console.log('user id is', userId);
+
+    if (!userId) {
+      res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
+      return;
+    }
+
+    console.log('deleting account for user id:', userId);
+
+    // delete user → sessions cascade automatically
+    const check = await client.user.delete({
+      where: { id: userId },
+    });
+
+    console.log('deleted user is', check);
+
+    if (!check) {
+      res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
+      return;
+    }
+
+    // clear session cookie on client side
+    const blankCookie = lucia.createBlankSessionCookie();
+    res.setHeader('Set-Cookie', blankCookie.serialize());
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(null, 'success.auth.account_deleted', lang, 200)
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Account deletion failed'),
+          'error.auth.account_deletion_failed',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const authController = {
   register,
   login,
@@ -789,6 +859,7 @@ const authController = {
   verifyOTP,
   verifyOTPLink,
   logout,
+  deleteAccount,
 };
 
 export default authController;
