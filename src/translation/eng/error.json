@@ -1,14 +1,18 @@
 {
   "auth": {
     "username_exists": "Username already exists",
-    "email_not_verified": "Your Email isnot verfied yet .",
     "email_exists": "Email address already exists",
+    "email_not_verified": "Your email is not verified yet",
     "user_not_found": "User not found",
     "email_not_found": "Email address not found",
-    "invalid_otp": "Invalid OTP",
+    "invalid_otp": "Invalid or expired OTP",
     "incorrect_password": "Incorrect password",
+    "password_not_set": "Password login not available. Use OAuth.",
+    "not_authenticated": "Not authenticated",
+    "no_session": "No active session",
+    "logout_failed": "Logout failed",
     "unauthorized": "Unauthorized access",
     "unexpected": "An unexpected error occurred",
-    "user_verified": " User  already verified"
+    "user_verified": "User already verified"
   }
 }

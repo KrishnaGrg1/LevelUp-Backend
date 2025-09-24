@@ -1,12 +1,19 @@
 {
   "auth": {
     "username_exists": "اسم المستخدم موجود بالفعل",
-    "email_exists": "البريد الإلكتروني موجود بالفعل",
+    "email_exists": "عنوان البريد الإلكتروني موجود بالفعل",
+    "email_not_verified": "بريدك الإلكتروني لم يتم التحقق منه بعد",
     "user_not_found": "المستخدم غير موجود",
-    "email_not_found": "البريد الإلكتروني غير موجود",
-    "invalid_otp": "رمز التحقق غير صالح",
+    "email_not_found": "عنوان البريد الإلكتروني غير موجود",
+    "invalid_otp": "رمز التحقق غير صالح أو منتهي الصلاحية",
     "incorrect_password": "كلمة المرور غير صحيحة",
-    "unauthorized": "غير مصرح",
-    "unexpected": "حدث خطأ غير متوقع"
+    "password_not_set": "تسجيل الدخول بكلمة المرور غير متاح. استخدم OAuth.",
+    "not_authenticated": "غير مصدق",
+    "no_session": "لا توجد جلسة نشطة",
+    "logout_failed": "فشل تسجيل الخروج",
+    "unauthorized": "دخول غير مصرح",
+    "unexpected": "حدث خطأ غير متوقع",
+    "user_verified": "المستخدم تم التحقق منه بالفعل"
   }
 }
+  

@@ -1,6 +1,12 @@
 {
   "auth": {
     "register": "用户注册成功",
-    "login": "用户登录成功"
+    "login": "用户登录成功",
+    "otp_resent": "邮箱已存在，验证码已重新发送",
+    "otp_sent": "验证码已成功发送",
+    "verify": "邮箱验证成功",
+    "email_verified": "邮箱验证成功",
+    "user_retrieved": "用户信息获取成功",
+    "logout": "成功登出"
   }
 }
