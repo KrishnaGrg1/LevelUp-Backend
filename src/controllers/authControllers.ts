@@ -339,8 +339,18 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
         );
       return;
     }
+    // Check if user already has an active session
+    const checkSession = await client.session.findFirst({
+      where: {
+        userId: existingUser.id,
+      },
+    });
+    if (checkSession) {
+      // invalidate it
+      await lucia.invalidateSession(checkSession.id);
+    }
 
-    // Create Lucia session instead of JWT
+    // Now Create Lucia session instead of JWT
     const session = await lucia.createSession(existingUser.id, {});
     const sessionCookie = lucia.createSessionCookie(session.id);
 

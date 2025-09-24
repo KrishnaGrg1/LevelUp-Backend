@@ -1,15 +1,15 @@
-import { startSessionCleanupJob } from './sessionCleanup';
+// import { startSessionCleanupJob } from './sessionCleanup';
 
-startSessionCleanupJob();
-console.log('Worker started: running cron jobs...');
+// startSessionCleanupJob();
+// console.log('Worker started: running cron jobs...');
 
-// Gracefully disconnect Prisma when process stops
-import client from '../helpers/prisma';
-process.on('SIGINT', async () => {
-  await client.$disconnect();
-  process.exit(0);
-});
-process.on('SIGTERM', async () => {
-  await client.$disconnect();
-  process.exit(0);
-});
+// // Gracefully disconnect Prisma when process stops
+// import client from '../helpers/prisma';
+// process.on('SIGINT', async () => {
+//   await client.$disconnect();
+//   process.exit(0);
+// });
+// process.on('SIGTERM', async () => {
+//   await client.$disconnect();
+//   process.exit(0);
+// });
