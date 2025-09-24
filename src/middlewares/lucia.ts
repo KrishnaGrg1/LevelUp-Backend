@@ -17,7 +17,7 @@ declare module 'lucia' {
   }
 }
 export const lucia = new Lucia(adapter, {
-  sessionExpiresIn: new TimeSpan(3, 'm'), // 3min
+   sessionExpiresIn: new TimeSpan(1, 'd'), // 1 day
   sessionCookie: {
     name: 'session', // optional: cookie name
     attributes: {
