@@ -13,6 +13,8 @@
     "logout_failed": "Error al cerrar sesión",
     "unauthorized": "Acceso no autorizado",
     "unexpected": "Ocurrió un error inesperado",
-    "user_verified": "Usuario ya verificado"
+    "user_verified": "Usuario ya verificado",
+    "logout_failed": "Error al cerrar sesión. Por favor, inténtalo de nuevo.",
+    "session_expired": "La sesión ha expirado. Por favor, inicia sesión de nuevo."
   }
 }

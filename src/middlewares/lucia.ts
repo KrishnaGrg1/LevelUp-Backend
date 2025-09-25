@@ -1,4 +1,4 @@
-import { Lucia } from 'lucia';
+import { Lucia, TimeSpan } from 'lucia';
 import { PrismaAdapter } from '@lucia-auth/adapter-prisma';
 import client from '../helpers/prisma.js';
 
@@ -17,19 +17,20 @@ declare module 'lucia' {
   }
 }
 export const lucia = new Lucia(adapter, {
+  sessionExpiresIn: new TimeSpan(1, 'd'), // 1 day
   sessionCookie: {
+    name: 'auth-session', // optional: cookie name
     attributes: {
       secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
     },
   },
-  getUserAttributes: (attributes) => {
-    return {
-      id: attributes.id,
-      UserName: attributes.UserName,
-      email: attributes.email,
-      isVerified: attributes.isVerified,
-      xp: attributes.xp,
-      level: attributes.level,
-    };
-  },
+  getUserAttributes: (attributes) => ({
+    id: attributes.id,
+    UserName: attributes.UserName,
+    email: attributes.email,
+    isVerified: attributes.isVerified,
+    xp: attributes.xp,
+    level: attributes.level,
+  }),
 });

@@ -11,6 +11,7 @@ import { TranslationRequest } from '../middlewares/translationMiddleware';
 import { Language } from '../translation/translation';
 import { EmailTopic } from '../helpers/emailMessage';
 import { lucia } from '../middlewares/lucia';
+import { AuthRequest } from '../middlewares/authMiddleware';
 
 const register = async (
   req: TranslationRequest,
@@ -338,28 +339,26 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
         );
       return;
     }
+    // Check if user already has an active session
+    const checkSession = await client.session.findFirst({
+      where: {
+        userId: existingUser.id,
+      },
+    });
+    if (checkSession) {
+      // invalidate it
+      await lucia.invalidateSession(checkSession.id);
+    }
 
-    // Create Lucia session instead of JWT
+    // Now Create Lucia session instead of JWT
     const session = await lucia.createSession(existingUser.id, {});
     const sessionCookie = lucia.createSessionCookie(session.id);
 
     res.setHeader('Set-Cookie', sessionCookie.serialize());
 
-    res.status(200).json(
-      makeSuccessResponse(
-        {
-          id: existingUser.id,
-          UserName: existingUser.UserName,
-          email: existingUser.email,
-          isVerified: existingUser.isVerified,
-          xp: existingUser.xp,
-          level: existingUser.level,
-        },
-        'success.auth.login',
-        lang,
-        200
-      )
-    );
+    res
+      .status(200)
+      .json(makeSuccessResponse(existingUser, 'success.auth.login', lang, 200));
     return;
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
@@ -709,7 +708,7 @@ const resetPassword = async (
   }
 };
 
-const me = async (req: TranslationRequest, res: Response): Promise<void> => {
+const me = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const lang = req.language as Language;
 
@@ -748,30 +747,19 @@ const me = async (req: TranslationRequest, res: Response): Promise<void> => {
     return;
   }
 };
-const logout = async (
-  req: TranslationRequest,
-  res: Response
-): Promise<void> => {
+const logout = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const lang = req.language as Language;
 
-    if (!req.session) {
-      res
-        .status(401)
-        .json(
-          makeErrorResponse(
-            new Error('No active session'),
-            'error.auth.no_session',
-            lang,
-            401
-          )
-        );
-      return;
-    }
+    //getting session cookie
 
-    await lucia.invalidateSession(req.session.id);
-    const sessionCookie = lucia.createBlankSessionCookie();
-    res.setHeader('Set-Cookie', sessionCookie.serialize());
+    const sessionId = req.session.id;
+
+    await lucia.invalidateSession(sessionId); // Invalidate session in DB
+
+    //clear session cookie onclient side
+    const blankCookie = lucia.createBlankSessionCookie();
+    res.setHeader('Set-Cookie', blankCookie.serialize());
 
     res
       .status(200)
@@ -790,6 +778,76 @@ const logout = async (
       );
   }
 };
+const deleteAccount = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const lang = req.language as Language;
+    const userId = req.user?.id;
+    console.log('user id is', userId);
+
+    if (!userId) {
+      res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
+      return;
+    }
+
+    console.log('deleting account for user id:', userId);
+
+    // delete user → sessions cascade automatically
+    const check = await client.user.delete({
+      where: { id: userId },
+    });
+
+    console.log('deleted user is', check);
+
+    if (!check) {
+      res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
+      return;
+    }
+
+    // clear session cookie on client side
+    const blankCookie = lucia.createBlankSessionCookie();
+    res.setHeader('Set-Cookie', blankCookie.serialize());
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(null, 'success.auth.account_deleted', lang, 200)
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Account deletion failed'),
+          'error.auth.account_deletion_failed',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const authController = {
   register,
   login,
@@ -799,6 +857,7 @@ const authController = {
   verifyOTP,
   verifyOTPLink,
   logout,
+  deleteAccount,
 };
 
 export default authController;

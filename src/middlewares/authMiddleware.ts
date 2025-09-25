@@ -2,8 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import { lucia } from './lucia';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import env from '../helpers/config';
+import { TranslationRequest } from './translationMiddleware';
+import { makeErrorResponse } from '../helpers/standardResponse';
+import { Language } from '../translation/translation';
 
-export interface AuthRequest extends Request {
+export interface AuthRequest extends TranslationRequest {
   user?: {
     id: string;
     UserName: string;
@@ -23,6 +26,7 @@ export const authMiddleware = async (
 ) => {
   // Try session-based auth first (Lucia)
   const sessionId = lucia.readSessionCookie(req.headers.cookie ?? '');
+  const lang = req.language as Language;
 
   if (sessionId) {
     try {
@@ -39,33 +43,29 @@ export const authMiddleware = async (
           );
         }
         return next();
+      } else {
+        //session expired and delete from the db
+        await lucia.invalidateSession(sessionId);
+        res
+          .status(403)
+          .json(
+            makeErrorResponse(
+              new Error('Session expired. Please log in again.'),
+              'error.auth.session_expired',
+              lang,
+              403
+            )
+          );
+        return;
       }
     } catch (error) {
       console.error('Session validation error:', error);
     }
   }
 
-  // Fallback to JWT auth
-  const authHeader = req.headers['authorization'];
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.replace('Bearer ', '');
-    try {
-      const decode = jwt.verify(token, env.JWT_SECRET as string) as {
-        userID: number;
-      };
-      if (typeof decode !== 'string') {
-        req.userID = { id: (decode as JwtPayload).userID };
-        // You might want to fetch user data from DB here
-        return next();
-      }
-    } catch (error) {
-      console.error('JWT validation error:', error);
-    }
-  }
-
   // No valid auth found
-  req.user = null;
-  req.session = null;
-  req.userID = undefined;
-  next();
+  // req.user = null;
+  // req.session = null;
+  // req.userID = undefined;
+  // next();
 };

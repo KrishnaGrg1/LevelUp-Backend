@@ -1,6 +1,7 @@
 {
   "auth": {
     "username_exists": "ユーザー名は既に存在します",
+    "email_not_verified": "あなたのメールはまだ確認されていません。",
     "email_exists": "メールアドレスは既に存在します",
     "email_not_verified": "メールはまだ確認されていません",
     "user_not_found": "ユーザーが見つかりません",
@@ -13,6 +14,8 @@
     "logout_failed": "ログアウトに失敗しました",
     "unauthorized": "許可されていないアクセス",
     "unexpected": "予期しないエラーが発生しました",
-    "user_verified": "ユーザーは既に確認済みです"
+    "user_verified": "ユーザーは既に確認済みです",
+    "logout_failed": "ログアウトに失敗しました。もう一度お試しください。",
+    "session_expired": "セッションの有効期限が切れました。再度ログインしてください。"
   }
 }
