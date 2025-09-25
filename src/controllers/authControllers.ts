@@ -356,21 +356,9 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
 
     res.setHeader('Set-Cookie', sessionCookie.serialize());
 
-    res.status(200).json(
-      makeSuccessResponse(
-        {
-          id: existingUser.id,
-          UserName: existingUser.UserName,
-          email: existingUser.email,
-          isVerified: existingUser.isVerified,
-          xp: existingUser.xp,
-          level: existingUser.level,
-        },
-        'success.auth.login',
-        lang,
-        200
-      )
-    );
+    res
+      .status(200)
+      .json(makeSuccessResponse(existingUser, 'success.auth.login', lang, 200));
     return;
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
