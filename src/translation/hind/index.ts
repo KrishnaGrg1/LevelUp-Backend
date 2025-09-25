@@ -1,8 +1,8 @@
 import error from './error.json';
 import success from './success.json';
-const jap = {
+const hind = {
   error,
   success,
 };
 
-export default jap;
+export default hind;

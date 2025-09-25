@@ -1,18 +1,18 @@
-# Questly Backend
+# LevelUp Backend
 
-Welcome to the **Questly Backend** repository! This project powers the backend of **Questly**, a gamified educational platform designed to motivate and track learners' progress through quests, streaks, and experience points.
+Welcome to the **LevelUp Backend** repository! This project powers the backend of **LevelUp**, a gamified educational platform designed to motivate and track learners' progress through quests, streaks, and experience points.
 
-> 🚀 Repository: [https://github.com/KrishnaGrg1/Questly-Backend.git](https://github.com/KrishnaGrg1/Questly-Backend)
+> 🚀 Repository: [https://github.com/KrishnaGrg1/LevelUp-Backend.git](https://github.com/KrishnaGrg1/LevelUp-Backend)
 
 ---
 
 ## 🏗️ Features
 
-- ✅ User registration and login (JWT-based auth)
+- ✅ User registration and login (Lucia authentication)
 - 🎯 Quest creation and completion tracking
 - 🧠 XP, levels, and streak calculation logic
 - 📊 Goal setting and personal progression
-- 🔒 JWT-based session handling
+- 🔒 Lucia-based session handling
 - 💾 PostgreSQL with Prisma ORM
 - 📧 Email notifications via SMTP
 
@@ -20,12 +20,12 @@ Welcome to the **Questly Backend** repository! This project powers the backend o
 
 ## 🛠️ Tech Stack
 
-| Layer      | Technology                            |
-| ---------- | ------------------------------------- |
-| Backend    | Node.js, Express.js                   |
-| Database   | PostgreSQL + Prisma ORM               |
-| Auth       | JWT (JSON Web Tokens)                 |
-| Deployment | Railway / Render / Vercel (suggested) |
+| Layer      | Technology                           |
+| ---------- | ------------------------------------ |
+| Backend    | Node.js, Express.js                  |
+| Database   | PostgreSQL + Prisma ORM              |
+| Auth       | Lucia (Session & OAuth)              |
+| Deployment | (Planned: Railway / Render / Vercel) |
 
 ---
 
@@ -34,8 +34,8 @@ Welcome to the **Questly Backend** repository! This project powers the backend o
 1. **Clone the repo:**
 
 ```bash
-git clone https://github.com/KrishnaGrg1/Questly-Backend.git
-cd Questly-Backend
+git clone https://github.com/KrishnaGrg1/LevelUp-Backend.git
+cd LevelUp-Backend
 ```
 
 2. **Install dependencies:**
@@ -75,19 +75,31 @@ SMTP_USERNAME="example_user"
 SMTP_PASSWORD="example_password"
 ```
 
-4. **Initialize Prisma and migrate database:**
+4. **Prisma & Development Workflow:**
 
-```bash
-npx prisma migrate dev
-npx prisma generate
-```
-
-5. **Run the application:**
+Generate Prisma client:
 
 ```bash
 # Using npm
-npm run start
+npm run db:generate
+# Using pnpm
+pnpm db:generate
+```
 
+Push database schema:
+
+```bash
+# Using npm
+npm run db:push
+# Using pnpm
+pnpm db:push
+```
+
+Run development:
+
+```bash
+# Using npm
+npm run dev
 # Using pnpm
 pnpm dev
 ```
@@ -96,12 +108,12 @@ pnpm dev
 
 ## 🚀 Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run start` / `pnpm dev` | Start the development server |
-| `npx prisma migrate dev` | Run database migrations |
-| `npx prisma generate` | Generate Prisma client |
-| `npx prisma studio` | Open Prisma Studio (database GUI) |
+| Command                                    | Description                       |
+| ------------------------------------------ | --------------------------------- |
+| `npm run dev` / `pnpm dev`                 | Start the development server      |
+| `npm run db:generate` / `pnpm db:generate` | Generate Prisma client            |
+| `npm run db:push` / `pnpm db:push`         | Push schema to the database       |
+| `npx prisma studio` / `pnpm prisma studio` | Open Prisma Studio (database GUI) |
 
 ---
 

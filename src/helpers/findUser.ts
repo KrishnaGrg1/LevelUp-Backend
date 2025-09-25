@@ -4,7 +4,7 @@ const findUser = async (userId: number) => {
   if (!userId) return null;
   return await client.user.findUnique({
     where: {
-      id: userId,
+      id: String(userId),
     },
   });
 };

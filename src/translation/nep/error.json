@@ -2,11 +2,19 @@
   "auth": {
     "username_exists": "प्रयोगकर्ता नाम पहिले नै अवस्थित छ",
     "email_exists": "इमेल पहिले नै अवस्थित छ",
-    "user_not_found": "प्रयोगकर्ता फेला परेन",
-    "email_not_found": "इमेल फेला परेन",
-    "invalid_otp": "OTP अवैध छ",
+    "email_not_verified": "तपाईँको इमेल अझै प्रमाणित गरिएको छैन",
+    "user_not_found": "प्रयोगकर्ता भेटिएन",
+    "email_not_found": "इमेल ठेगाना भेटिएन",
+    "invalid_otp": "OTP अमान्य वा म्याद समाप्त भएको छ",
     "incorrect_password": "गलत पासवर्ड",
+    "password_not_set": "पासवर्ड लगइन उपलब्ध छैन। OAuth प्रयोग गर्नुहोस्।",
+    "not_authenticated": "प्रमाणित गरिएको छैन",
+    "no_session": "सक्रिय सत्र छैन",
+    "logout_failed": "लगआउट असफल भयो",
     "unauthorized": "अनधिकृत पहुँच",
-    "unexpected": "अप्रत्याशित त्रुटि आएको छ"
+    "unexpected": "अनपेक्षित त्रुटि भयो",
+    "user_verified": "प्रयोगकर्ता पहिले नै प्रमाणित भइसकेको छ",
+    "logout_failed": "लगआउट असफल भयो। कृपया फेरि प्रयास गर्नुहोस्।",
+    "session_expired": "सत्र समाप्त भएको छ। कृपया पुन: लगइन गर्नुहोस्।"
   }
 }

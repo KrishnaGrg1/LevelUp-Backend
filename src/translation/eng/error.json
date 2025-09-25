@@ -1,12 +1,16 @@
 {
   "auth": {
-    "username_exists": "ユーザー名は既に存在します",
-    "email_exists": "メールアドレスは既に存在します",
-    "user_not_found": "ユーザーが見つかりません",
-    "email_not_found": "メールアドレスが見つかりません",
-    "invalid_otp": "無効なOTPです",
-    "incorrect_password": "パスワードが間違っています",
-    "unauthorized": "認証されていません",
-    "unexpected": "予期しないエラーが発生しました"
+    "username_exists": "Username already exists",
+    "email_not_verified": "Your Email isnot verfied yet .",
+    "email_exists": "Email address already exists",
+    "user_not_found": "User not found",
+    "email_not_found": "Email address not found",
+    "invalid_otp": "Invalid OTP",
+    "incorrect_password": "Incorrect password",
+    "unauthorized": "Unauthorized access",
+    "unexpected": "An unexpected error occurred",
+    "user_verified": " User  already verified",
+    "logout_failed": "Logout failed. Please try again.",
+    "session_expired": "Session expired. Please log in again."
   }
 }

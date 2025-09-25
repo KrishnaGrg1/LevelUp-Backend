@@ -1,6 +1,12 @@
 {
   "auth": {
     "register": "User registered successfully",
-    "login": "User login successfully"
+    "login": "User logged in successfully",
+    "otp_resent": "Email already exists. OTP has been resent to your email",
+    "logout": "User logged out successfully",
+    "otp_sent": "OTP sent successfully",
+    "verify": "Email verified successfully",
+    "email_verified": "Email verified successfully",
+    "user_retrieved": "User data retrieved successfully"
   }
 }

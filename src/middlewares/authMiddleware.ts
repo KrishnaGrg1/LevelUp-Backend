@@ -1,40 +1,71 @@
-import { NextFunction, Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
+import { lucia } from './lucia';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import env from '../helpers/config';
-export default interface IRequest extends Request {
-  userID?: { id: number };
+import { TranslationRequest } from './translationMiddleware';
+import { makeErrorResponse } from '../helpers/standardResponse';
+import { Language } from '../translation/translation';
+
+export interface AuthRequest extends TranslationRequest {
+  user?: {
+    id: string;
+    UserName: string;
+    email: string;
+    isVerified: boolean;
+    xp: number;
+    level: number;
+  } | null;
+  session?: any;
+  userID?: { id: string };
 }
 
 export const authMiddleware = async (
-  req: IRequest,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(400).json({
-      message: 'No token found',
-    });
-    return;
-  }
-  const token = authHeader.replace('Bearer ', '');
-  try {
-    const decode = jwt.verify(token, env.JWT_SECRET as string) as {
-      userID: number;
-    };
-    if (typeof decode === 'string') {
-      res.status(403).json({ message: 'You are not authorized' });
-      return;
+  // Try session-based auth first (Lucia)
+  const sessionId = lucia.readSessionCookie(req.headers.cookie ?? '');
+  const lang = req.language as Language;
+
+  if (sessionId) {
+    try {
+      const { session, user } = await lucia.validateSession(sessionId);
+      if (session) {
+        req.session = session;
+        req.user = user;
+        req.userID = user ? { id: user.id } : undefined;
+
+        if (session.fresh) {
+          res.appendHeader(
+            'Set-Cookie',
+            lucia.createSessionCookie(session.id).serialize()
+          );
+        }
+        return next();
+      } else {
+        //session expired and delete from the db
+        await lucia.invalidateSession(sessionId);
+        res
+          .status(403)
+          .json(
+            makeErrorResponse(
+              new Error('Session expired. Please log in again.'),
+              'error.auth.session_expired',
+              lang,
+              403
+            )
+          );
+        return;
+      }
+    } catch (error) {
+      console.error('Session validation error:', error);
     }
-    req.userID = (decode as JwtPayload).userID;
-    next();
-  } catch (e: unknown) {
-    if (e instanceof Error) {
-      console.error('Authentication error:', e.message);
-      res.status(401).json({ message: e.message });
-    } else {
-      console.error('Unknown authentication error:', e);
-      res.status(401).json({ message: 'Authentication failed' });
-    }
   }
+
+  // No valid auth found
+  // req.user = null;
+  // req.session = null;
+  // req.userID = undefined;
+  // next();
 };
