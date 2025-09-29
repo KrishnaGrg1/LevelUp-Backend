@@ -2,15 +2,19 @@
   "auth": {
     "register": "用户注册成功",
     "login": "用户登录成功",
-    "otp_resent": "邮箱已存在，验证码已重新发送到您的邮箱",
+    "otp_resent": "邮箱已存在。OTP已重新发送到您的邮箱",
     "logout": "用户已成功登出",
-    "otp_sent": "验证码发送成功",
+    "otp_sent": "OTP发送成功",
     "verify": "邮箱验证成功",
     "email_verified": "邮箱验证成功",
     "user_retrieved": "用户数据获取成功"
   },
   "admin": {
-    "updated_details": "用户详情更新成功",
-    "view_user_details": "用户详情获取成功"
+    "updated_details": "用户信息更新成功",
+    "view_user_details": "用户信息获取成功"
+  },
+  "community": {
+    "created": "社区创建成功",
+    "joined": "成功加入社区"
   }
 }
