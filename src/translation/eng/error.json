@@ -17,5 +17,12 @@
     "forbidden": "You do not have permission to perform this action",
     "not_authenticated": "Admin not authenticated",
     "update_user_details_failed": "Failed to update user details. Please try again."
+  },
+  "community": {
+    "community_not_found": "Community not found",
+    "user_already_in_community": "User is already a member of a community",
+    "community_name_exists": "Community name already exists",
+    "failed_to_create_community": "Failed to create community. Please try again.",
+    "failed_to_join_community": "Failed to join community. Please try again."
   }
 }

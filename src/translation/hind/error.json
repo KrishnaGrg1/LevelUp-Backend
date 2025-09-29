@@ -7,15 +7,22 @@
     "email_not_found": "ईमेल पता नहीं मिला",
     "invalid_otp": "अमान्य OTP",
     "incorrect_password": "गलत पासवर्ड",
-    "unauthorized": "अनधिकृत पहुँच",
+    "unauthorized": "अनधिकृत प्रवेश",
     "unexpected": "एक अप्रत्याशित त्रुटि हुई",
     "user_verified": "उपयोगकर्ता पहले से ही सत्यापित है",
-    "logout_failed": "लॉगआउट विफल रहा। कृपया पुनः प्रयास करें।",
-    "session_expired": "सत्र समाप्त हो गया है। कृपया फिर से लॉगिन करें।"
+    "logout_failed": "लॉगआउट असफल रहा। कृपया पुनः प्रयास करें।",
+    "session_expired": "सत्र समाप्त हो गया। कृपया पुनः लॉगिन करें।"
   },
   "admin": {
-    "forbidden": "आपको यह कार्य करने की अनुमति नहीं है",
-    "not_authenticated": "प्रशासक प्रमाणित नहीं है",
+    "forbidden": "आपको इस कार्य को करने की अनुमति नहीं है",
+    "not_authenticated": "एडमिन प्रमाणित नहीं है",
     "update_user_details_failed": "उपयोगकर्ता विवरण अपडेट करने में विफल। कृपया पुनः प्रयास करें।"
+  },
+  "community": {
+    "community_not_found": "समुदाय नहीं मिला",
+    "user_already_in_community": "उपयोगकर्ता पहले से ही समुदाय का सदस्य है",
+    "community_name_exists": "समुदाय का नाम पहले से मौजूद है",
+    "failed_to_create_community": "समुदाय बनाने में विफल। कृपया पुनः प्रयास करें।",
+    "failed_to_join_community": "समुदाय से जुड़ने में विफल। कृपया पुनः प्रयास करें।"
   }
 }
