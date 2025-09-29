@@ -1,3 +1,4 @@
+import env from './config';
 // Define enum
 export enum EmailTopic {
   ForgotPassword = 'forgot-password',
@@ -29,10 +30,32 @@ const verifyEmailButton = (
   token: string,
   userId?: string | number
 ): string => {
-  const baseUrl = 'http://localhost:8080/api/v1/auth';
+  const baseUrl =
+    env.NODE_ENV === 'production'
+      ? 'https://melevelup.me/eng'
+      : 'http://localhost:3000/eng';
 
   switch (topic) {
-    case EmailTopic.VerifyEmail:
+    case EmailTopic.ForgotPassword:
+      return `<a 
+        href="${baseUrl}/reset-password?token=${token}&id=${userId}" 
+        style="
+          display:inline-block;
+          background-color:#4f46e5;
+          color:#ffffff;
+          font-size:16px;
+          font-weight:bold;
+          text-decoration:none;
+          padding:14px 28px;
+          border-radius:8px;
+          box-shadow:0 4px 10px rgba(0,0,0,0.15);
+          transition:background-color 0.3s ease;
+        "
+      >
+         Reset Password
+      </a>
+      `;
+    default:
       return `<a 
         href="${baseUrl}/verify-email?token=${token}&id=${userId}" 
         style="
@@ -48,11 +71,9 @@ const verifyEmailButton = (
           transition:background-color 0.3s ease;
         "
       >
-         Verify Email
+        Verify Email
       </a>
       `;
-    default:
-      return '';
   }
 };
 // Function to get a nicer title
