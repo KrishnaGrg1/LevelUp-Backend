@@ -1,20 +1,21 @@
 {
   "auth": {
     "username_exists": "El nombre de usuario ya existe",
+    "email_not_verified": "Tu correo electrónico aún no está verificado.",
     "email_exists": "La dirección de correo electrónico ya existe",
-    "email_not_verified": "Tu correo electrónico aún no está verificado",
     "user_not_found": "Usuario no encontrado",
     "email_not_found": "Dirección de correo electrónico no encontrada",
-    "invalid_otp": "OTP inválido o caducado",
+    "invalid_otp": "OTP inválido",
     "incorrect_password": "Contraseña incorrecta",
-    "password_not_set": "El inicio de sesión con contraseña no está disponible. Use OAuth.",
-    "not_authenticated": "No autenticado",
-    "no_session": "No hay sesión activa",
-    "logout_failed": "Error al cerrar sesión",
     "unauthorized": "Acceso no autorizado",
     "unexpected": "Ocurrió un error inesperado",
-    "user_verified": "Usuario ya verificado",
+    "user_verified": "El usuario ya está verificado",
     "logout_failed": "Error al cerrar sesión. Por favor, inténtalo de nuevo.",
-    "session_expired": "La sesión ha expirado. Por favor, inicia sesión de nuevo."
+    "session_expired": "La sesión ha expirado. Por favor, inicia sesión nuevamente."
+  },
+  "admin": {
+    "forbidden": "No tienes permiso para realizar esta acción",
+    "not_authenticated": "Administrador no autenticado",
+    "update_user_details_failed": "No se pudieron actualizar los detalles del usuario. Por favor, inténtalo de nuevo."
   }
 }

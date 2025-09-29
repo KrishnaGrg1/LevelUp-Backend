@@ -12,5 +12,10 @@
     "user_verified": " User  already verified",
     "logout_failed": "Logout failed. Please try again.",
     "session_expired": "Session expired. Please log in again."
+  },
+  "admin":{
+      "forbidden": "You do not have permission to perform this action",
+      "not_authenticated": "Admin not authenticated",
+      "update_user_details_failed": "Failed to update user details. Please try again."
   }
 }
