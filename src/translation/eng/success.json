@@ -12,5 +12,10 @@
   "admin": {
     "updated_details": "User details updated successfully",
     "view_user_details": "User details retrieved successfully"
+  },
+  "community": {
+    "created": "Community created successfully",
+    "joined": "Joined community successfully"
+   
   }
 }
