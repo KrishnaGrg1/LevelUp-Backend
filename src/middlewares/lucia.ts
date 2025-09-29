@@ -1,7 +1,7 @@
 import { Lucia, TimeSpan } from 'lucia';
 import { PrismaAdapter } from '@lucia-auth/adapter-prisma';
 import client from '../helpers/prisma.js';
-
+import env from '../helpers/config.js';
 const adapter = new PrismaAdapter(client.session, client.user);
 declare module 'lucia' {
   interface Register {
@@ -21,7 +21,7 @@ export const lucia = new Lucia(adapter, {
   sessionCookie: {
     name: 'auth-session', // optional: cookie name
     attributes: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: env.NODE_ENV === 'production',
       sameSite: 'lax',
     },
   },

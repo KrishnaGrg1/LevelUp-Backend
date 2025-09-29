@@ -44,8 +44,8 @@ const authValidation = {
   },
   reset_password: {
     body: Joi.object().keys({
-      userId: Joi.number().required().messages({
-        'number.base': 'User ID must be a number',
+      userId: Joi.string().required().messages({
+        'string.empty': 'User ID is required',
         'any.required': 'User ID is required',
       }),
       newPassword: Joi.string().min(8).max(50).required().messages({

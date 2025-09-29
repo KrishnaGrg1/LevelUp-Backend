@@ -13,11 +13,7 @@ authRoutes.post(
   authController.register
 );
 
-authRoutes.post(
-  '/verify-email',
 
-  authController.verifyOTPLink
-);
 
 authRoutes.post('/login', validate(authValidation.login), authController.login);
 
@@ -32,7 +28,7 @@ authRoutes.post(
   authController.resetPassword
 );
 authRoutes.get('/me', authMiddleware, authController.me);
-authRoutes.post('/verify-otp', authController.verifyOTP);
+authRoutes.post('/verify-email', authController.verifyEmail);
 authRoutes.post('/logout', authMiddleware, authController.logout);
 authRoutes.post('/deleteAccount', authMiddleware, authController.deleteAccount);
 
