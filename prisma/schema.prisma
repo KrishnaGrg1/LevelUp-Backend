@@ -20,6 +20,7 @@ model User {
   updatedAt  DateTime @updatedAt
   categoryId String?
   isVerified Boolean  @default(false)
+  isAdmin    Boolean  @default(false)
 
   Clan            Clan[]
   Community       Community[]

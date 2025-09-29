@@ -1,12 +1,16 @@
 {
   "auth": {
-    "register": "Usuario registrado con éxito",
-    "login": "Usuario inició sesión con éxito",
-    "otp_resent": "El correo electrónico ya existe. OTP reenviado",
-    "otp_sent": "OTP enviado con éxito",
-    "verify": "Correo electrónico verificado con éxito",
-    "email_verified": "Correo electrónico verificado con éxito",
-    "user_retrieved": "Datos del usuario obtenidos con éxito",
-    "logout": "Cierre de sesión exitoso"
+    "register": "Usuario registrado exitosamente",
+    "login": "Usuario ha iniciado sesión exitosamente",
+    "otp_resent": "El correo electrónico ya existe. OTP ha sido reenviado a tu correo",
+    "logout": "Usuario cerrado sesión exitosamente",
+    "otp_sent": "OTP enviado exitosamente",
+    "verify": "Correo electrónico verificado exitosamente",
+    "email_verified": "Correo electrónico verificado exitosamente",
+    "user_retrieved": "Datos del usuario obtenidos exitosamente"
+  },
+  "admin": {
+    "updated_details": "Detalles del usuario actualizados exitosamente",
+    "view_user_details": "Detalles del usuario obtenidos exitosamente"
   }
 }

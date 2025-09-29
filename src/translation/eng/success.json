@@ -8,5 +8,9 @@
     "verify": "Email verified successfully",
     "email_verified": "Email verified successfully",
     "user_retrieved": "User data retrieved successfully"
+  },
+  "admin": {
+    "updated_details": "User details updated successfully",
+    "view_user_details": "User details retrieved successfully"
   }
 }
