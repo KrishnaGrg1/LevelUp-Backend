@@ -13,5 +13,5 @@ adminRoutes.post(
   adminController.updateUserDetails
 );
 adminRoutes.get('/:id', adminController.viewUserDetail);
-
+adminRoutes.get('/users/all', adminController.getAllUsers);
 export default adminRoutes;

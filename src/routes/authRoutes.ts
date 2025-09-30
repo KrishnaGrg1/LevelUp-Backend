@@ -13,8 +13,6 @@ authRoutes.post(
   authController.register
 );
 
-
-
 authRoutes.post('/login', validate(authValidation.login), authController.login);
 
 authRoutes.post(
