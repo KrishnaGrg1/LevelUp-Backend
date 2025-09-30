@@ -13,6 +13,7 @@ declare module 'lucia' {
       isVerified: boolean;
       xp: number;
       level: number;
+      isAdmin: boolean;
     };
   }
 }
@@ -32,5 +33,6 @@ export const lucia = new Lucia(adapter, {
     isVerified: attributes.isVerified,
     xp: attributes.xp,
     level: attributes.level,
+    isAdmin: attributes.isAdmin,
   }),
 });
