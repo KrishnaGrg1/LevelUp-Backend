@@ -550,7 +550,7 @@ const resetPassword = async (
         );
       return;
     }
-    
+
     const isValid = await bcrypt.compare(otp.toString(), existingOtp.otp_code);
     if (!isValid) {
       res

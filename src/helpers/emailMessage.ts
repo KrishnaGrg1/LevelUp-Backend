@@ -116,12 +116,7 @@ const html = ({ token, topic, username, userId }: HtmlProps): string => {
                 <p>${message(topic)}</p>
 
                
-                <!-- Token -->
-                <div style="margin:30px 0; text-align:center;">
-                  <span style="display:inline-block; background:#4f46e5; color:#fff; font-size:24px; font-weight:bold; padding:15px 30px; border-radius:8px; letter-spacing:3px;">
-                    ${token}
-                  </span>
-                </div>
+               
                 
                 <p style="margin-top:20px;">⚠️ Do not share this code with anyone.</p>
                 <p style="margin-top:20px;">  Otherwise Click this button</p>

@@ -51,8 +51,7 @@ const viewUserDetail = async (req: AuthRequest, res: Response) => {
 
     const userId = req.params.id; //from params -- this is user(costumer)
 
-
-    const user=await findUser(userId,res,lang);
+    const user = await findUser(userId, res, lang);
     res
       .status(200)
       .json(
@@ -74,7 +73,6 @@ const viewUserDetail = async (req: AuthRequest, res: Response) => {
 };
 
 const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
-  console.log('Fetching all users with query:', req.query);
   try {
     const lang = (req.language as Language) || 'eng';
     const page = parseInt(req.query.page as string) || 1;
@@ -116,7 +114,7 @@ const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
       )
     );
     return;
-  }catch (e: unknown) {
+  } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -131,7 +129,6 @@ const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
     return;
   }
 };
-
 
 const adminController = {
   updateUserDetails,
