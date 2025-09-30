@@ -1,7 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
+import {  Response, NextFunction } from 'express';
 import { lucia } from './lucia';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import env from '../helpers/config';
 import { TranslationRequest } from './translationMiddleware';
 import { makeErrorResponse } from '../helpers/standardResponse';
 import { Language } from '../translation/translation';

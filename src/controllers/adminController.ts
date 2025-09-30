@@ -74,6 +74,8 @@ const viewUserDetail = async (req: AuthRequest, res: Response) => {
 
 const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const user=req.user
+    
     const lang = (req.language as Language) || 'eng';
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 10;
