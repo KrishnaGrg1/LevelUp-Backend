@@ -1,7 +1,7 @@
 {
   "auth": {
     "username_exists": "Username already exists",
-    "email_not_verified": "Your Email isnot verfied yet .",
+    "email_not_verified": "Your email is not verified yet.",
     "email_exists": "Email address already exists",
     "user_not_found": "User not found",
     "email_not_found": "Email address not found",
@@ -9,14 +9,17 @@
     "incorrect_password": "Incorrect password",
     "unauthorized": "Unauthorized access",
     "unexpected": "An unexpected error occurred",
-    "user_verified": " User  already verified",
+    "user_verified": "User already verified",
     "logout_failed": "Logout failed. Please try again.",
-    "session_expired": "Session expired. Please log in again."
+    "session_expired": "Session expired. Please log in again.",
+    "failed_to_fetch_all_users": "Failed to fetch all users"
   },
   "admin": {
     "forbidden": "You do not have permission to perform this action",
     "not_authenticated": "Admin not authenticated",
-    "update_user_details_failed": "Failed to update user details. Please try again."
+    "update_user_details_failed": "Failed to update user details. Please try again.",
+    "update_community_failed": "Failed to update community. Please try again.",
+    "get_all_communities_failed": "Failed to retrieve communities. Please try again."
   },
   "community": {
     "community_not_found": "Community not found",
