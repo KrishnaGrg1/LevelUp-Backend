@@ -14,4 +14,21 @@ adminRoutes.post(
 );
 adminRoutes.get('/:id', adminController.viewUserDetail);
 adminRoutes.get('/users/all', adminController.getAllUsers);
+
+// // Ban user
+// adminRoutes.patch('/:id/ban', adminController.banUser);
+
+// // Unban user
+// adminRoutes.patch('/:id/unban', adminController.unbanUser);
+
+adminRoutes.put('/communities/:id', adminController.updateCommunityDetails);
+
+adminRoutes.get('/communities/all', adminController.getAllCommunities);
+
+
+
+// adminRoutes.delete('/posts/:id', adminController.deletePost);
+// adminRoutes.delete('/comments/:id', adminController.deleteComment);
+
+
 export default adminRoutes;
