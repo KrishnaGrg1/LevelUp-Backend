@@ -31,7 +31,7 @@ const register = async (
       where: { UserName: username },
     });
 
-    if (user ) {
+    if (user) {
       if (user.isVerified === false) {
         await client.otp.deleteMany({ where: { userId: user.id } });
 
@@ -73,16 +73,18 @@ const register = async (
       return;
     }
     if (existingUserByUsername) {
-  res.status(400).json(
-    makeErrorResponse(
-      new Error('Username already exists'),
-      'error.auth.username_exists',
-      lang,
-      400
-    )
-  );
-  return;
-}
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Username already exists'),
+            'error.auth.username_exists',
+            lang,
+            400
+          )
+        );
+      return;
+    }
 
     const otp = await sendEmailToken(email, email, EmailTopic.VerifyEmail);
     // Hash password
@@ -236,6 +238,7 @@ const verifyOTP = async (
             isVerified: true,
             xp: user.xp,
             level: user.level,
+            isAdmin: user.isAdmin,
           },
           'success.auth.verify',
           lang,
@@ -598,6 +601,7 @@ const verifyOTPLink = async (
             isVerified: true,
             xp: user.xp,
             level: user.level,
+            isAdmin: user.isAdmin,
           },
           'success.auth.email_verified',
           lang,

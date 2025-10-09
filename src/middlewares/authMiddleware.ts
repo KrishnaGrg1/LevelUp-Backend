@@ -14,6 +14,7 @@ export interface AuthRequest extends TranslationRequest {
     isVerified: boolean;
     xp: number;
     level: number;
+    isAdmin: boolean;
   } | null;
   session?: any;
   userID?: { id: string };
@@ -24,6 +25,8 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ) => {
+  console.log('Cookies:', req.headers.cookie);
+
   // Try session-based auth first (Lucia)
   const sessionId = lucia.readSessionCookie(req.headers.cookie ?? '');
   const lang = req.language as Language;

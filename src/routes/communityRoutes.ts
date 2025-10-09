@@ -17,4 +17,9 @@ communityRoutes.post(
   communityController.joinCommunity
 );
 
+communityRoutes.get(
+  '/my-communities',
+  validate(communityValidation.joinCommunity),
+  communityController.myCommunities
+);
 export default communityRoutes;
