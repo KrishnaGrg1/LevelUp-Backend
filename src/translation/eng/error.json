@@ -8,24 +8,38 @@
     "invalid_otp": "Invalid OTP",
     "incorrect_password": "Incorrect password",
     "unauthorized": "Unauthorized access",
-    "unexpected": "An unexpected error occurred",
-    "user_verified": "User already verified",
-    "logout_failed": "Logout failed. Please try again.",
+    "unexpected": "Unexpected error occurred",
+    "user_verified": "User is already verified",
+    "logout_failed": "Logout failed. Try again.",
     "session_expired": "Session expired. Please log in again.",
     "failed_to_fetch_all_users": "Failed to fetch all users"
   },
   "admin": {
     "forbidden": "You do not have permission to perform this action",
     "not_authenticated": "Admin not authenticated",
-    "update_user_details_failed": "Failed to update user details. Please try again.",
-    "update_community_failed": "Failed to update community. Please try again.",
-    "get_all_communities_failed": "Failed to retrieve communities. Please try again."
+    "update_user_details_failed": "Failed to update user details. Try again.",
+    "update_community_failed": "Failed to update community. Try again.",
+    "get_all_communities_failed": "Failed to retrieve communities. Try again."
   },
   "community": {
     "community_not_found": "Community not found",
-    "user_already_in_community": "User is already a member of a community",
+    "user_already_in_community": "User is already in the community",
     "community_name_exists": "Community name already exists",
-    "failed_to_create_community": "Failed to create community. Please try again.",
-    "failed_to_join_community": "Failed to join community. Please try again."
+    "failed_to_create_community": "Failed to create community. Try again.",
+    "failed_to_join_community": "Failed to join community. Try again."
+  },
+  "clan": {
+    "clan_not_found": "Clan not found",
+    "user_already_in_clan": "User is already in this clan",
+    "clan_name_exists": "Clan name already exists",
+    "failed_to_create_clan": "Failed to create clan. Try again.",
+    "failed_to_join_clan": "Failed to join clan. Try again.",
+    "failed_to_leave_clan": "Failed to leave clan. Try again.",
+    "failed_to_delete_clan": "Failed to delete clan. Try again.",
+    "failed_to_update_clan": "Failed to update clan. Try again.",
+    "failed_to_get_clans": "Failed to fetch clans. Try again.",
+    "failed_to_get_clan_info": "Failed to fetch clan info. Try again.",
+    "failed_to_get_clan_members": "Failed to fetch clan members. Try again.",
+    "failed_to_get_user_clans": "Failed to fetch user's clans. Try again."
   }
 }

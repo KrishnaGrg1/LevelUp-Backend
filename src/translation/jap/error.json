@@ -1,31 +1,45 @@
 {
   "auth": {
-    "username_exists": "ユーザー名は既に存在します",
-    "email_not_verified": "メールがまだ認証されていません。",
-    "email_exists": "メールアドレスは既に存在します",
+    "username_exists": "ユーザー名はすでに存在します",
+    "email_not_verified": "メールはまだ確認されていません。",
+    "email_exists": "メールアドレスはすでに存在します",
     "user_not_found": "ユーザーが見つかりません",
     "email_not_found": "メールアドレスが見つかりません",
-    "invalid_otp": "無効なOTPです",
+    "invalid_otp": "無効なOTP",
     "incorrect_password": "パスワードが正しくありません",
-    "unauthorized": "不正アクセスです",
+    "unauthorized": "許可されていないアクセス",
     "unexpected": "予期しないエラーが発生しました",
-    "user_verified": "ユーザーはすでに認証されています",
-    "logout_failed": "ログアウトに失敗しました。再試行してください。",
-    "session_expired": "セッションの有効期限が切れました。再度ログインしてください。",
-    "failed_to_fetch_all_users": "すべてのユーザーを取得できませんでした"
+    "user_verified": "ユーザーはすでに確認済みです",
+    "logout_failed": "ログアウトに失敗しました。もう一度試してください。",
+    "session_expired": "セッションが期限切れです。再度ログインしてください。",
+    "failed_to_fetch_all_users": "すべてのユーザーの取得に失敗しました"
   },
   "admin": {
-    "forbidden": "この操作を行う権限がありません",
-    "not_authenticated": "管理者が認証されていません",
-    "update_user_details_failed": "ユーザー詳細の更新に失敗しました。再試行してください。",
+    "forbidden": "この操作を実行する権限がありません",
+    "not_authenticated": "管理者は認証されていません",
+    "update_user_details_failed": "ユーザーの詳細を更新できませんでした。もう一度試してください。",
     "update_community_failed": "コミュニティの更新に失敗しました。再試行してください。",
-    "get_all_communities_failed": "すべてのコミュニティを取得できませんでした。再試行してください。"
+    "get_all_communities_failed": "コミュニティの取得に失敗しました。再試行してください。"
   },
   "community": {
     "community_not_found": "コミュニティが見つかりません",
-    "user_already_in_community": "ユーザーはすでにコミュニティのメンバーです",
+    "user_already_in_community": "ユーザーはすでにコミュニティに参加しています",
     "community_name_exists": "コミュニティ名はすでに存在します",
     "failed_to_create_community": "コミュニティの作成に失敗しました。再試行してください。",
     "failed_to_join_community": "コミュニティへの参加に失敗しました。再試行してください。"
+  },
+  "clan": {
+    "clan_not_found": "クランが見つかりません",
+    "user_already_in_clan": "ユーザーはすでにこのクランに参加しています",
+    "clan_name_exists": "クラン名はすでに存在します",
+    "failed_to_create_clan": "クランの作成に失敗しました。もう一度試してください。",
+    "failed_to_join_clan": "クランへの参加に失敗しました。もう一度試してください。",
+    "failed_to_leave_clan": "クランから退出できませんでした。もう一度試してください。",
+    "failed_to_delete_clan": "クランの削除に失敗しました。もう一度試してください。",
+    "failed_to_update_clan": "クランの更新に失敗しました。もう一度試してください。",
+    "failed_to_get_clans": "クランの取得に失敗しました。もう一度試してください。",
+    "failed_to_get_clan_info": "クラン情報の取得に失敗しました。もう一度試してください。",
+    "failed_to_get_clan_members": "クランメンバーの取得に失敗しました。もう一度試してください。",
+    "failed_to_get_user_clans": "ユーザーのクラン取得に失敗しました。もう一度試してください。"
   }
 }

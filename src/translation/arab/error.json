@@ -27,5 +27,19 @@
     "community_name_exists": "اسم المجتمع موجود بالفعل",
     "failed_to_create_community": "فشل في إنشاء المجتمع. حاول مجدداً.",
     "failed_to_join_community": "فشل في الانضمام إلى المجتمع. حاول مجدداً."
+  },
+  "clan": {
+    "clan_not_found": "العشيرة غير موجودة",
+    "user_already_in_clan": "المستخدم عضو بالفعل في هذه العشيرة",
+    "clan_name_exists": "اسم العشيرة موجود بالفعل",
+    "failed_to_create_clan": "فشل في إنشاء العشيرة. حاول مرة أخرى.",
+    "failed_to_join_clan": "فشل في الانضمام إلى العشيرة. حاول مرة أخرى.",
+    "failed_to_leave_clan": "فشل في مغادرة العشيرة. حاول مرة أخرى.",
+    "failed_to_delete_clan": "فشل في حذف العشيرة. حاول مرة أخرى.",
+    "failed_to_update_clan": "فشل في تحديث العشيرة. حاول مرة أخرى.",
+    "failed_to_get_clans": "فشل في جلب العشائر. حاول مرة أخرى.",
+    "failed_to_get_clan_info": "فشل في جلب معلومات العشيرة. حاول مرة أخرى.",
+    "failed_to_get_clan_members": "فشل في جلب أعضاء العشيرة. حاول مرة أخرى.",
+    "failed_to_get_user_clans": "فشل في جلب العشائر الخاصة بالمستخدم. حاول مرة أخرى."
   }
 }
