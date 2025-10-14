@@ -62,8 +62,7 @@ Then edit the `.env` file with your configuration:
 # Database connection string
 DATABASE_URL="postgresql://username:password@host:port/database?sslmode=require"
 
-# JWT secret password
-JWT_SECRET="your_jwt_secret_password"
+
 
 # Port for the application
 PORT=8080

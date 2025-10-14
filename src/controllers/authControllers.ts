@@ -32,6 +32,7 @@ const register = async (
     });
 
     if (user) {
+    if (user) {
       if (user.isVerified === false) {
         await client.otp.deleteMany({ where: { userId: user.id } });
 
@@ -85,8 +86,19 @@ const register = async (
         );
       return;
     }
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Username already exists'),
+            'error.auth.username_exists',
+            lang,
+            400
+          )
+        );
+      return;
+    }
 
-    const otp = await sendEmailToken(email, email, EmailTopic.VerifyEmail);
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -99,6 +111,12 @@ const register = async (
         isVerified: false,
       },
     });
+    const otp = await sendEmailToken(
+      email,
+      email,
+      EmailTopic.VerifyEmail,
+      newUser?.id
+    ); //send otp to email
 
     const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
 
@@ -141,18 +159,17 @@ const register = async (
   }
 };
 
-const verifyOTP = async (
+const verifyEmail = async (
   req: TranslationRequest,
   res: Response
 ): Promise<void> => {
   const lang = req.language as Language;
-  const { email, otp } = req.body;
-
+  const { userId, otp } = req.body;
   try {
     await client.$transaction(async (tx: any) => {
       // Find user
-      const user = await tx.user.findFirst({
-        where: { email },
+      const user = await tx.user.findUnique({
+        where: { id: userId },
       });
 
       if (!user) {
@@ -202,8 +219,7 @@ const verifyOTP = async (
           );
         return;
       }
-
-      const validOTP = await bcrypt.compare(otp, otpDoc.otp_code);
+      const validOTP = await bcrypt.compare(otp.toString(), otpDoc.otp_code);
       if (!validOTP) {
         res
           .status(400)
@@ -218,11 +234,11 @@ const verifyOTP = async (
         return;
       }
 
-      await client.user.update({
+      await tx.user.update({
         where: { id: user.id },
         data: { isVerified: true },
       });
-
+      await tx.otp.delete({ where: { id: otpDoc.id } });
       // Delete all OTPs for this user
       await tx.otp.deleteMany({ where: { userId: user.id } });
       const session = await lucia.createSession(user.id, {});
@@ -239,6 +255,7 @@ const verifyOTP = async (
             xp: user.xp,
             level: user.level,
             isAdmin: user.isAdmin,
+            expiredAt: session.expiresAt,
           },
           'success.auth.verify',
           lang,
@@ -370,9 +387,17 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
 
     res.setHeader('Set-Cookie', sessionCookie.serialize());
 
-    res
-      .status(200)
-      .json(makeSuccessResponse(existingUser, 'success.auth.login', lang, 200));
+    res.status(200).json(
+      makeSuccessResponse(
+        {
+          isadmin: existingUser.isAdmin,
+          expiredAt: session.expiresAt,
+        },
+        'success.auth.login',
+        lang,
+        200
+      )
+    );
     return;
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
@@ -404,11 +429,10 @@ const forgetPassword = async (
 ): Promise<void> => {
   try {
     const { email } = req.body;
-    const existingUser = await client.user.findFirst({
-      where: {
-        email,
-      },
-    });
+    const lang = req.language as Language;
+
+    const existingUser = await client.user.findUnique({ where: { email } });
+
     if (!existingUser) {
       res
         .status(400)
@@ -416,13 +440,15 @@ const forgetPassword = async (
           makeErrorResponse(
             new Error('User does not exist'),
             'error.auth.user_not_found',
-            req.language as Language,
+            lang,
             400
           )
         );
       return;
     }
-    if (existingUser.isVerified === false) {
+
+    // If not verified, resend verification OTP
+    if (!existingUser.isVerified) {
       await client.otp.deleteMany({ where: { userId: existingUser.id } });
 
       const otp = await sendEmailToken(
@@ -431,14 +457,13 @@ const forgetPassword = async (
         EmailTopic.VerifyEmail,
         existingUser.id
       );
-      const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
+      const hashedOtp = await bcrypt.hash(otp.toString(), 10);
 
-      //create new otp
       await client.otp.create({
         data: {
-          otp_code: hashedOTP,
+          otp_code: hashedOtp,
           userId: existingUser.id,
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
         },
       });
 
@@ -448,189 +473,56 @@ const forgetPassword = async (
           makeErrorResponse(
             new Error('Email not verified. Verification link resent.'),
             'error.auth.email_not_verified',
-            req.language as Language,
+            lang,
             403
           )
         );
       return;
     }
+
+    // For verified users → send password reset OTP
+    await client.otp.deleteMany({ where: { userId: existingUser.id } });
+
     const otp = await sendEmailToken(
       email,
       existingUser.UserName,
-      EmailTopic.ForgotPassword
+      EmailTopic.ForgotPassword,
+      existingUser.id
     );
-    const hashed_Otp = await bcrypt.hash(otp, 10);
+    const hashedOtp = await bcrypt.hash(otp.toString(), 10);
 
     const newOtp = await client.otp.create({
       data: {
-        otp_code: hashed_Otp,
+        otp_code: hashedOtp,
         userId: existingUser.id,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       },
     });
+
     res
       .status(200)
       .json(
         makeSuccessResponse(
           { otpId: newOtp.id },
           'success.auth.otp_sent',
-          req.language as Language,
-          200,
-          { 'Content-Type': 'application/json' }
+          lang,
+          200
         )
       );
     return;
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-
-    if (e instanceof Error) {
-      res
-        .status(500)
-        .json(makeErrorResponse(e, 'error.auth.unexpected', lang, 500));
-      return;
-    } else {
-      res
-        .status(500)
-        .json(
-          makeErrorResponse(
-            new Error('Unexpected error'),
-            'error.auth.unexpected',
-            lang,
-            500
-          )
-        );
-      return;
-    }
-  }
-};
-
-const verifyOTPLink = async (
-  req: TranslationRequest,
-  res: Response
-): Promise<void> => {
-  const { id, token } = req.query;
-  const lang = req.language as Language;
-  const userId = id;
-
-  try {
-    await client.$transaction(async (tx: any) => {
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-      });
-      if (!user) {
-        res
-          .status(400)
-          .json(
-            makeErrorResponse(
-              new Error('User not found'),
-              'error.auth.user_not_found',
-              req.language as Language,
-              400
-            )
-          );
-        return;
-      }
-
-      const otpDoc = await tx.otp.findFirst({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      if (!otpDoc) {
-        res
-          .status(400)
-          .json(
-            makeErrorResponse(
-              new Error('Invalid OTP'),
-              'error.auth.invalid_otp',
-              req.language as Language,
-              400
-            )
-          );
-        return;
-      }
-      // Check expiry
-      if (otpDoc.expiresAt < new Date()) {
-        res
-          .status(400)
-          .json(
-            makeErrorResponse(
-              new Error('OTP expired'),
-              'error.auth.invalid_otp',
-              lang,
-              400
-            )
-          );
-        return;
-      }
-
-      const validOTP = await bcrypt.compare(token as string, otpDoc.otp_code);
-      if (!validOTP) {
-        res
-          .status(400)
-          .json(
-            makeErrorResponse(
-              new Error('Invalid OTP or expired'),
-              'error.auth.invalid_otp',
-              lang,
-              400
-            )
-          );
-        return;
-      }
-
-      const verifiedUser = await tx.user.update({
-        where: { id: user.id },
-        data: {
-          isVerified: true,
-        },
-      });
-
-      // Delete all OTPs for this user
-      await tx.otp.deleteMany({ where: { userId: user.id } });
-      const session = await lucia.createSession(user.id, {});
-      const sessionCookie = lucia.createSessionCookie(session.id);
-
-      res.setHeader('Set-Cookie', sessionCookie.serialize());
-      res.status(200).json(
-        makeSuccessResponse(
-          {
-            id: user.id,
-            UserName: user.UserName,
-            email: user.email,
-            isVerified: true,
-            xp: user.xp,
-            level: user.level,
-            isAdmin: user.isAdmin,
-          },
-          'success.auth.email_verified',
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Unexpected error'),
+          'error.auth.unexpected',
           lang,
-          200
+          500
         )
       );
-      return;
-    });
-  } catch (e: unknown) {
-    const lang = (req.language as Language) || 'eng';
-
-    if (e instanceof Error) {
-      res
-        .status(500)
-        .json(makeErrorResponse(e, 'error.auth.unexpected', lang, 500));
-      return;
-    } else {
-      res
-        .status(500)
-        .json(
-          makeErrorResponse(
-            new Error('Unexpected error'),
-            'error.auth.unexpected',
-            lang,
-            500
-          )
-        );
-      return;
-    }
+    return;
   }
 };
 
@@ -639,7 +531,7 @@ const resetPassword = async (
   res: Response
 ): Promise<void> => {
   const { otp, userId, newPassword } = req.body;
-
+const lang = (req.language as Language) || 'eng';
   try {
     await client.$transaction(async (tx: any) => {
       // Find user
@@ -686,46 +578,41 @@ const resetPassword = async (
       // Hash the new password
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      // Update password
-      await tx.user.update({
+    // ✅ Only updates are atomic
+    await client.$transaction([
+      client.user.update({
         where: { id: userId },
         data: { password: hashedPassword },
-      });
-
-      // Delete OTP entry
-      await tx.otp.delete({
-        where: { id: existingOtp.id },
-      });
-
-      res.status(200).json({ message: 'Password updated successfully' });
+      }),
+      client.otp.delete({ where: { id: existingOtp.id } }),
+    ]);
+    await client.otp.delete({ where: { id: existingOtp.id } });
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(null, 'success.auth.password_updated', lang, 200)
+      );
+    return;
     });
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-
-    if (e instanceof Error) {
-      res
-        .status(500)
-        .json(makeErrorResponse(e, 'error.auth.unexpected', lang, 500));
-      return;
-    } else {
-      res
-        .status(500)
-        .json(
-          makeErrorResponse(
-            new Error('Unexpected error'),
-            'error.auth.unexpected',
-            lang,
-            500
-          )
-        );
-      return;
-    }
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Unexpected error'),
+          'error.auth.unexpected',
+          lang,
+          500
+        )
+      );
+    return;
   }
 };
 
 const me = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const lang = req.language as Language;
+    const lang = (req.language as Language) || 'eng';
 
     if (!req.user || !req.session) {
       res
@@ -740,11 +627,13 @@ const me = async (req: AuthRequest, res: Response): Promise<void> => {
         );
       return;
     }
-
+    const user = await client.user.findUnique({
+      where: { id: req.user.id },
+    });
     res
       .status(200)
       .json(
-        makeSuccessResponse(req.user, 'success.auth.user_retrieved', lang, 200)
+        makeSuccessResponse(user, 'success.auth.user_retrieved', lang, 200)
       );
     return;
   } catch (e: unknown) {
@@ -869,8 +758,7 @@ const authController = {
   forgetPassword,
   resetPassword,
   me,
-  verifyOTP,
-  verifyOTPLink,
+  verifyEmail,
   logout,
   deleteAccount,
 };
