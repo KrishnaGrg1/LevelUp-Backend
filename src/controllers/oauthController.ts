@@ -272,6 +272,7 @@ const oauthLogin = async (req: TranslationRequest, res: Response) => {
           isVerified: user.isVerified,
           xp: user.xp,
           level: user.level,
+          isAdmin: user.isAdmin,
           createdAt: user.createdAt,
           isNewUser,
           actionTaken,

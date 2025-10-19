@@ -32,6 +32,7 @@ const register = async (
     });
 
     if (user) {
+    if (user) {
       if (user.isVerified === false) {
         await client.otp.deleteMany({ where: { userId: user.id } });
 
@@ -73,6 +74,18 @@ const register = async (
       return;
     }
     if (existingUserByUsername) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Username already exists'),
+            'error.auth.username_exists',
+            lang,
+            400
+          )
+        );
+      return;
+    }
       res
         .status(400)
         .json(
@@ -235,7 +248,13 @@ const verifyEmail = async (
       res.status(200).json(
         makeSuccessResponse(
           {
-            isadmin: user.isAdmin,
+            id: user.id,
+            UserName: user.UserName,
+            email: user.email,
+            isVerified: true,
+            xp: user.xp,
+            level: user.level,
+            isAdmin: user.isAdmin,
             expiredAt: session.expiresAt,
           },
           'success.auth.verify',
@@ -512,61 +531,52 @@ const resetPassword = async (
   res: Response
 ): Promise<void> => {
   const { otp, userId, newPassword } = req.body;
-  const lang = req.language as Language;
-
+const lang = (req.language as Language) || 'eng';
   try {
-    const existingUser = await client.user.findUnique({
-      where: { id: userId },
-    });
-    if (!existingUser) {
-      res
-        .status(400)
-        .json(
-          makeErrorResponse(
-            new Error('User not found'),
-            'error.auth.user_not_found',
-            lang,
-            400
-          )
-        );
-      return;
-    }
+    await client.$transaction(async (tx: any) => {
+      // Find user
+      const existingUser = await tx.user.findUnique({
+        where: { id: userId },
+      });
 
-    const existingOtp = await client.otp.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
+      if (!existingUser) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('User not found'),
+              'error.auth.user_not_found',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
 
-    if (!existingOtp || existingOtp.expiresAt < new Date()) {
-      res
-        .status(400)
-        .json(
-          makeErrorResponse(
-            new Error('Invalid or expired OTP'),
-            'error.auth.invalid_otp',
-            lang,
-            400
-          )
-        );
-      return;
-    }
+      // Find OTP
+      const existingOtp = await tx.otp.findFirst({
+        where: {
+          userId,
+          otp_code: otp,
+        },
+      });
 
-    const isValid = await bcrypt.compare(otp.toString(), existingOtp.otp_code);
-    if (!isValid) {
-      res
-        .status(400)
-        .json(
-          makeErrorResponse(
-            new Error('Invalid OTP'),
-            'error.auth.invalid_otp',
-            lang,
-            400
-          )
-        );
-      return;
-    }
+      if (!existingOtp) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('Invalid OTP'),
+              'error.auth.invalid_otp',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // ✅ Only updates are atomic
     await client.$transaction([
@@ -583,6 +593,7 @@ const resetPassword = async (
         makeSuccessResponse(null, 'success.auth.password_updated', lang, 200)
       );
     return;
+    });
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
     res
@@ -601,7 +612,7 @@ const resetPassword = async (
 
 const me = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const lang = req.language as Language;
+    const lang = (req.language as Language) || 'eng';
 
     if (!req.user || !req.session) {
       res

@@ -170,9 +170,53 @@ const joinCommunity = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const myCommunities = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+
+    const userId = req.user?.id; //from session -- logged in user
+    console.log('User ID IS', userId);
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const user = await findUser(userId as string, res, lang);
+    if (!user) return;
+
+    const communities = await client.communityMember.findMany({
+      where: { userId: user.id },
+      include: { community: true },
+    });
+    const userCommunities = communities.map((cm) => cm.community);
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          userCommunities,
+          'success.community.fetched',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to join community'),
+          'error.community.failed_to_join_community',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const communityController = {
   createCommunity,
   joinCommunity,
+  myCommunities,
 };
 
 export default communityController;
