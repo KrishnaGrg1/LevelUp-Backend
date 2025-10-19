@@ -1,23 +1,34 @@
 {
   "auth": {
-    "register": "ユーザー登録が成功しました",
-    "login": "ユーザーのログインに成功しました",
-    "otp_resent": "メールはすでに存在します。OTP を再送しました。",
+    "register": "ユーザー登録に成功しました",
+    "login": "ログインに成功しました",
+    "otp_resent": "メールはすでに存在します。OTPが再送信されました",
     "logout": "ログアウトに成功しました",
-    "otp_sent": "OTP を送信しました",
-    "verify": "メール認証に成功しました",
-    "email_verified": "メールが認証されました",
-    "user_retrieved": "ユーザーデータを正常に取得しました",
-    "retrieved_all_users": "すべてのユーザーを正常に取得しました"
+    "otp_sent": "OTPの送信に成功しました",
+    "verify": "メール確認に成功しました",
+    "email_verified": "メール確認に成功しました",
+    "user_retrieved": "ユーザー情報の取得に成功しました",
+    "retrieved_all_users": "すべてのユーザーの取得に成功しました"
   },
   "admin": {
-    "updated_details": "ユーザーの詳細を正常に更新しました",
-    "view_user_details": "ユーザーの詳細を正常に取得しました",
-    "community_updated": "コミュニティを正常に更新しました",
-    "get_all_communities": "すべてのコミュニティを正常に取得しました"
+    "updated_details": "ユーザー詳細の更新に成功しました",
+    "view_user_details": "ユーザー詳細の取得に成功しました",
+    "community_updated": "コミュニティの更新に成功しました",
+    "get_all_communities": "すべてのコミュニティの取得に成功しました"
   },
   "community": {
-    "created": "コミュニティが正常に作成されました",
-    "joined": "コミュニティに正常に参加しました"
+    "created": "コミュニティの作成に成功しました",
+    "joined": "コミュニティへの参加に成功しました"
+  },
+  "clan": {
+    "created": "クランの作成に成功しました",
+    "joined": "クランへの参加に成功しました",
+    "left": "クランから退出しました",
+    "deleted": "クランを削除しました",
+    "updated": "クランの更新に成功しました",
+    "retrieved": "クランの取得に成功しました",
+    "info_retrieved": "クラン情報の取得に成功しました",
+    "members_retrieved": "クランメンバーの取得に成功しました",
+    "user_clans_retrieved": "ユーザーのクラン取得に成功しました"
   }
 }
