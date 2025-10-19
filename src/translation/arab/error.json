@@ -1,28 +1,45 @@
 {
   "auth": {
     "username_exists": "اسم المستخدم موجود بالفعل",
-    "email_not_verified": "لم يتم التحقق من بريدك الإلكتروني بعد.",
+    "email_not_verified": "بريدك الإلكتروني لم يُفعّل بعد.",
     "email_exists": "عنوان البريد الإلكتروني موجود بالفعل",
     "user_not_found": "المستخدم غير موجود",
     "email_not_found": "عنوان البريد الإلكتروني غير موجود",
     "invalid_otp": "رمز التحقق غير صالح",
     "incorrect_password": "كلمة المرور غير صحيحة",
-    "unauthorized": "وصول غير مصرح به",
+    "unauthorized": "دخول غير مصرح به",
     "unexpected": "حدث خطأ غير متوقع",
-    "user_verified": "تم التحقق من المستخدم بالفعل",
-    "logout_failed": "فشل تسجيل الخروج. يرجى المحاولة مرة أخرى.",
-    "session_expired": "انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى."
+    "user_verified": "المستخدم مُفعّل بالفعل",
+    "logout_failed": "فشل تسجيل الخروج. حاول مرة أخرى.",
+    "session_expired": "انتهت الجلسة. الرجاء تسجيل الدخول مجدداً.",
+    "failed_to_fetch_all_users": "فشل في جلب جميع المستخدمين"
   },
   "admin": {
-    "forbidden": "ليس لديك إذن بتنفيذ هذا الإجراء",
-    "not_authenticated": "المسؤول غير مصادق",
-    "update_user_details_failed": "فشل في تحديث تفاصيل المستخدم. يرجى المحاولة مرة أخرى."
+    "forbidden": "ليس لديك الإذن لتنفيذ هذا الإجراء",
+    "not_authenticated": "المشرف غير مُصادق",
+    "update_user_details_failed": "فشل تحديث تفاصيل المستخدم. حاول مجدداً.",
+    "update_community_failed": "فشل في تحديث المجتمع. حاول مجدداً.",
+    "get_all_communities_failed": "فشل في استرجاع المجتمعات. حاول مجدداً."
   },
   "community": {
     "community_not_found": "المجتمع غير موجود",
-    "user_already_in_community": "المستخدم عضو بالفعل في المجتمع",
+    "user_already_in_community": "المستخدم عضو في المجتمع بالفعل",
     "community_name_exists": "اسم المجتمع موجود بالفعل",
-    "failed_to_create_community": "فشل في إنشاء المجتمع. يرجى المحاولة مرة أخرى.",
-    "failed_to_join_community": "فشل في الانضمام إلى المجتمع. يرجى المحاولة مرة أخرى."
+    "failed_to_create_community": "فشل في إنشاء المجتمع. حاول مجدداً.",
+    "failed_to_join_community": "فشل في الانضمام إلى المجتمع. حاول مجدداً."
+  },
+  "clan": {
+    "clan_not_found": "العشيرة غير موجودة",
+    "user_already_in_clan": "المستخدم عضو بالفعل في هذه العشيرة",
+    "clan_name_exists": "اسم العشيرة موجود بالفعل",
+    "failed_to_create_clan": "فشل في إنشاء العشيرة. حاول مرة أخرى.",
+    "failed_to_join_clan": "فشل في الانضمام إلى العشيرة. حاول مرة أخرى.",
+    "failed_to_leave_clan": "فشل في مغادرة العشيرة. حاول مرة أخرى.",
+    "failed_to_delete_clan": "فشل في حذف العشيرة. حاول مرة أخرى.",
+    "failed_to_update_clan": "فشل في تحديث العشيرة. حاول مرة أخرى.",
+    "failed_to_get_clans": "فشل في جلب العشائر. حاول مرة أخرى.",
+    "failed_to_get_clan_info": "فشل في جلب معلومات العشيرة. حاول مرة أخرى.",
+    "failed_to_get_clan_members": "فشل في جلب أعضاء العشيرة. حاول مرة أخرى.",
+    "failed_to_get_user_clans": "فشل في جلب العشائر الخاصة بالمستخدم. حاول مرة أخرى."
   }
 }

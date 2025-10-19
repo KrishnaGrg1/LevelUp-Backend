@@ -5,24 +5,41 @@
     "email_exists": "La dirección de correo electrónico ya existe",
     "user_not_found": "Usuario no encontrado",
     "email_not_found": "Dirección de correo electrónico no encontrada",
-    "invalid_otp": "OTP no válido",
+    "invalid_otp": "OTP inválido",
     "incorrect_password": "Contraseña incorrecta",
     "unauthorized": "Acceso no autorizado",
     "unexpected": "Ocurrió un error inesperado",
     "user_verified": "El usuario ya está verificado",
-    "logout_failed": "Error al cerrar sesión. Por favor, inténtalo de nuevo.",
-    "session_expired": "La sesión ha expirado. Por favor, inicia sesión de nuevo."
+    "logout_failed": "Error al cerrar sesión. Intenta de nuevo.",
+    "session_expired": "Sesión expirada. Por favor, inicia sesión de nuevo.",
+    "failed_to_fetch_all_users": "No se pudo obtener todos los usuarios"
   },
   "admin": {
     "forbidden": "No tienes permiso para realizar esta acción",
     "not_authenticated": "Administrador no autenticado",
-    "update_user_details_failed": "No se pudieron actualizar los detalles del usuario. Por favor, inténtalo de nuevo."
+    "update_user_details_failed": "No se pudieron actualizar los detalles del usuario. Intenta de nuevo.",
+    "update_community_failed": "No se pudo actualizar la comunidad. Intenta de nuevo.",
+    "get_all_communities_failed": "No se pudieron obtener las comunidades. Intenta de nuevo."
   },
   "community": {
     "community_not_found": "Comunidad no encontrada",
-    "user_already_in_community": "El usuario ya es miembro de una comunidad",
+    "user_already_in_community": "El usuario ya está en la comunidad",
     "community_name_exists": "El nombre de la comunidad ya existe",
-    "failed_to_create_community": "Error al crear la comunidad. Por favor, inténtalo de nuevo.",
-    "failed_to_join_community": "Error al unirse a la comunidad. Por favor, inténtalo de nuevo."
+    "failed_to_create_community": "No se pudo crear la comunidad. Intenta de nuevo.",
+    "failed_to_join_community": "No se pudo unir a la comunidad. Intenta de nuevo."
+  },
+  "clan": {
+    "clan_not_found": "Clan no encontrado",
+    "user_already_in_clan": "El usuario ya está en este clan",
+    "clan_name_exists": "El nombre del clan ya existe",
+    "failed_to_create_clan": "No se pudo crear el clan. Intenta de nuevo.",
+    "failed_to_join_clan": "No se pudo unir al clan. Intenta de nuevo.",
+    "failed_to_leave_clan": "No se pudo salir del clan. Intenta de nuevo.",
+    "failed_to_delete_clan": "No se pudo eliminar el clan. Intenta de nuevo.",
+    "failed_to_update_clan": "No se pudo actualizar el clan. Intenta de nuevo.",
+    "failed_to_get_clans": "No se pudieron obtener los clanes. Intenta de nuevo.",
+    "failed_to_get_clan_info": "No se pudo obtener información del clan. Intenta de nuevo.",
+    "failed_to_get_clan_members": "No se pudieron obtener los miembros del clan. Intenta de nuevo.",
+    "failed_to_get_user_clans": "No se pudieron obtener los clanes del usuario. Intenta de nuevo."
   }
 }
