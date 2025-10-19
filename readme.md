@@ -103,16 +103,26 @@ npm run dev
 pnpm dev
 ```
 
+Deploy migrations (for production):
+
+```bash
+# Using npx
+npx prisma migrate deploy
+# Using pnpm
+pnpm prisma migrate deploy
+```
+
 ---
 
 ## 🚀 Available Scripts
 
-| Command                                    | Description                       |
-| ------------------------------------------ | --------------------------------- |
-| `npm run dev` / `pnpm dev`                 | Start the development server      |
-| `npm run db:generate` / `pnpm db:generate` | Generate Prisma client            |
-| `npm run db:push` / `pnpm db:push`         | Push schema to the database       |
-| `npx prisma studio` / `pnpm prisma studio` | Open Prisma Studio (database GUI) |
+| Command                                                    | Description                       |
+| ---------------------------------------------------------- | --------------------------------- |
+| `npm run dev` / `pnpm dev`                                 | Start the development server      |
+| `npm run db:generate` / `pnpm db:generate`                 | Generate Prisma client            |
+| `npm run db:push` / `pnpm db:push`                         | Push schema to the database       |
+| `npx prisma migrate deploy` / `pnpm prisma migrate deploy` | Deploy migrations (production)    |
+| `npx prisma studio` / `pnpm prisma studio`                 | Open Prisma Studio (database GUI) |
 
 ---
 
