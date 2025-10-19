@@ -1,23 +1,34 @@
 {
   "auth": {
-    "register": "Usuario registrado con éxito",
-    "login": "Usuario conectado con éxito",
-    "otp_resent": "El correo electrónico ya existe. El OTP ha sido reenviado a tu correo.",
-    "logout": "Usuario desconectado con éxito",
-    "otp_sent": "OTP enviado con éxito",
-    "verify": "Correo verificado con éxito",
-    "email_verified": "Correo verificado con éxito",
-    "user_retrieved": "Datos del usuario recuperados con éxito",
-    "retrieved_all_users": "Todos los usuarios recuperados con éxito"
+    "register": "Usuario registrado exitosamente",
+    "login": "Inicio de sesión exitoso",
+    "otp_resent": "El correo electrónico ya existe. OTP reenviado exitosamente",
+    "logout": "Cierre de sesión exitoso",
+    "otp_sent": "OTP enviado exitosamente",
+    "verify": "Correo electrónico verificado exitosamente",
+    "email_verified": "Correo electrónico verificado exitosamente",
+    "user_retrieved": "Usuario recuperado exitosamente",
+    "retrieved_all_users": "Todos los usuarios recuperados exitosamente"
   },
   "admin": {
-    "updated_details": "Detalles del usuario actualizados con éxito",
-    "view_user_details": "Detalles del usuario recuperados con éxito",
-    "community_updated": "Comunidad actualizada con éxito",
-    "get_all_communities": "Todas las comunidades recuperadas con éxito"
+    "updated_details": "Detalles del usuario actualizados exitosamente",
+    "view_user_details": "Detalles del usuario recuperados exitosamente",
+    "community_updated": "Comunidad actualizada exitosamente",
+    "get_all_communities": "Todas las comunidades recuperadas exitosamente"
   },
   "community": {
-    "created": "Comunidad creada con éxito",
-    "joined": "Unido a la comunidad con éxito"
+    "created": "Comunidad creada exitosamente",
+    "joined": "Unido a la comunidad exitosamente"
+  },
+  "clan": {
+    "created": "Clan creado exitosamente",
+    "joined": "Unido al clan exitosamente",
+    "left": "Salió del clan exitosamente",
+    "deleted": "Clan eliminado exitosamente",
+    "updated": "Clan actualizado exitosamente",
+    "retrieved": "Clanes recuperados exitosamente",
+    "info_retrieved": "Información del clan recuperada exitosamente",
+    "members_retrieved": "Miembros del clan recuperados exitosamente",
+    "user_clans_retrieved": "Clanes del usuario recuperados exitosamente"
   }
 }

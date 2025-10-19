@@ -1,13 +1,13 @@
 {
   "auth": {
     "register": "User registered successfully",
-    "login": "User logged in successfully",
-    "otp_resent": "Email already exists. OTP has been resent to your email",
-    "logout": "User logged out successfully",
+    "login": "Logged in successfully",
+    "otp_resent": "Email exists. OTP resent successfully",
+    "logout": "Logged out successfully",
     "otp_sent": "OTP sent successfully",
     "verify": "Email verified successfully",
     "email_verified": "Email verified successfully",
-    "user_retrieved": "User data retrieved successfully",
+    "user_retrieved": "User retrieved successfully",
     "retrieved_all_users": "All users retrieved successfully"
   },
   "admin": {
@@ -19,5 +19,16 @@
   "community": {
     "created": "Community created successfully",
     "joined": "Joined community successfully"
+  },
+  "clan": {
+    "created": "Clan created successfully",
+    "joined": "Joined clan successfully",
+    "left": "Left clan successfully",
+    "deleted": "Clan deleted successfully",
+    "updated": "Clan updated successfully",
+    "retrieved": "Clans retrieved successfully",
+    "info_retrieved": "Clan info retrieved successfully",
+    "members_retrieved": "Clan members retrieved successfully",
+    "user_clans_retrieved": "User's clans retrieved successfully"
   }
 }

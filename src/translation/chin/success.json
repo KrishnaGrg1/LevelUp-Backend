@@ -1,13 +1,13 @@
 {
   "auth": {
     "register": "用户注册成功",
-    "login": "用户登录成功",
-    "otp_resent": "电子邮件已存在。OTP 已重新发送至您的邮箱",
-    "logout": "用户登出成功",
-    "otp_sent": "OTP 发送成功",
+    "login": "登录成功",
+    "otp_resent": "邮箱已存在。OTP已重新发送",
+    "logout": "注销成功",
+    "otp_sent": "OTP发送成功",
     "verify": "邮箱验证成功",
     "email_verified": "邮箱验证成功",
-    "user_retrieved": "用户数据获取成功",
+    "user_retrieved": "用户信息获取成功",
     "retrieved_all_users": "所有用户获取成功"
   },
   "admin": {
@@ -19,5 +19,16 @@
   "community": {
     "created": "社区创建成功",
     "joined": "成功加入社区"
+  },
+  "clan": {
+    "created": "氏族创建成功",
+    "joined": "成功加入氏族",
+    "left": "成功离开氏族",
+    "deleted": "氏族删除成功",
+    "updated": "氏族更新成功",
+    "retrieved": "氏族获取成功",
+    "info_retrieved": "氏族信息获取成功",
+    "members_retrieved": "氏族成员获取成功",
+    "user_clans_retrieved": "用户氏族获取成功"
   }
 }
