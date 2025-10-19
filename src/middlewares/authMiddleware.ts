@@ -23,6 +23,8 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ) => {
+  console.log('Cookies:', req.headers.cookie);
+
   // Try session-based auth first (Lucia)
   const sessionId = lucia.readSessionCookie(req.headers.cookie ?? '');
   const lang = req.language as Language;

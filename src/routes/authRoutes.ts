@@ -31,4 +31,11 @@ authRoutes.post('/logout', authMiddleware, authController.logout);
 authRoutes.post('/deleteAccount', authMiddleware, authController.deleteAccount);
 
 authRoutes.post('/oauth/register', oauthController.oauthLogin);
+
+authRoutes.post(
+  '/change-password',
+  validate(authValidation.change_password),
+  authMiddleware,
+  authController.changePassword
+);
 export default authRoutes;
