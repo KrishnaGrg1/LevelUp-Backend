@@ -21,6 +21,13 @@ app.use(cors(corsOptions));
 // Security headers
 app.use(helmet());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use('/api/v1/', translationMiddeware, mainRoutes);
 
