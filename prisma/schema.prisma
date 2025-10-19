@@ -7,6 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  MEMBER
+  ADMIN
+}
+
 model User {
   id         String   @id @default(cuid())
   UserName   String   @unique
@@ -20,6 +25,10 @@ model User {
   updatedAt  DateTime @updatedAt
   categoryId String?
   isVerified Boolean  @default(false)
+  isAdmin    Boolean  @default(false)
+
+  isBanned   Boolean   @default(false)
+  banUntil   DateTime? 
 
   Clan            Clan[]
   Community       Community[]
@@ -70,6 +79,8 @@ model Community {
   id          String            @id @default(cuid())
   name        String            @unique
   description String?
+  isPrivate   Boolean           @default(false)
+  memberLimit Int               @default(100)
   createdAt   DateTime          @default(now())
   ownerId     String
   categoryId  String?
@@ -100,6 +111,7 @@ model CommunityMember {
   id          String       @id @default(cuid())
   userId      String
   communityId String
+  role        Role         @default(MEMBER)
   joinedAt    DateTime     @default(now())
   totalXP     Int          @default(0)
   clanId      String?
@@ -107,7 +119,7 @@ model CommunityMember {
   status      MemberStatus @default(Beginner)
 
   clan      Clan?     @relation(fields: [clanId], references: [id])
-  community Community @relation(fields: [communityId], references: [id])
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   quest     Quest[]
 }

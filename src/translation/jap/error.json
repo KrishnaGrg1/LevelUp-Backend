@@ -1,21 +1,31 @@
 {
   "auth": {
     "username_exists": "ユーザー名は既に存在します",
-    "email_not_verified": "あなたのメールはまだ確認されていません。",
+    "email_not_verified": "メールがまだ認証されていません。",
     "email_exists": "メールアドレスは既に存在します",
-    "email_not_verified": "メールはまだ確認されていません",
     "user_not_found": "ユーザーが見つかりません",
     "email_not_found": "メールアドレスが見つかりません",
-    "invalid_otp": "無効または期限切れのOTP",
+    "invalid_otp": "無効なOTPです",
     "incorrect_password": "パスワードが正しくありません",
-    "password_not_set": "パスワードログインは利用できません。OAuthを使用してください。",
-    "not_authenticated": "認証されていません",
-    "no_session": "アクティブなセッションがありません",
-    "logout_failed": "ログアウトに失敗しました",
-    "unauthorized": "許可されていないアクセス",
+    "unauthorized": "不正アクセスです",
     "unexpected": "予期しないエラーが発生しました",
-    "user_verified": "ユーザーは既に確認済みです",
-    "logout_failed": "ログアウトに失敗しました。もう一度お試しください。",
-    "session_expired": "セッションの有効期限が切れました。再度ログインしてください。"
+    "user_verified": "ユーザーはすでに認証されています",
+    "logout_failed": "ログアウトに失敗しました。再試行してください。",
+    "session_expired": "セッションの有効期限が切れました。再度ログインしてください。",
+    "failed_to_fetch_all_users": "すべてのユーザーを取得できませんでした"
+  },
+  "admin": {
+    "forbidden": "この操作を行う権限がありません",
+    "not_authenticated": "管理者が認証されていません",
+    "update_user_details_failed": "ユーザー詳細の更新に失敗しました。再試行してください。",
+    "update_community_failed": "コミュニティの更新に失敗しました。再試行してください。",
+    "get_all_communities_failed": "すべてのコミュニティを取得できませんでした。再試行してください。"
+  },
+  "community": {
+    "community_not_found": "コミュニティが見つかりません",
+    "user_already_in_community": "ユーザーはすでにコミュニティのメンバーです",
+    "community_name_exists": "コミュニティ名はすでに存在します",
+    "failed_to_create_community": "コミュニティの作成に失敗しました。再試行してください。",
+    "failed_to_join_community": "コミュニティへの参加に失敗しました。再試行してください。"
   }
 }

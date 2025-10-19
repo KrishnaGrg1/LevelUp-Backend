@@ -1,7 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
+import {  Response, NextFunction } from 'express';
 import { lucia } from './lucia';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import env from '../helpers/config';
 import { TranslationRequest } from './translationMiddleware';
 import { makeErrorResponse } from '../helpers/standardResponse';
 import { Language } from '../translation/translation';
@@ -14,6 +12,7 @@ export interface AuthRequest extends TranslationRequest {
     isVerified: boolean;
     xp: number;
     level: number;
+    isAdmin: boolean;
   } | null;
   session?: any;
   userID?: { id: string };
@@ -27,12 +26,13 @@ export const authMiddleware = async (
   // Try session-based auth first (Lucia)
   const sessionId = lucia.readSessionCookie(req.headers.cookie ?? '');
   const lang = req.language as Language;
-
+  console.log('Session ID from cookie:', sessionId);
   if (sessionId) {
     try {
       const { session, user } = await lucia.validateSession(sessionId);
       if (session) {
         req.session = session;
+
         req.user = user;
         req.userID = user ? { id: user.id } : undefined;
 
@@ -63,6 +63,17 @@ export const authMiddleware = async (
     }
   }
 
+  res
+    .status(401)
+    .json(
+      makeErrorResponse(
+        new Error('Unauthorized access. Please log in.'),
+        'error.auth.unauthorized',
+        lang,
+        401
+      )
+    );
+  return;
   // No valid auth found
   // req.user = null;
   // req.session = null;

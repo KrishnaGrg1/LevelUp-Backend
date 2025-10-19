@@ -44,7 +44,7 @@ export async function sendEmailToken(
   userId?: string | number
 ): Promise<string> {
   const token = generateToken();
-
+  console.log('Generated Token:', userId);
   const htmlMsg = html({
     token,
     topic,

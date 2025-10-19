@@ -1,12 +1,23 @@
 {
   "auth": {
     "register": "ユーザー登録が成功しました",
-    "login": "ユーザーが正常にログインしました",
-    "otp_resent": "メールは既に存在します。OTPが再送信されました",
-    "otp_sent": "OTPが正常に送信されました",
-    "verify": "メールの確認が成功しました",
-    "email_verified": "メールの確認が成功しました",
-    "user_retrieved": "ユーザー情報が正常に取得されました",
-    "logout": "ユーザーは正常にログアウトしました"
+    "login": "ユーザーのログインに成功しました",
+    "otp_resent": "メールはすでに存在します。OTP を再送しました。",
+    "logout": "ログアウトに成功しました",
+    "otp_sent": "OTP を送信しました",
+    "verify": "メール認証に成功しました",
+    "email_verified": "メールが認証されました",
+    "user_retrieved": "ユーザーデータを正常に取得しました",
+    "retrieved_all_users": "すべてのユーザーを正常に取得しました"
+  },
+  "admin": {
+    "updated_details": "ユーザーの詳細を正常に更新しました",
+    "view_user_details": "ユーザーの詳細を正常に取得しました",
+    "community_updated": "コミュニティを正常に更新しました",
+    "get_all_communities": "すべてのコミュニティを正常に取得しました"
+  },
+  "community": {
+    "created": "コミュニティが正常に作成されました",
+    "joined": "コミュニティに正常に参加しました"
   }
 }
