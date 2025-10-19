@@ -1,17 +1,20 @@
 {
   "auth": {
     "register": "Usuario registrado con éxito",
-    "login": "Usuario inició sesión con éxito",
-    "otp_resent": "El correo electrónico ya existe. El OTP ha sido reenviado a tu correo",
-    "logout": "Usuario cerró sesión con éxito",
+    "login": "Usuario conectado con éxito",
+    "otp_resent": "El correo electrónico ya existe. El OTP ha sido reenviado a tu correo.",
+    "logout": "Usuario desconectado con éxito",
     "otp_sent": "OTP enviado con éxito",
-    "verify": "Correo electrónico verificado con éxito",
-    "email_verified": "Correo electrónico verificado con éxito",
-    "user_retrieved": "Datos del usuario recuperados con éxito"
+    "verify": "Correo verificado con éxito",
+    "email_verified": "Correo verificado con éxito",
+    "user_retrieved": "Datos del usuario recuperados con éxito",
+    "retrieved_all_users": "Todos los usuarios recuperados con éxito"
   },
   "admin": {
     "updated_details": "Detalles del usuario actualizados con éxito",
-    "view_user_details": "Detalles del usuario recuperados con éxito"
+    "view_user_details": "Detalles del usuario recuperados con éxito",
+    "community_updated": "Comunidad actualizada con éxito",
+    "get_all_communities": "Todas las comunidades recuperadas con éxito"
   },
   "community": {
     "created": "Comunidad creada con éxito",

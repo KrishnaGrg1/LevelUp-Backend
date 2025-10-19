@@ -17,4 +17,5 @@ communityRoutes.post(
   communityController.joinCommunity
 );
 
+
 export default communityRoutes;

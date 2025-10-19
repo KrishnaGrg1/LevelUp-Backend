@@ -9,20 +9,23 @@
     "incorrect_password": "Contraseña incorrecta",
     "unauthorized": "Acceso no autorizado",
     "unexpected": "Ocurrió un error inesperado",
-    "user_verified": "El usuario ya está verificado",
+    "user_verified": "Usuario ya verificado",
     "logout_failed": "Error al cerrar sesión. Por favor, inténtalo de nuevo.",
-    "session_expired": "La sesión ha expirado. Por favor, inicia sesión de nuevo."
+    "session_expired": "La sesión ha expirado. Por favor, inicia sesión nuevamente.",
+    "failed_to_fetch_all_users": "Error al obtener todos los usuarios"
   },
   "admin": {
     "forbidden": "No tienes permiso para realizar esta acción",
     "not_authenticated": "Administrador no autenticado",
-    "update_user_details_failed": "No se pudieron actualizar los detalles del usuario. Por favor, inténtalo de nuevo."
+    "update_user_details_failed": "No se pudieron actualizar los detalles del usuario. Por favor, inténtalo de nuevo.",
+    "update_community_failed": "No se pudo actualizar la comunidad. Por favor, inténtalo de nuevo.",
+    "get_all_communities_failed": "Error al recuperar todas las comunidades. Por favor, inténtalo de nuevo."
   },
   "community": {
     "community_not_found": "Comunidad no encontrada",
-    "user_already_in_community": "El usuario ya es miembro de una comunidad",
+    "user_already_in_community": "El usuario ya es miembro de la comunidad",
     "community_name_exists": "El nombre de la comunidad ya existe",
-    "failed_to_create_community": "Error al crear la comunidad. Por favor, inténtalo de nuevo.",
+    "failed_to_create_community": "No se pudo crear la comunidad. Por favor, inténtalo de nuevo.",
     "failed_to_join_community": "Error al unirse a la comunidad. Por favor, inténtalo de nuevo."
   }
 }
