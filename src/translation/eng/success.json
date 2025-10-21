@@ -14,7 +14,8 @@
     "updated_details": "User details updated successfully",
     "view_user_details": "User details retrieved successfully",
     "community_updated": "Community updated successfully",
-    "get_all_communities": "All communities retrieved successfully"
+    "get_all_communities": "All communities retrieved successfully",
+    "deleted_user": "User deleted successfully"
   },
   "community": {
     "created": "Community created successfully",
