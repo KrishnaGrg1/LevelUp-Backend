@@ -43,6 +43,37 @@ const updateUserDetails = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const deleteUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const userId = req.body.id;
+
+    const user = await client.user.findUnique({
+      where: { id: userId },
+    });
+
+    const deleteUser = await client.user.delete({
+      where: { id: userId },
+    });
+
+    res
+      .status(200)
+      .json(makeSuccessResponse(user, 'success.admin.deleted_user', lang, 200));
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Update user details failed'),
+          'error.admin.update_user_details_failed',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const viewUserDetail = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
@@ -74,8 +105,8 @@ const viewUserDetail = async (req: AuthRequest, res: Response) => {
 
 const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const user=req.user
-    
+    const user = req.user;
+
     const lang = (req.language as Language) || 'eng';
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 10;
@@ -236,7 +267,6 @@ const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
 //   }
 // };
 
-
 const updateCommunityDetails = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
@@ -258,18 +288,23 @@ const updateCommunityDetails = async (req: AuthRequest, res: Response) => {
       );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    res.status(500).json(
-      makeErrorResponse(
-        e instanceof Error ? e : new Error('Update community failed'),
-        'error.admin.update_community_failed',
-        lang,
-        500
-      )
-    );
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Update community failed'),
+          'error.admin.update_community_failed',
+          lang,
+          500
+        )
+      );
   }
 };
 
-const getAllCommunities = async (req: AuthRequest, res: Response): Promise<void> => {
+const getAllCommunities = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
   try {
     const lang = (req.language as Language) || 'eng';
     const page = parseInt(req.query.page as string) || 1;
@@ -283,8 +318,7 @@ const getAllCommunities = async (req: AuthRequest, res: Response): Promise<void>
       }),
       client.community.count(),
     ]);
-    res.status(200)
-    .json(
+    res.status(200).json(
       makeSuccessResponse(
         {
           communities,
@@ -302,14 +336,16 @@ const getAllCommunities = async (req: AuthRequest, res: Response): Promise<void>
     );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    res.status(500).json(
-      makeErrorResponse(
-        e instanceof Error ? e : new Error('Get all communities failed'),
-        'error.admin.get_all_communities_failed',
-        lang,
-        500
-      )
-    );
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Get all communities failed'),
+          'error.admin.get_all_communities_failed',
+          lang,
+          500
+        )
+      );
   }
 };
 
@@ -319,6 +355,7 @@ const adminController = {
   getAllUsers,
   updateCommunityDetails,
   getAllCommunities,
+  deleteUser,
   // banUser,
   // unbanUser,
   // deletePost,

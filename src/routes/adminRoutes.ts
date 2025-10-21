@@ -25,10 +25,11 @@ adminRoutes.put('/communities/:id', adminController.updateCommunityDetails);
 
 adminRoutes.get('/communities/all', adminController.getAllCommunities);
 
-
-
-// adminRoutes.delete('/posts/:id', adminController.deletePost);
+adminRoutes.delete(
+  '/users/delete',
+  validate(adminValidation.deleteUser),
+  adminController.deleteUser
+);
 // adminRoutes.delete('/comments/:id', adminController.deleteComment);
-
 
 export default adminRoutes;
