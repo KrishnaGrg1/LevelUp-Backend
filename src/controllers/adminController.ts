@@ -74,6 +74,41 @@ const deleteUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const getOverview = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+
+    const [totalUsers, verifiedUsers, adminUsers] = await Promise.all([
+      client.user.count(),
+      client.user.count({ where: { isVerified: true } }),
+      client.user.count({ where: { isAdmin: true } }),
+    ]);
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { totalUsers, verifiedUsers, adminUsers },
+          'success.admin.get_overview',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to get overview'),
+          'error.admin.failed_to_get_overview',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const viewUserDetail = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
@@ -83,6 +118,8 @@ const viewUserDetail = async (req: AuthRequest, res: Response) => {
     const userId = req.params.id; //from params -- this is user(costumer)
 
     const user = await findUser(userId, res, lang);
+    if (!user) return; // If user not found, findUser already sent the response
+
     res
       .status(200)
       .json(
@@ -356,6 +393,7 @@ const adminController = {
   updateCommunityDetails,
   getAllCommunities,
   deleteUser,
+  getOverview,
   // banUser,
   // unbanUser,
   // deletePost,

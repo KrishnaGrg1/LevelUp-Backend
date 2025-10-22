@@ -7,13 +7,15 @@ import adminValidation from '../validations/adminValidation';
 
 const adminRoutes = Router();
 
+adminRoutes.get('/overview', adminController.getOverview);
+adminRoutes.get('/users/all', adminController.getAllUsers);
+
 adminRoutes.post(
   '/:id',
   validate(adminValidation.updateDetails),
   adminController.updateUserDetails
 );
 adminRoutes.get('/:id', adminController.viewUserDetail);
-adminRoutes.get('/users/all', adminController.getAllUsers);
 
 // // Ban user
 // adminRoutes.patch('/:id/ban', adminController.banUser);
