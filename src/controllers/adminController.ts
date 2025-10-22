@@ -77,7 +77,9 @@ const deleteUser = async (req: AuthRequest, res: Response) => {
 const getOverview = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
-
+    const userId = req.user?.id;
+    const user = await findUser(userId as string, res, lang);
+    if (!user) return; // If user not found, findUser already sent the response
     const [totalUsers, verifiedUsers, adminUsers] = await Promise.all([
       client.user.count(),
       client.user.count({ where: { isVerified: true } }),
@@ -112,8 +114,6 @@ const getOverview = async (req: AuthRequest, res: Response) => {
 const viewUserDetail = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
-
-    const adminId = req.user?.id; //from session
 
     const userId = req.params.id; //from params -- this is user(costumer)
 
