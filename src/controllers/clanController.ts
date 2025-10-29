@@ -8,6 +8,14 @@ import { AuthRequest } from '../middlewares/authMiddleware';
 import { Language } from '../translation/translation';
 import { findUser } from '../helpers/auth/userHelper';
 
+const generateSlug = (name: string) => {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-') 
+    .replace(/^-+|-+$/g, '');
+};
+
 /**
  * Create a new Clan inside a Community
  */
@@ -28,7 +36,6 @@ const createClan = async (req: AuthRequest, res: Response) => {
     });
 
     if (!member) {
-      // If not a member, reject
       return res
         .status(403)
         .json(
@@ -41,45 +48,80 @@ const createClan = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Create the clan
-    const clan = await client.clan.create({
-      data: {
-        name,
-        description,
-        isPrivate: isPrivate || false,
-        limit: limit || 50,
-        xp: 0,
-        ownerId: user.id,
-        communityId,
-      },
+    // Check for duplicate clan name in the same community
+    const existingClan = await client.clan.findFirst({
+      where: { name, communityId },
     });
 
-    // Add the owner to the clan members
-    await client.communityMember.update({
-      where: { id: member.id },
-      data: {
-        clanId: clan.id,
-        role: 'ADMIN', // Owner is admin in clan
-      },
+    if (existingClan) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Clan name already exists'),
+            'error.clan.clan_name_exists',
+            lang,
+            400
+          )
+        );
+    }
+
+    // Generate a unique slug
+    let slug = generateSlug(name);
+    let slugExists = await client.clan.findFirst({ where: { slug } });
+    let counter = 1;
+    while (slugExists) {
+      slug = `${slug}-${counter}`;
+      slugExists = await client.clan.findFirst({ where: { slug } });
+      counter++;
+    }
+
+    // Create clan and assign owner in a transaction
+    const clan = await client.$transaction(async (tx) => {
+      const newClan = await tx.clan.create({
+        data: {
+          name,
+          slug,
+          description,
+          isPrivate: isPrivate || false,
+          limit: limit || 50,
+          xp: 0,
+          ownerId: user.id,
+          communityId,
+          welcomeMessage: 'Welcome to the clan!',
+          stats: { memberCount: 1, battlesWon: 0 },
+        },
+      });
+
+      await tx.communityMember.update({
+        where: { id: member!.id },
+        data: { clanId: newClan.id, role: 'ADMIN' },
+      });
+
+      return newClan;
     });
+
+    console.log(`Clan ${clan.id} created by user ${user.id}`);
 
     return res
       .status(200)
       .json(makeSuccessResponse(clan, 'success.clan.created', lang, 200));
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
+    console.error('Failed to create clan:', e);
     return res
       .status(500)
       .json(
         makeErrorResponse(
-          new Error('Failed to create clan'),
-          'error.clan.failed_to_create',
+          new Error('Failed to create clan. Try again.'),
+          'error.clan.failed_to_create_clan',
           lang,
           500
         )
       );
   }
 };
+
 
 /**
  * Join a Clan
@@ -351,7 +393,7 @@ const getClanMembers = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Get detailed info of a Clan
+ * Get Clan info (includes slug, welcomeMessage, stats)
  */
 const getClanInfo = async (req: AuthRequest, res: Response) => {
   try {
@@ -363,44 +405,31 @@ const getClanInfo = async (req: AuthRequest, res: Response) => {
       include: {
         community: true,
         owner: true,
-        members: {
-          include: { user: true },
-        },
+        members: { include: { user: true } },
       },
     });
 
     if (!clan)
-      return res
-        .status(404)
-        .json(
-          makeErrorResponse(
-            new Error('Clan not found'),
-            'error.clan.not_found',
-            lang,
-            404
-          )
-        );
+      return res.status(404).json(
+        makeErrorResponse(new Error('Clan not found'), 'error.clan.not_found', lang, 404)
+      );
 
-    return res
-      .status(200)
-      .json(makeSuccessResponse(clan, 'success.clan.info', lang, 200));
+    return res.status(200).json(makeSuccessResponse(clan, 'success.clan.info', lang, 200));
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    return res
-      .status(500)
-      .json(
-        makeErrorResponse(
-          new Error('Failed to get clan info'),
-          'error.clan.failed_to_get_info',
-          lang,
-          500
-        )
-      );
+    return res.status(500).json(
+      makeErrorResponse(
+        new Error('Failed to get clan info'),
+        'error.clan.failed_to_get_info',
+        lang,
+        500
+      )
+    );
   }
 };
 
 /**
- * Update Clan info (only owner)
+ * Update Clan info (only owner) — now handles slug
  */
 const updateClan = async (req: AuthRequest, res: Response) => {
   try {
@@ -410,52 +439,49 @@ const updateClan = async (req: AuthRequest, res: Response) => {
     const { name, description, isPrivate, limit } = req.body;
 
     const clan = await client.clan.findUnique({ where: { id: clanId } });
-
     if (!clan)
-      return res
-        .status(404)
-        .json(
-          makeErrorResponse(
-            new Error('Clan not found'),
-            'error.clan.not_found',
-            lang,
-            404
-          )
-        );
+      return res.status(404).json(
+        makeErrorResponse(new Error('Clan not found'), 'error.clan.not_found', lang, 404)
+      );
 
-    if (clan.ownerId !== userId) {
-      return res
-        .status(403)
-        .json(
-          makeErrorResponse(
-            new Error('Only owner can update this clan'),
-            'error.clan.not_owner',
-            lang,
-            403
-          )
-        );
+    if (clan.ownerId !== userId)
+      return res.status(403).json(
+        makeErrorResponse(
+          new Error('Only owner can update this clan'),
+          'error.clan.not_owner',
+          lang,
+          403
+        )
+      );
+
+    // If name changes, update slug as well
+    let slug = clan.slug;
+    if (name && name !== clan.name) {
+      slug = generateSlug(name);
+      let counter = 1;
+      while (await client.clan.findFirst({ where: { slug, NOT: { id: clanId } } })) {
+        slug = `${slug}-${counter}`;
+        counter++;
+      }
     }
 
     const updated = await client.clan.update({
       where: { id: clanId },
-      data: { name, description, isPrivate, limit },
+      data: { name, slug, description, isPrivate, limit },
     });
 
-    return res
-      .status(200)
-      .json(makeSuccessResponse(updated, 'success.clan.updated', lang, 200));
+    return res.status(200).json(makeSuccessResponse(updated, 'success.clan.updated', lang, 200));
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    return res
-      .status(500)
-      .json(
-        makeErrorResponse(
-          new Error('Failed to update clan'),
-          'error.clan.failed_to_update',
-          lang,
-          500
-        )
-      );
+    console.error('Failed to update clan:', e);
+    return res.status(500).json(
+      makeErrorResponse(
+        new Error('Failed to update clan'),
+        'error.clan.failed_to_update',
+        lang,
+        500
+      )
+    );
   }
 };
 

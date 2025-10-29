@@ -93,20 +93,25 @@ model Community {
 }
 
 model Clan {
-  id          String            @id @default(cuid())
-  name        String            @unique
-  isPrivate   Boolean           @default(false)
-  xp          Int               @default(0)
-  description String?
-  ownerId     String
-  communityId String
-  limit       Int               @default(50)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  community   Community         @relation(fields: [communityId], references: [id])
-  owner       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  members     CommunityMember[]
+  id             String            @id @default(cuid())
+  name           String            @unique
+  slug           String?           @unique              // URL-friendly version of name
+  isPrivate      Boolean           @default(false)
+  xp             Int               @default(0)
+  description    String?
+  ownerId        String
+  communityId    String
+  limit          Int               @default(50)
+  welcomeMessage String?          
+  stats          Json?            
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  community      Community         @relation(fields: [communityId], references: [id])
+  owner          User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members        CommunityMember[]
 }
+
 
 model CommunityMember {
   id          String       @id @default(cuid())

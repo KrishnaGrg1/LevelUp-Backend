@@ -41,5 +41,12 @@
     "failed_to_get_clan_info": "Failed to fetch clan info. Try again.",
     "failed_to_get_clan_members": "Failed to fetch clan members. Try again.",
     "failed_to_get_user_clans": "Failed to fetch user's clans. Try again."
-  }
+  },
+  "ticket": {
+  "failed_to_create": "Failed to create ticket. Please try again.",
+  "failed_to_get_ticket": "Failed to retrieve ticket",
+  "failed_to_get_all": "Failed to retrieve tickets",
+  "not_found": "Ticket not found",
+  "forbidden": "You do not have permission to access this ticket"
+}
 }

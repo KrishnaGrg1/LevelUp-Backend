@@ -41,5 +41,12 @@
     "failed_to_get_clan_info": "获取氏族信息失败。请再试一次。",
     "failed_to_get_clan_members": "获取氏族成员失败。请再试一次。",
     "failed_to_get_user_clans": "获取用户氏族失败。请再试一次。"
+  },
+  "ticket": {
+  "failed_to_create": "创建工单失败。请再试一次。",
+  "failed_to_get_ticket": "检索工单失败",
+  "failed_to_get_all": "检索工单失败",
+  "not_found": "未找到工单",
+  "forbidden": "您无权访问此工单"
   }
 }
