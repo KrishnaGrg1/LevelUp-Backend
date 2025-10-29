@@ -32,60 +32,60 @@ const register = async (
     });
 
     if (user) {
-    if (user) {
-      if (user.isVerified === false) {
-        await client.otp.deleteMany({ where: { userId: user.id } });
+      if (user) {
+        if (user.isVerified === false) {
+          await client.otp.deleteMany({ where: { userId: user.id } });
 
-        const otp = await sendEmailToken(
-          email,
-          email,
-          EmailTopic.VerifyEmail,
-          user.id
-        );
-        console.log('OTP sent:', otp);
-        const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
+          const otp = await sendEmailToken(
+            email,
+            email,
+            EmailTopic.VerifyEmail,
+            user.id
+          );
+          console.log('OTP sent:', otp);
+          const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
 
-        //create new otp
-        await client.otp.create({
-          data: {
-            otp_code: hashedOTP,
-            userId: user.id,
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
-          },
-        });
+          //create new otp
+          await client.otp.create({
+            data: {
+              otp_code: hashedOTP,
+              userId: user.id,
+              expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
+            },
+          });
 
-        res.status(200).json(
-          makeSuccessResponse(user, 'success.auth.otp_resent', lang, 200, {
-            'Content-Type': 'application/json',
-          })
-        );
+          res.status(200).json(
+            makeSuccessResponse(user, 'success.auth.otp_resent', lang, 200, {
+              'Content-Type': 'application/json',
+            })
+          );
+          return;
+        }
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('User already exists'),
+              'error.auth.email_exists',
+              lang,
+              400
+            )
+          );
         return;
       }
-      res
-        .status(400)
-        .json(
-          makeErrorResponse(
-            new Error('User already exists'),
-            'error.auth.email_exists',
-            lang,
-            400
-          )
-        );
-      return;
-    }
-    if (existingUserByUsername) {
-      res
-        .status(400)
-        .json(
-          makeErrorResponse(
-            new Error('Username already exists'),
-            'error.auth.username_exists',
-            lang,
-            400
-          )
-        );
-      return;
-    }
+      if (existingUserByUsername) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('Username already exists'),
+              'error.auth.username_exists',
+              lang,
+              400
+            )
+          );
+        return;
+      }
       res
         .status(400)
         .json(
@@ -531,7 +531,7 @@ const resetPassword = async (
   res: Response
 ): Promise<void> => {
   const { otp, userId, newPassword } = req.body;
-const lang = (req.language as Language) || 'eng';
+  const lang = (req.language as Language) || 'eng';
   try {
     await client.$transaction(async (tx: any) => {
       // Find user
@@ -578,21 +578,21 @@ const lang = (req.language as Language) || 'eng';
       // Hash the new password
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // ✅ Only updates are atomic
-    await client.$transaction([
-      client.user.update({
-        where: { id: userId },
-        data: { password: hashedPassword },
-      }),
-      client.otp.delete({ where: { id: existingOtp.id } }),
-    ]);
-    await client.otp.delete({ where: { id: existingOtp.id } });
-    res
-      .status(200)
-      .json(
-        makeSuccessResponse(null, 'success.auth.password_updated', lang, 200)
-      );
-    return;
+      // ✅ Only updates are atomic
+      await client.$transaction([
+        client.user.update({
+          where: { id: userId },
+          data: { password: hashedPassword },
+        }),
+        client.otp.delete({ where: { id: existingOtp.id } }),
+      ]);
+      await client.otp.delete({ where: { id: existingOtp.id } });
+      res
+        .status(200)
+        .json(
+          makeSuccessResponse(null, 'success.auth.password_updated', lang, 200)
+        );
+      return;
     });
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
