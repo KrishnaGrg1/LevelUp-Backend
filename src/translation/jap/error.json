@@ -40,7 +40,8 @@
     "failed_to_get_clans": "クランの取得に失敗しました。もう一度試してください。",
     "failed_to_get_clan_info": "クラン情報の取得に失敗しました。もう一度試してください。",
     "failed_to_get_clan_members": "クランメンバーの取得に失敗しました。もう一度試してください。",
-    "failed_to_get_user_clans": "ユーザーのクラン取得に失敗しました。もう一度試してください。"
+    "failed_to_get_user_clans": "ユーザーのクラン取得に失敗しました。もう一度試してください。",
+    "user_not_found": "システム内にユーザーが見つかりません"
   },
   "ticket": {
   "failed_to_create": "チケットの作成に失敗しました。もう一度試してください。",
