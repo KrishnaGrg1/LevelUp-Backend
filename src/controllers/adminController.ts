@@ -7,6 +7,7 @@ import {
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { Language } from '../translation/translation';
 import { findUser } from '../helpers/auth/userHelper';
+import { startOfMonth, startOfDay, startOfWeek, format } from 'date-fns';
 
 const updateUserDetails = async (req: AuthRequest, res: Response) => {
   try {
@@ -386,6 +387,96 @@ const getAllCommunities = async (
   }
 };
 
+const getUserGrowth = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    const range = (req.query.range as string) || 'day';
+    // 1️⃣ Define time window
+    const now = new Date();
+    let startDate: Date;
+
+    switch (range) {
+      case 'day':
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 30
+        );
+        break;
+      case 'week':
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 90
+        );
+        break;
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+    }
+
+    // 2️⃣ Fetch users created after that date
+    const users = await client.user.findMany({
+      where: {
+        createdAt: {
+          gte: startDate,
+        },
+      },
+      select: {
+        createdAt: true,
+      },
+    });
+
+    // 3️⃣ Group by the selected range using JS (safe, since dataset is smaller)
+    const growthMap: Record<string, number> = {};
+
+    for (const user of users) {
+      let key: string;
+      const date = new Date(user.createdAt);
+
+      if (range === 'day') {
+        key = format(startOfDay(date), 'yyyy-MM-dd');
+      } else if (range === 'week') {
+        key = format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd'); // Monday start
+      } else {
+        key = format(startOfMonth(date), 'yyyy-MM');
+      }
+
+      growthMap[key] = (growthMap[key] || 0) + 1;
+    }
+
+    // 4️⃣ Convert map to sorted array
+    const growthData = Object.entries(growthMap)
+      .sort(([a], [b]) => (a > b ? 1 : -1))
+      .map(([period, count]) => ({ period, count }));
+
+    // 5️⃣ Return the analytics data
+    res.status(200).json(
+      makeSuccessResponse(
+        {
+          range,
+          totalNewUsers: users.length,
+          growth: growthData,
+        },
+        'success.admin.user_growth_fetched',
+        lang,
+        200
+      )
+    );
+  } catch (e) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Failed to fetch user growth'),
+          'error.admin.user_growth_failed',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const adminController = {
   updateUserDetails,
   viewUserDetail,
@@ -394,6 +485,7 @@ const adminController = {
   getAllCommunities,
   deleteUser,
   getOverview,
+  getUserGrowth,
   // banUser,
   // unbanUser,
   // deletePost,

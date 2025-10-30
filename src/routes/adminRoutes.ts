@@ -6,16 +6,18 @@ import adminController from '../controllers/adminController';
 import adminValidation from '../validations/adminValidation';
 
 const adminRoutes = Router();
-
+// Example: GET /api/admin/user-growth?range=month
+adminRoutes.get('/user-growth', adminController.getUserGrowth);
 adminRoutes.get('/overview', adminController.getOverview);
 adminRoutes.get('/users/all', adminController.getAllUsers);
+adminRoutes.get('/communities/all', adminController.getAllCommunities);
+adminRoutes.get('/:id', adminController.viewUserDetail);
 
 adminRoutes.post(
   '/:id',
   validate(adminValidation.updateDetails),
   adminController.updateUserDetails
 );
-adminRoutes.get('/:id', adminController.viewUserDetail);
 
 // // Ban user
 // adminRoutes.patch('/:id/ban', adminController.banUser);
@@ -24,8 +26,6 @@ adminRoutes.get('/:id', adminController.viewUserDetail);
 // adminRoutes.patch('/:id/unban', adminController.unbanUser);
 
 adminRoutes.put('/communities/:id', adminController.updateCommunityDetails);
-
-adminRoutes.get('/communities/all', adminController.getAllCommunities);
 
 adminRoutes.delete(
   '/users/delete',
