@@ -391,7 +391,7 @@ const getUserGrowth = async (req: AuthRequest, res: Response) => {
   try {
     const lang = (req.language as Language) || 'eng';
     const range = (req.query.range as string) || 'day';
-    // 1️⃣ Define time window
+    //  Define time window
     const now = new Date();
     let startDate: Date;
 
@@ -414,7 +414,7 @@ const getUserGrowth = async (req: AuthRequest, res: Response) => {
         startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
     }
 
-    // 2️⃣ Fetch users created after that date
+    //  Fetch users created after that date
     const users = await client.user.findMany({
       where: {
         createdAt: {
@@ -426,7 +426,7 @@ const getUserGrowth = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    // 3️⃣ Group by the selected range using JS (safe, since dataset is smaller)
+    // Group by the selected range using JS (safe, since dataset is smaller)
     const growthMap: Record<string, number> = {};
 
     for (const user of users) {
@@ -444,12 +444,12 @@ const getUserGrowth = async (req: AuthRequest, res: Response) => {
       growthMap[key] = (growthMap[key] || 0) + 1;
     }
 
-    // 4️⃣ Convert map to sorted array
+    //  Convert map to sorted array
     const growthData = Object.entries(growthMap)
       .sort(([a], [b]) => (a > b ? 1 : -1))
       .map(([period, count]) => ({ period, count }));
 
-    // 5️⃣ Return the analytics data
+    //  Return the analytics data
     res.status(200).json(
       makeSuccessResponse(
         {
