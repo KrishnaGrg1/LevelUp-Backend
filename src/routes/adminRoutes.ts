@@ -34,4 +34,9 @@ adminRoutes.delete(
 );
 // adminRoutes.delete('/comments/:id', adminController.deleteComment);
 
+adminRoutes.put(
+  '/ticket/:id',
+  validate(adminValidation.updateTicket),
+  adminController.updateTicket
+);
 export default adminRoutes;

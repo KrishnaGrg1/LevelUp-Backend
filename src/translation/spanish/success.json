@@ -30,5 +30,12 @@
     "info_retrieved": "Información del clan recuperada exitosamente",
     "members_retrieved": "Miembros del clan recuperados exitosamente",
     "user_clans_retrieved": "Clanes del usuario recuperados exitosamente"
+  },
+  "ticket": {
+    "create": "Ticket creado exitosamente",
+    "fetch": "Ticket recuperado exitosamente",
+    "fetch_all": "Todos los tickets recuperados exitosamente",
+    "update": "Ticket actualizado exitosamente",
+    "delete": "Ticket eliminado exitosamente"
   }
 }
