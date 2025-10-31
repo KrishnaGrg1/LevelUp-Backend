@@ -1,4 +1,4 @@
-import {  Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { lucia } from './lucia';
 import { TranslationRequest } from './translationMiddleware';
 import { makeErrorResponse } from '../helpers/standardResponse';

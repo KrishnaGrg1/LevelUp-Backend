@@ -26,7 +26,11 @@ authRoutes.post(
   authController.resetPassword
 );
 authRoutes.get('/me', authMiddleware, authController.me);
-authRoutes.post('/verify-email', authController.verifyEmail);
+authRoutes.post(
+  '/verify-email',
+  validate(authValidation.verify_email),
+  authController.verifyEmail
+);
 authRoutes.post('/logout', authMiddleware, authController.logout);
 authRoutes.post('/deleteAccount', authMiddleware, authController.deleteAccount);
 
