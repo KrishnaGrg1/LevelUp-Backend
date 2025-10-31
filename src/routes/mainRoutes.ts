@@ -6,6 +6,7 @@ import adminRoutes from './adminRoutes';
 import communityRoutes from './communityRoutes';
 import { adminMiddleware } from '../middlewares/adminMiddleware';
 import clanRoutes from './clanRoutes';
+import ticketRoutes from './ticketRoutes';
 
 const mainRoutes = Router();
 
@@ -14,4 +15,5 @@ mainRoutes.use('/admin', authMiddleware, adminMiddleware, adminRoutes);
 mainRoutes.use('/community', authMiddleware, communityRoutes);
 mainRoutes.use('/clan', authMiddleware, clanRoutes);
 // mainRoutes.use('/goal', authMiddleware, goalRoute);
+mainRoutes.use('/ticket', authMiddleware, ticketRoutes);
 export default mainRoutes;

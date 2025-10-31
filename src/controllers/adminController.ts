@@ -386,6 +386,40 @@ const getAllCommunities = async (
   }
 };
 
+const updateTicket = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const lang = req.language as Language;
+    const ticketId = req.params.id;
+    const { status, priority, expectedDateOfCompletion } = req.body;
+    const updatedTicket = await client.ticket.update({
+      where: { id: ticketId },
+      data: { status, priority, expectedDateOfCompletion },
+    });
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          updatedTicket,
+          'success.admin.updated_ticket',
+          lang,
+          200
+        )
+      );
+    return;
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Update ticket failed'),
+          'error.admin.update_ticket_failed',
+          lang,
+          500
+        )
+      );
+  }
+};
 const adminController = {
   updateUserDetails,
   viewUserDetail,
@@ -394,6 +428,7 @@ const adminController = {
   getAllCommunities,
   deleteUser,
   getOverview,
+  updateTicket,
   // banUser,
   // unbanUser,
   // deletePost,

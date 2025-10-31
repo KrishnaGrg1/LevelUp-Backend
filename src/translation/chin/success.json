@@ -30,5 +30,12 @@
     "info_retrieved": "氏族信息获取成功",
     "members_retrieved": "氏族成员获取成功",
     "user_clans_retrieved": "用户氏族获取成功"
+  },
+  "ticket": {
+    "create": "工单创建成功",
+    "fetch": "工单获取成功",
+    "fetch_all": "工单列表获取成功",
+    "update": "工单更新成功",
+    "delete": "工单删除成功"
   }
 }
