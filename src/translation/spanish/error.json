@@ -40,6 +40,14 @@
     "failed_to_get_clans": "No se pudieron obtener los clanes. Intenta de nuevo.",
     "failed_to_get_clan_info": "No se pudo obtener información del clan. Intenta de nuevo.",
     "failed_to_get_clan_members": "No se pudieron obtener los miembros del clan. Intenta de nuevo.",
-    "failed_to_get_user_clans": "No se pudieron obtener los clanes del usuario. Intenta de nuevo."
+    "failed_to_get_user_clans": "No se pudieron obtener los clanes del usuario. Intenta de nuevo.",
+    "user_not_found": "Usuario no encontrado en el sistema"
+  },
+  "ticket": {
+    "failed_to_create": "No se pudo crear el ticket. Por favor, intenta de nuevo.",
+    "failed_to_get_ticket": "No se pudo obtener el ticket. Por favor, intenta de nuevo.",
+    "failed_to_get_all": "No se pudieron obtener todos los tickets. Por favor, intenta de nuevo.",
+    "not_found": "Ticket no encontrado.",
+    "forbidden": "No tienes permiso para acceder a este ticket."
   }
 }

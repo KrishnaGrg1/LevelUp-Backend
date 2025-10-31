@@ -32,5 +32,12 @@
     "info_retrieved": "Clan info retrieved successfully",
     "members_retrieved": "Clan members retrieved successfully",
     "user_clans_retrieved": "User's clans retrieved successfully"
-  }
+  },
+  "ticket": {
+  "create": "Ticket created successfully",
+  "fetch": "Ticket retrieved successfully",
+  "fetch_all": "Tickets retrieved successfully",
+  "update": "Ticket updated successfully",
+  "delete": "Ticket deleted successfully"
+}
 }
