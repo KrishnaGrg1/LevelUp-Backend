@@ -387,8 +387,6 @@ const getAllCommunities = async (
   }
 };
 
-
-
 const getUserGrowth = async (req: AuthRequest, res: Response) => {
   try {
     const lang = (req.language as Language) || 'eng';
