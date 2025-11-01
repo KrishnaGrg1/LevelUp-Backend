@@ -49,5 +49,11 @@
     "failed_to_get_all": "Failed to retrieve tickets",
     "not_found": "Ticket not found",
     "forbidden": "You do not have permission to access this ticket"
+  },
+  "upload": {
+    "no_file": "No file uploaded",
+    "failed_to_upload": "Failed to upload file. Please try again.",
+    "invalid_file_type": "Invalid file type. Only images are allowed.",
+    "file_too_large": "File size is too large"
   }
 }

@@ -19,6 +19,7 @@ model User {
   password   String? // nullable for OAuth users
   provider   String? // e.g., "github", "google"
   providerId String? // provider-specific user ID
+  profilePicture String? // path to profile picture
   xp         Int      @default(0)
   level      Int      @default(1)
   createdAt  DateTime @default(now())
@@ -80,6 +81,7 @@ model Community {
   id          String            @id @default(cuid())
   name        String            @unique
   description String?
+  photo       String? // path to community photo
   isPrivate   Boolean           @default(false)
   memberLimit Int               @default(100)
   createdAt   DateTime          @default(now())

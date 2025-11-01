@@ -39,5 +39,9 @@
     "fetch_all": "Tickets retrieved successfully",
     "update": "Ticket updated successfully",
     "delete": "Ticket deleted successfully"
+  },
+  "upload": {
+    "profile_picture_uploaded": "Profile picture uploaded successfully",
+    "community_photo_uploaded": "Community photo uploaded successfully"
   }
 }
