@@ -25,14 +25,31 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
 
     const communities = await client.communityMember.findMany({
       where: { userId: user.id },
-      include: { community: true },
+      include: {
+        community: {
+          include: {
+            _count: {
+              select: { members: true },
+            },
+          },
+        },
+      },
     });
-    const userCommunities = communities.map((cm) => cm.community);
+
+    const formattedCommunities = communities.map((member) => ({
+      id: member.community.id,
+      name: member.community.name,
+      description: member.community.description,
+      currentMembers: member.community._count.members, // Prisma count
+      maxMembers: member.community.memberLimit,
+      visibility: member.community.isPrivate ? 'private' : 'public',
+      userRole: member.role,
+    }));
     res
       .status(200)
       .json(
         makeSuccessResponse(
-          userCommunities,
+          formattedCommunities,
           'success.community.fetched',
           lang,
           200
@@ -54,19 +71,18 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
 };
 
 const createCommunity = async (req: AuthRequest, res: Response) => {
-  try {
-    const lang = req.language as Language;
+  const { communityName, memberLimit, isPrivate, description } = req.body;
+  const lang = req.language as Language;
 
-    const userId = req.user?.id; //from session -- logged in user
-    console.log('User ID IS', userId);
+  const userId = req.user?.id; //from session -- logged in user
+  console.log('User ID IS', userId);
+  try {
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
     const user = await findUser(userId as string, res, lang);
     if (!user) return;
-
-    const { communityName, memberLimit, isPrivate } = req.body;
 
     const communityExists = await client.community.findUnique({
       // check if community name already exists
@@ -94,6 +110,7 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
     const community = await client.community.create({
       data: {
         name: communityName,
+        description: description || '',
         ownerId: userId,
         memberLimit: memberLimit || 100,
         isPrivate: isPrivate,
@@ -350,6 +367,12 @@ const transferOwnership = async (req: AuthRequest, res: Response) => {
     await client.communityMember.updateMany({
       where: { communityId, userId: newOwnerId },
       data: { role: 'ADMIN' },
+    });
+
+    // Demote current owner to MEMBER role
+    await client.communityMember.updateMany({
+      where: { communityId, userId },
+      data: { role: 'MEMBER' },
     });
 
     res
