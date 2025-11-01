@@ -17,6 +17,9 @@ const communityValidation = {
         'number.min': 'Member limit must be at least 1',
         'number.max': 'Member limit cannot exceed 1000',
       }),
+      description: Joi.string().max(500).optional().messages({
+        'string.max': 'Description must not exceed 500 characters long',
+      }),
     }),
   },
 
