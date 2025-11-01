@@ -37,5 +37,9 @@
     "fetch_all": "Todos los tickets recuperados exitosamente",
     "update": "Ticket actualizado exitosamente",
     "delete": "Ticket eliminado exitosamente"
+  },
+  "upload": {
+    "profile_picture_uploaded": "Foto de perfil subida exitosamente",
+    "community_photo_uploaded": "Foto de la comunidad subida exitosamente"
   }
 }
