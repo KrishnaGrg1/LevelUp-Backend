@@ -4,9 +4,16 @@ This document describes the file upload endpoints for profile pictures and commu
 
 ## Setup
 
-The application uses `multer` for handling file uploads. Uploaded files are stored in the `uploads/` directory:
-- Profile pictures: `uploads/profiles/`
-- Community photos: `uploads/communities/`
+The application uses `multer` with `multer-storage-cloudinary` for handling file uploads. Files are stored on Cloudinary cloud storage:
+- Profile pictures: Stored in `levelup/profiles/` folder with 500x500px transformation
+- Community photos: Stored in `levelup/communities/` folder with 1200x630px transformation
+
+### Environment Variables Required:
+```env
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
 
 ## Endpoints
 
@@ -29,12 +36,14 @@ The application uses `multer` for handling file uploads. Uploaded files are stor
 
 **Max File Size:** 5MB
 
+**Image Transformation:** Automatically resized to 500x500px
+
 **Success Response (200):**
 ```json
 {
   "success": true,
   "data": {
-    "profilePicture": "uploads/profiles/profile-1234567890-123456789.jpg"
+    "profilePicture": "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/levelup/profiles/filename.jpg"
   },
   "message": "Profile picture uploaded successfully"
 }
@@ -52,6 +61,10 @@ curl -X POST http://localhost:3000/api/v1/auth/upload-profile-picture \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -F "profilePicture=@/path/to/image.jpg"
 ```
+
+**Notes:**
+- Old profile pictures are automatically deleted from Cloudinary when uploading a new one
+- Images are stored with optimized format and quality
 
 ---
 
@@ -77,6 +90,8 @@ curl -X POST http://localhost:3000/api/v1/auth/upload-profile-picture \
 
 **Max File Size:** 10MB
 
+**Image Transformation:** Automatically resized to 1200x630px
+
 **Success Response (200):**
 ```json
 {
@@ -85,7 +100,7 @@ curl -X POST http://localhost:3000/api/v1/auth/upload-profile-picture \
     "id": "community_id",
     "name": "Community Name",
     "description": null,
-    "photo": "uploads/communities/community-1234567890-123456789.jpg",
+    "photo": "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/levelup/communities/filename.jpg",
     "isPrivate": false,
     "memberLimit": 100,
     "ownerId": "user_id",
@@ -136,12 +151,14 @@ curl -X POST http://localhost:3000/api/v1/community/create \
 
 **Max File Size:** 10MB
 
+**Image Transformation:** Automatically resized to 1200x630px
+
 **Success Response (200):**
 ```json
 {
   "success": true,
   "data": {
-    "photo": "uploads/communities/community-1234567890-123456789.jpg"
+    "photo": "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/levelup/communities/filename.jpg"
   },
   "message": "Community photo uploaded successfully"
 }
@@ -161,39 +178,57 @@ curl -X POST http://localhost:3000/api/v1/community/COMMUNITY_ID/upload-photo \
   -F "photo=@/path/to/community-image.jpg"
 ```
 
+**Notes:**
+- Old community photos are automatically deleted from Cloudinary when uploading a new one
+- Only community owners and admins can upload photos
+
 ---
 
-## File Storage Structure
+## File Storage
 
+All files are stored on **Cloudinary** cloud storage:
+
+### Folder Structure
 ```
-uploads/
-├── profiles/
-│   └── profile-{timestamp}-{random}.{ext}
-└── communities/
-    └── community-{timestamp}-{random}.{ext}
+levelup/
+├── profiles/      (Profile pictures - 500x500px)
+└── communities/   (Community photos - 1200x630px)
 ```
+
+### File Naming Convention
+Files are automatically named with timestamps and unique identifiers by Cloudinary.
 
 ## Accessing Uploaded Files
 
-Uploaded files can be accessed via:
+Uploaded files are accessible via Cloudinary CDN URLs:
 ```
-http://localhost:3000/uploads/profiles/profile-1234567890-123456789.jpg
-http://localhost:3000/uploads/communities/community-1234567890-123456789.jpg
+https://res.cloudinary.com/{cloud_name}/image/upload/v{version}/levelup/profiles/{filename}
+https://res.cloudinary.com/{cloud_name}/image/upload/v{version}/levelup/communities/{filename}
 ```
+
+These URLs are automatically returned in API responses and stored in the database.
 
 ## Notes
 
-1. **Old File Deletion**: When uploading a new profile picture, the old file is automatically deleted from the server.
+1. **Old File Deletion**: When uploading a new profile picture or community photo, the old file is automatically deleted from Cloudinary using the `public_id` extracted from the image URL.
 
 2. **File Validation**: Files are validated for:
-   - File type (only images allowed)
+   - File type (only images: JPEG, PNG, GIF, WebP)
    - File size (5MB for profiles, 10MB for communities)
 
-3. **Security**: The uploads directory is added to `.gitignore` to prevent committing uploaded files to version control.
+3. **Image Transformations**: 
+   - Profile pictures: Automatically resized to 500x500px
+   - Community photos: Automatically resized to 1200x630px
+   - Format optimization handled by Cloudinary
 
-4. **Error Handling**: If an invalid file type is uploaded, the server will return an error message.
+4. **CDN Delivery**: Images are served via Cloudinary's global CDN for fast loading worldwide.
 
-5. **Authentication**: All upload endpoints require a valid authentication token.
+5. **Security**: 
+   - All upload endpoints require valid authentication tokens
+   - Cloudinary credentials stored in environment variables
+   - Old images automatically cleaned up to save storage
+
+6. **Error Handling**: Invalid file types or sizes return appropriate error messages with translation support.
 
 ## Testing with Bruno/Postman
 

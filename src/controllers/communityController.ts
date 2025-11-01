@@ -8,6 +8,7 @@ import { AuthRequest } from '../middlewares/authMiddleware';
 import { Language } from '../translation/translation';
 import { findUser } from '../helpers/auth/userHelper';
 import authorizeAdmin from '../helpers/auth/adminHelper';
+import { deleteFile, extractPublicId } from '../helpers/multer';
 
 const myCommunities = async (req: AuthRequest, res: Response) => {
   try {
@@ -85,8 +86,9 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
         );
     }
     
-    // Get photo path from uploaded file if available
-    const photoPath = req.file ? req.file.path : undefined;
+    // Get photo URL from uploaded file if available (Cloudinary)
+    const cloudinaryFile = req.file as any;
+    const photoPath = cloudinaryFile ? (cloudinaryFile.path || cloudinaryFile.url) : undefined;
     
     // create community
     const community = await client.community.create({
@@ -716,20 +718,34 @@ const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // Delete old photo if it exists
+    // Delete old photo if it exists (from Cloudinary)
     if (community.photo) {
-      const oldFilePath = community.photo;
-      const fs = await import('fs');
-      if (fs.existsSync(oldFilePath)) {
-        fs.unlinkSync(oldFilePath);
+      const publicId = extractPublicId(community.photo);
+      if (publicId) {
+        await deleteFile(publicId);
       }
     }
 
-    // Update community with new photo path
+    // Get Cloudinary URL from uploaded file
+    const cloudinaryFile = req.file as any;
+    const photoUrl = cloudinaryFile.path || cloudinaryFile.url;
+
+    if (!photoUrl) {
+      return res.status(500).json(
+        makeErrorResponse(
+          new Error('Failed to get Cloudinary URL'),
+          'error.upload.failed_to_upload',
+          lang,
+          500
+        )
+      );
+    }
+
+    // Update community with new photo URL (Cloudinary)
     const updatedCommunity = await client.community.update({
       where: { id: communityId },
       data: {
-        photo: req.file.path,
+        photo: photoUrl,
       },
     });
 

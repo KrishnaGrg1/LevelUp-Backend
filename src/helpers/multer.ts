@@ -1,41 +1,26 @@
 import multer from "multer";
-import path from "path";
-import fs from "fs";
 import { Request } from "express";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import cloudinary from "./cloudinary";
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(process.cwd(), "uploads");
-const profilePicsDir = path.join(uploadsDir, "profiles");
-const communityPhotosDir = path.join(uploadsDir, "communities");
-
-[uploadsDir, profilePicsDir, communityPhotosDir].forEach((dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+// Cloudinary storage for profile pictures
+const profileStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "levelup/profiles",
+    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
+    transformation: [{ width: 500, height: 500, crop: "limit" }],
+  } as any,
 });
 
-// Storage configuration for profile pictures
-const profileStorage = multer.diskStorage({
-  destination: (_req: Request, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
-    cb(null, profilePicsDir);
-  },
-  filename: (_req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, `profile-${uniqueSuffix}${ext}`);
-  },
-});
-
-// Storage configuration for community photos
-const communityStorage = multer.diskStorage({
-  destination: (_req: Request, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
-    cb(null, communityPhotosDir);
-  },
-  filename: (_req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, `community-${uniqueSuffix}${ext}`);
-  },
+// Cloudinary storage for community photos
+const communityStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "levelup/communities",
+    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
+    transformation: [{ width: 1200, height: 630, crop: "limit" }],
+  } as any,
 });
 
 // File filter for images only
@@ -70,13 +55,34 @@ export const uploadCommunityPhoto = multer({
   },
 });
 
-// Helper function to delete old files
-export const deleteFile = (filePath: string) => {
+// Helper function to delete files from Cloudinary
+export const deleteFile = async (publicId: string) => {
   try {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    if (publicId) {
+      await cloudinary.uploader.destroy(publicId);
     }
   } catch (error) {
-    console.error("Error deleting file:", error);
+    console.error("Error deleting file from Cloudinary:", error);
+  }
+};
+
+// Helper function to extract public_id from Cloudinary URL
+export const extractPublicId = (url: string): string | null => {
+  try {
+    // Cloudinary URL format: https://res.cloudinary.com/{cloud_name}/image/upload/{version}/{public_id}.{format}
+    const parts = url.split("/");
+    const uploadIndex = parts.findIndex((part) => part === "upload");
+    if (uploadIndex !== -1 && parts.length > uploadIndex + 1) {
+      // Get everything after 'upload/' and before the extension
+      const pathAfterUpload = parts.slice(uploadIndex + 1).join("/");
+      // Remove version number if present (starts with 'v' followed by digits)
+      const pathWithoutVersion = pathAfterUpload.replace(/^v\d+\//, "");
+      // Remove file extension
+      return pathWithoutVersion.replace(/\.[^/.]+$/, "");
+    }
+    return null;
+  } catch (error) {
+    console.error("Error extracting public_id from URL:", error);
+    return null;
   }
 };

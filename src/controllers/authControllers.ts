@@ -12,6 +12,7 @@ import { Language } from '../translation/translation';
 import { EmailTopic } from '../helpers/emailMessage';
 import { lucia } from '../middlewares/lucia';
 import { AuthRequest } from '../middlewares/authMiddleware';
+import { deleteFile, extractPublicId } from '../helpers/multer';
 
 const register = async (
   req: TranslationRequest,
@@ -779,6 +780,8 @@ const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
       );
     }
 
+    console.log('Uploaded file details:', JSON.stringify(req.file, null, 2));
+
     const user = await client.user.findUnique({
       where: { id: userId },
     });
@@ -794,20 +797,34 @@ const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // Delete old profile picture if it exists
+    // Delete old profile picture from Cloudinary if it exists
     if (user.profilePicture) {
-      const oldFilePath = user.profilePicture;
-      const fs = await import('fs');
-      if (fs.existsSync(oldFilePath)) {
-        fs.unlinkSync(oldFilePath);
+      const publicId = extractPublicId(user.profilePicture);
+      if (publicId) {
+        await deleteFile(publicId);
       }
     }
 
-    // Update user with new profile picture path
+    // Get Cloudinary URL from uploaded file
+    const cloudinaryFile = req.file as any;
+    const profilePictureUrl = cloudinaryFile.path || cloudinaryFile.url;
+
+    if (!profilePictureUrl) {
+      return res.status(500).json(
+        makeErrorResponse(
+          new Error('Failed to get Cloudinary URL'),
+          'error.upload.failed_to_upload',
+          lang,
+          500
+        )
+      );
+    }
+
+    // Update user with new profile picture URL from Cloudinary
     const updatedUser = await client.user.update({
       where: { id: userId },
       data: {
-        profilePicture: req.file.path,
+        profilePicture: profilePictureUrl, // Cloudinary URL
       },
     });
 
