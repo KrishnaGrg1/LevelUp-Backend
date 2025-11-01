@@ -44,10 +44,10 @@
     "user_not_found": "User not found in the system"
   },
   "ticket": {
-  "failed_to_create": "Failed to create ticket. Please try again.",
-  "failed_to_get_ticket": "Failed to retrieve ticket",
-  "failed_to_get_all": "Failed to retrieve tickets",
-  "not_found": "Ticket not found",
-  "forbidden": "You do not have permission to access this ticket"
-}
+    "failed_to_create": "Failed to create ticket. Please try again.",
+    "failed_to_get_ticket": "Failed to retrieve ticket",
+    "failed_to_get_all": "Failed to retrieve tickets",
+    "not_found": "Ticket not found",
+    "forbidden": "You do not have permission to access this ticket"
+  }
 }

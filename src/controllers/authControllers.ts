@@ -31,67 +31,55 @@ const register = async (
       where: { UserName: username },
     });
 
-    if (user) {
-      if (user) {
-        if (user.isVerified === false) {
-          await client.otp.deleteMany({ where: { userId: user.id } });
-
-          const otp = await sendEmailToken(
-            email,
-            email,
-            EmailTopic.VerifyEmail,
-            user.id
-          );
-          console.log('OTP sent:', otp);
-          const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
-
-          //create new otp
-          await client.otp.create({
-            data: {
-              otp_code: hashedOTP,
-              userId: user.id,
-              expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
-            },
-          });
-
-          res.status(200).json(
-            makeSuccessResponse(user, 'success.auth.otp_resent', lang, 200, {
-              'Content-Type': 'application/json',
-            })
-          );
-          return;
-        }
-        res
-          .status(400)
-          .json(
-            makeErrorResponse(
-              new Error('User already exists'),
-              'error.auth.email_exists',
-              lang,
-              400
-            )
-          );
-        return;
-      }
-      if (existingUserByUsername) {
-        res
-          .status(400)
-          .json(
-            makeErrorResponse(
-              new Error('Username already exists'),
-              'error.auth.username_exists',
-              lang,
-              400
-            )
-          );
-        return;
-      }
+    if (existingUserByUsername) {
       res
         .status(400)
         .json(
           makeErrorResponse(
             new Error('Username already exists'),
             'error.auth.username_exists',
+            lang,
+            400
+          )
+        );
+      return;
+    }
+
+    if (user) {
+      if (user.isVerified === false) {
+        await client.otp.deleteMany({ where: { userId: user.id } });
+
+        const otp = await sendEmailToken(
+          email,
+          email,
+          EmailTopic.VerifyEmail,
+          user.id
+        );
+        console.log('OTP sent:', otp);
+        const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
+
+        //create new otp
+        await client.otp.create({
+          data: {
+            otp_code: hashedOTP,
+            userId: user.id,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
+          },
+        });
+
+        res.status(200).json(
+          makeSuccessResponse(user, 'success.auth.otp_resent', lang, 200, {
+            'Content-Type': 'application/json',
+          })
+        );
+        return;
+      }
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('User already exists'),
+            'error.auth.email_exists',
             lang,
             400
           )

@@ -34,10 +34,10 @@
     "user_clans_retrieved": "User's clans retrieved successfully"
   },
   "ticket": {
-  "create": "Ticket created successfully",
-  "fetch": "Ticket retrieved successfully",
-  "fetch_all": "Tickets retrieved successfully",
-  "update": "Ticket updated successfully",
-  "delete": "Ticket deleted successfully"
-}
+    "create": "Ticket created successfully",
+    "fetch": "Ticket retrieved successfully",
+    "fetch_all": "Tickets retrieved successfully",
+    "update": "Ticket updated successfully",
+    "delete": "Ticket deleted successfully"
+  }
 }
