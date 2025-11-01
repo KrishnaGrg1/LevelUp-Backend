@@ -37,6 +37,7 @@
     "joi": "17.13.3",
     "jsonwebtoken": "9.0.2",
     "lucia": "3.2.2",
+    "multer": "^2.0.2",
     "node-cron": "4.2.1",
     "nodemailer": "7.0.3",
     "qs": "6.14.0"
@@ -46,6 +47,7 @@
     "@types/date-fns": "^2.6.3",
     "@types/express": "5.0.3",
     "@types/jsonwebtoken": "9.0.10",
+    "@types/multer": "^2.0.0",
     "@types/node-cron": "3.0.11",
     "@types/qs": "6.14.0",
     "nodemon": "3.1.10",

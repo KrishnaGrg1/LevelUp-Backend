@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import mainRoutes from './routes/mainRoutes';
 import env from './helpers/config';
 import translationMiddeware from './middlewares/translationMiddleware';
@@ -27,6 +28,9 @@ app.use((req, res, next) => {
   console.log(`[${timestamp}] ${req.method} ${req.originalUrl}`);
   next();
 });
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.use(express.json({ limit: '10mb' }));
 app.use('/api/v1/', translationMiddeware, mainRoutes);

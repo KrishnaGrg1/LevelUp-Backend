@@ -4,6 +4,7 @@ import validate from '../middlewares/validation';
 import authValidation from '../validations/authValidation';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import oauthController from '../controllers/oauthController';
+import { uploadProfilePicture } from '../helpers/multer';
 
 const authRoutes = Router();
 
@@ -33,6 +34,14 @@ authRoutes.post(
 );
 authRoutes.post('/logout', authMiddleware, authController.logout);
 authRoutes.post('/deleteAccount', authMiddleware, authController.deleteAccount);
+
+// Upload profile picture route
+authRoutes.post(
+  '/upload-profile-picture',
+  authMiddleware,
+  uploadProfilePicture.single('profilePicture'),
+  authController.uploadProfilePicture
+);
 
 authRoutes.post('/oauth/register', oauthController.oauthLogin);
 export default authRoutes;

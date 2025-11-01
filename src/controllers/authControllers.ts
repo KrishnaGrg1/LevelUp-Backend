@@ -752,6 +752,87 @@ const deleteAccount = async (
   }
 };
 
+const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
+  const lang = (req.language as Language) || 'eng';
+  
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json(
+        makeErrorResponse(
+          new Error('Not authenticated'),
+          'error.auth.not_authenticated',
+          lang,
+          401
+        )
+      );
+    }
+
+    if (!req.file) {
+      return res.status(400).json(
+        makeErrorResponse(
+          new Error('No file uploaded'),
+          'error.upload.no_file',
+          lang,
+          400
+        )
+      );
+    }
+
+    const user = await client.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json(
+        makeErrorResponse(
+          new Error('User not found'),
+          'error.auth.user_not_found',
+          lang,
+          404
+        )
+      );
+    }
+
+    // Delete old profile picture if it exists
+    if (user.profilePicture) {
+      const oldFilePath = user.profilePicture;
+      const fs = await import('fs');
+      if (fs.existsSync(oldFilePath)) {
+        fs.unlinkSync(oldFilePath);
+      }
+    }
+
+    // Update user with new profile picture path
+    const updatedUser = await client.user.update({
+      where: { id: userId },
+      data: {
+        profilePicture: req.file.path,
+      },
+    });
+
+    res.status(200).json(
+      makeSuccessResponse(
+        { profilePicture: updatedUser.profilePicture },
+        'success.upload.profile_picture_uploaded',
+        lang,
+        200
+      )
+    );
+  } catch (error) {
+    console.error('Error uploading profile picture:', error);
+    const lang = (req.language as Language) || 'eng';
+    res.status(500).json(
+      makeErrorResponse(
+        new Error('Failed to upload profile picture'),
+        'error.upload.failed_to_upload',
+        lang,
+        500
+      )
+    );
+  }
+};
+
 const authController = {
   register,
   login,
@@ -761,6 +842,7 @@ const authController = {
   verifyEmail,
   logout,
   deleteAccount,
+  uploadProfilePicture,
 };
 
 export default authController;

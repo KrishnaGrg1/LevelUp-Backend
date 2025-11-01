@@ -37,5 +37,9 @@
     "fetch_all": "تم جلب التذاكر بنجاح",
     "update": "تم تحديث التذكرة بنجاح",
     "delete": "تم حذف التذكرة بنجاح"
+  },
+  "upload": {
+    "profile_picture_uploaded": "تم تحميل صورة الملف الشخصي بنجاح",
+    "community_photo_uploaded": "تم تحميل صورة المجتمع بنجاح"
   }
 }

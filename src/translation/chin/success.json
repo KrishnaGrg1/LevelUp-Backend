@@ -37,5 +37,9 @@
     "fetch_all": "工单列表获取成功",
     "update": "工单更新成功",
     "delete": "工单删除成功"
+  },
+  "upload": {
+    "profile_picture_uploaded": "个人资料图片上传成功",
+    "community_photo_uploaded": "社区照片上传成功"
   }
 }

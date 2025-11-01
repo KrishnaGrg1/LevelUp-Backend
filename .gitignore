@@ -14,3 +14,6 @@ pnpm-lock.yaml
 tsconfig.build.json
 
 package-lock.json
+
+# Uploaded files
+uploads/

@@ -3,12 +3,14 @@ import communityController from '../controllers/communityController';
 import validate from '../middlewares/validation';
 import communityValidation from '../validations/communityValidation';
 import { checkRole } from '../middlewares/roleMiddleware';
+import { uploadCommunityPhoto } from '../helpers/multer';
 
 const communityRoutes = Router();
 
-//  Create a community
+//  Create a community with optional photo upload
 communityRoutes.post(
   '/create',
+  uploadCommunityPhoto.single('photo'),
   validate(communityValidation.createCommunity),
   communityController.createCommunity
 );
@@ -59,6 +61,13 @@ communityRoutes.patch(
   '/:communityId/members/:memberId/role',
   checkRole(['ADMIN']),
   communityController.changeMemberRole
+);
+
+// Upload community photo (owner or admin only)
+communityRoutes.post(
+  '/:communityId/upload-photo',
+  uploadCommunityPhoto.single('photo'),
+  communityController.uploadCommunityPhoto
 );
 
 export default communityRoutes;
