@@ -70,4 +70,11 @@ communityRoutes.post(
   communityController.uploadCommunityPhoto
 );
 
+//pin the community
+//  Create a community with optional photo upload
+communityRoutes.post(
+  '/:id/pin',
+
+  communityController.pinCommunity
+);
 export default communityRoutes;

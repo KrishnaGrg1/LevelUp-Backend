@@ -34,6 +34,10 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
           },
         },
       },
+      orderBy: [
+        { isPinned: 'desc' }, // ✅ isPinned is directly on CommunityMember
+        { joinedAt: 'desc' },
+      ],
     });
 
     const formattedCommunities = communities.map((member) => ({
@@ -44,6 +48,7 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
       maxMembers: member.community.memberLimit,
       visibility: member.community.isPrivate ? 'private' : 'public',
       userRole: member.role,
+      isPinned: member.isPinned,
     }));
     res
       .status(200)
@@ -101,11 +106,13 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
           )
         );
     }
-    
+
     // Get photo URL from uploaded file if available (Cloudinary)
     const cloudinaryFile = req.file as any;
-    const photoPath = cloudinaryFile ? (cloudinaryFile.path || cloudinaryFile.url) : undefined;
-    
+    const photoPath = cloudinaryFile
+      ? cloudinaryFile.path || cloudinaryFile.url
+      : undefined;
+
     // create community
     const community = await client.community.create({
       data: {
@@ -685,25 +692,29 @@ const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json(
-        makeErrorResponse(
-          new Error('Not authenticated'),
-          'error.auth.not_authenticated',
-          lang,
-          401
-        )
-      );
+      return res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
     }
 
     if (!req.file) {
-      return res.status(400).json(
-        makeErrorResponse(
-          new Error('No file uploaded'),
-          'error.upload.no_file',
-          lang,
-          400
-        )
-      );
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('No file uploaded'),
+            'error.upload.no_file',
+            lang,
+            400
+          )
+        );
     }
 
     const user = await findUser(userId as string, res, lang);
@@ -718,27 +729,31 @@ const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
     });
 
     if (!community) {
-      return res.status(404).json(
-        makeErrorResponse(
-          new Error('Community not found'),
-          'error.community.community_not_found',
-          lang,
-          404
-        )
-      );
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.community.community_not_found',
+            lang,
+            404
+          )
+        );
     }
 
     // Check if user is owner or admin of the community
     const member = community.members.find((m) => m.userId === user.id);
     if (!member || (member.role !== 'ADMIN' && community.ownerId !== user.id)) {
-      return res.status(403).json(
-        makeErrorResponse(
-          new Error('Only community owner or admin can upload photo'),
-          'error.community.not_authorized',
-          lang,
-          403
-        )
-      );
+      return res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Only community owner or admin can upload photo'),
+            'error.community.not_authorized',
+            lang,
+            403
+          )
+        );
     }
 
     // Delete old photo if it exists (from Cloudinary)
@@ -754,14 +769,16 @@ const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
     const photoUrl = cloudinaryFile.path || cloudinaryFile.url;
 
     if (!photoUrl) {
-      return res.status(500).json(
-        makeErrorResponse(
-          new Error('Failed to get Cloudinary URL'),
-          'error.upload.failed_to_upload',
-          lang,
-          500
-        )
-      );
+      return res
+        .status(500)
+        .json(
+          makeErrorResponse(
+            new Error('Failed to get Cloudinary URL'),
+            'error.upload.failed_to_upload',
+            lang,
+            500
+          )
+        );
     }
 
     // Update community with new photo URL (Cloudinary)
@@ -772,25 +789,118 @@ const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    res.status(200).json(
-      makeSuccessResponse(
-        { photo: updatedCommunity.photo },
-        'success.upload.community_photo_uploaded',
-        lang,
-        200
-      )
-    );
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { photo: updatedCommunity.photo },
+          'success.upload.community_photo_uploaded',
+          lang,
+          200
+        )
+      );
   } catch (error) {
     console.error('Error uploading community photo:', error);
     const lang = (req.language as Language) || 'eng';
-    res.status(500).json(
-      makeErrorResponse(
-        new Error('Failed to upload community photo'),
-        'error.upload.failed_to_upload',
-        lang,
-        500
-      )
-    );
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to upload community photo'),
+          'error.upload.failed_to_upload',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+//pin the community
+const pinCommunity = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { id: communityId } = req.params;
+    const lang = req.language as Language;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Update the CommunityMember record for this user and community
+    const updated = await client.communityMember.updateMany({
+      where: {
+        userId: userId,
+        communityId: communityId,
+      },
+      data: { isPinned: true },
+    });
+
+    if (updated.count === 0) {
+      return res.status(404).json({
+        error: 'Community membership not found',
+      });
+    }
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(updated, 'success.community.pinned', lang, 200)
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    return res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to pin community'),
+          'error.community.failed_to_pin',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+// Unpin the communnity
+const unpinCommunity = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { id: communityId } = req.params;
+    const lang = req.language as Language;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const updated = await client.communityMember.updateMany({
+      where: {
+        userId: userId,
+        communityId: communityId,
+      },
+      data: { isPinned: false },
+    });
+
+    if (updated.count === 0) {
+      return res.status(404).json({
+        error: 'Community membership not found',
+      });
+    }
+
+    return res.json({
+      message: 'Community unpinned successfully',
+    });
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    return res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to unpin community'),
+          'error.community.failed_to_unpin',
+          lang,
+          500
+        )
+      );
   }
 };
 
@@ -804,6 +914,8 @@ const communityController = {
   removeMember,
   changeMemberRole,
   uploadCommunityPhoto,
+  pinCommunity,
+  unpinCommunity,
 };
 
 export default communityController;
