@@ -814,95 +814,139 @@ const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
       );
   }
 };
+const toggleMultipleCommunityPin = async (req: AuthRequest, res: Response) => {
+  const { communityIds } = req.body; // array of IDs to pin
+  const userId = req.user?.id;
 
-//pin the community
-const pinCommunity = async (req: AuthRequest, res: Response) => {
+  if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+
+  if (!Array.isArray(communityIds))
+    return res.status(400).json({ message: 'communityIds must be an array' });
+
   try {
-    const userId = req.user?.id;
-    const { id: communityId } = req.params;
-    const lang = req.language as Language;
-
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
-
-    // Update the CommunityMember record for this user and community
-    const updated = await client.communityMember.updateMany({
-      where: {
-        userId: userId,
-        communityId: communityId,
-      },
-      data: { isPinned: true },
+    // Get all the user's communities
+    const userMemberships = await client.communityMember.findMany({
+      where: { userId },
+      select: { id: true, communityId: true, isPinned: true },
     });
 
-    if (updated.count === 0) {
-      return res.status(404).json({
-        error: 'Community membership not found',
-      });
-    }
+    const updates = await Promise.all(
+      userMemberships.map(async (member) => {
+        const shouldBePinned = communityIds.includes(member.communityId);
+        if (member.isPinned !== shouldBePinned) {
+          return client.communityMember.update({
+            where: { id: member.id },
+            data: { isPinned: shouldBePinned },
+          });
+        }
+        return member;
+      })
+    );
 
-    res
-      .status(200)
-      .json(
-        makeSuccessResponse(updated, 'success.community.pinned', lang, 200)
-      );
-  } catch (e: unknown) {
-    const lang = (req.language as Language) || 'eng';
-    return res
-      .status(500)
-      .json(
-        makeErrorResponse(
-          new Error('Failed to pin community'),
-          'error.community.failed_to_pin',
-          lang,
-          500
-        )
-      );
+    res.status(200).json({
+      message: 'Updated pinned communities successfully',
+      updatedMembers: updates.map((u) => ({
+        communityId: u.communityId,
+        isPinned: u.isPinned,
+      })),
+    });
+  } catch (err) {
+    console.error('Toggle pin error:', err);
+    res.status(500).json({
+      message: 'Failed to update pinned communities',
+      error: err,
+    });
   }
 };
 
-// Unpin the communnity
-const unpinCommunity = async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.user?.id;
-    const { id: communityId } = req.params;
-    const lang = req.language as Language;
+// //pin the community
+// const pinCommunity = async (req: AuthRequest, res: Response) => {
+//   try {
+//     const userId = req.user?.id;
+//     const { id: communityId } = req.params;
+//     const lang = req.language as Language;
 
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
+//     if (!userId) {
+//       return res.status(401).json({ error: 'Not authenticated' });
+//     }
 
-    const updated = await client.communityMember.updateMany({
-      where: {
-        userId: userId,
-        communityId: communityId,
-      },
-      data: { isPinned: false },
-    });
+//     // Update the CommunityMember record for this user and community
+//     const updated = await client.communityMember.updateMany({
+//       where: {
+//         userId: userId,
+//         communityId: communityId,
+//       },
+//       data: { isPinned: true },
+//     });
 
-    if (updated.count === 0) {
-      return res.status(404).json({
-        error: 'Community membership not found',
-      });
-    }
+//     if (updated.count === 0) {
+//       return res.status(404).json({
+//         error: 'Community membership not found',
+//       });
+//     }
 
-    return res.json({
-      message: 'Community unpinned successfully',
-    });
-  } catch (e: unknown) {
-    const lang = (req.language as Language) || 'eng';
-    return res
-      .status(500)
-      .json(
-        makeErrorResponse(
-          new Error('Failed to unpin community'),
-          'error.community.failed_to_unpin',
-          lang,
-          500
-        )
-      );
-  }
-};
+//     res
+//       .status(200)
+//       .json(
+//         makeSuccessResponse(updated, 'success.community.pinned', lang, 200)
+//       );
+//   } catch (e: unknown) {
+//     const lang = (req.language as Language) || 'eng';
+//     return res
+//       .status(500)
+//       .json(
+//         makeErrorResponse(
+//           new Error('Failed to pin community'),
+//           'error.community.failed_to_pin',
+//           lang,
+//           500
+//         )
+//       );
+//   }
+// };
+
+// // Unpin the communnity
+// const unpinCommunity = async (req: AuthRequest, res: Response) => {
+//   try {
+//     const userId = req.user?.id;
+//     const { id: communityId } = req.params;
+//     const lang = req.language as Language;
+
+//     if (!userId) {
+//       return res.status(401).json({ error: 'Not authenticated' });
+//     }
+
+//     const updated = await client.communityMember.updateMany({
+//       where: {
+//         userId: userId,
+//         communityId: communityId,
+//       },
+//       data: { isPinned: false },
+//     });
+
+//     if (updated.count === 0) {
+//       return res.status(404).json({
+//         error: 'Community membership not found',
+//       });
+//     }
+
+//     return res.json({
+//       message: 'Community unpinned successfully',
+//     });
+//   } catch (e: unknown) {
+//     const lang = (req.language as Language) || 'eng';
+//     return res
+//       .status(500)
+//       .json(
+//         makeErrorResponse(
+//           new Error('Failed to unpin community'),
+//           'error.community.failed_to_unpin',
+//           lang,
+//           500
+//         )
+//       );
+//   }
+// };
 
 const communityController = {
   createCommunity,
@@ -914,8 +958,8 @@ const communityController = {
   removeMember,
   changeMemberRole,
   uploadCommunityPhoto,
-  pinCommunity,
-  unpinCommunity,
+  toggleMultipleCommunityPin,
+  // unpinCommunity,
 };
 
 export default communityController;
