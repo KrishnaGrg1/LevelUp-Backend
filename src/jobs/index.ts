@@ -1,5 +1,8 @@
-// import { startSessionCleanupJob } from './sessionCleanup';
+import { scheduleDailyQuestGeneration } from './dailyQuestGeneration';
+import { scheduleDailyTokenRefill } from './dailyTokenRefill';
 
-// export function startJobs() {
-//   startSessionCleanupJob();
-// }
+export function startJobs() {
+  scheduleDailyQuestGeneration();
+  scheduleDailyTokenRefill();
+  console.log('[JOBS] All cron jobs initialized');
+}

@@ -12,6 +12,63 @@ enum Role {
   ADMIN
 }
 
+enum MemberStatus {
+  Beginner
+  Intermediate
+  Advanced
+}
+
+enum QuestType {
+  Daily
+  Weekly
+  Monthly
+  OneTime
+}
+
+enum QuestSource {
+  AI
+  TEMPLATE
+  MANUAL
+}
+
+enum TicketStatus {
+  PENDING
+  WORKING_ON
+  TO_BE_DONE_LATER
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum SubjectType {
+  ACCOUNT_ISSUE
+  PAYMENT_ISSUE
+  BUG_REPORT
+  FEATURE_REQUEST
+  PERFORMANCE_ISSUE
+  COMMUNITY_MANAGEMENT
+  CLAN_MANAGEMENT
+  QUEST_MANAGEMENT
+  OTHER
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+  ULTRA
+}
+
+/**
+ * ---------- core user + auth models (kept mostly as-is) ----------
+ */
+
 model User {
   id         String   @id @default(cuid())
   UserName   String   @unique
@@ -34,11 +91,20 @@ model User {
   Community       Community[]
   CommunityMember CommunityMember[]
   otps            Otp[]
-  Quest           Quest[]
+  Quest           Quest[] // existing user-level quests (kept)
   category        Category?         @relation(fields: [categoryId], references: [id])
   sessions        Session[]
   keys            Key[]
   Ticket          Ticket[]
+
+  tokens        Int             @default(50) // daily
+  userSkills    UserSkill[] // per-skill progress
+  subscription  Subscription? // one-to-one relation (foreign key is on Subscription side)
+  DailyStreak   DailyStreak?
+  UserMilestone UserMilestone[]
+  UpsellTrigger UpsellTrigger[]
+
+  @@index([email])
 }
 
 model Session {
@@ -93,25 +159,24 @@ model Community {
 }
 
 model Clan {
-  id             String            @id @default(cuid())
-  name           String            @unique
-  slug           String?           @unique              // URL-friendly version of name
-  isPrivate      Boolean           @default(false)
-  xp             Int               @default(0)
+  id             String   @id @default(cuid())
+  name           String   @unique
+  slug           String?  @unique
+  isPrivate      Boolean  @default(false)
+  xp             Int      @default(0)
   description    String?
   ownerId        String
   communityId    String
-  limit          Int               @default(50)
-  welcomeMessage String?          
-  stats          Json?            
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  limit          Int      @default(50)
+  welcomeMessage String?
+  stats          Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  community      Community         @relation(fields: [communityId], references: [id])
-  owner          User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  members        CommunityMember[]
+  community Community         @relation(fields: [communityId], references: [id])
+  owner     User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members   CommunityMember[]
 }
-
 
 model CommunityMember {
   id          String       @id @default(cuid())
@@ -132,9 +197,93 @@ model CommunityMember {
   @@unique([userId, communityId])
 }
 
+model Skill {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String?  @unique
+  description String?
+  icon        String?
+  isPremium   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userSkills UserSkill[]
+}
+
+model UserSkill {
+  id        String       @id @default(cuid())
+  userId    String
+  skillId   String
+  level     Int          @default(1)
+  xp        Int          @default(0)
+  status    MemberStatus @default(Beginner)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  quests Quest[] // link quests generated for this skill
+
+  @@unique([userId, skillId])
+  @@index([userId])
+  @@index([skillId])
+}
+
+model Subscription {
+  id        String           @id @default(cuid())
+  userId    String           @unique
+  plan      SubscriptionPlan @default(FREE)
+  startsAt  DateTime?        @default(now())
+  expiresAt DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DailyStreak {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Milestone {
+  id            String          @id @default(cuid())
+  name          String
+  description   String?
+  xpReward      Int             @default(0)
+  createdAt     DateTime        @default(now())
+  UserMilestone UserMilestone[]
+}
+
+model UserMilestone {
+  id          String   @id @default(cuid())
+  userId      String
+  milestoneId String
+  achievedAt  DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  milestone Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+}
+
+model UpsellTrigger {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model Quest {
   id                String      @id @default(cuid())
   userId            String
+  userSkillId       String? // NEW: optional link to specific skill progress
   xpValue           Int
   isCompleted       Boolean     @default(false)
   date              DateTime
@@ -146,53 +295,10 @@ model Quest {
 
   CommunityMember CommunityMember? @relation(fields: [communityMemberId], references: [id])
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+  userSkill       UserSkill?       @relation(fields: [userSkillId], references: [id])
 
-enum MemberStatus {
-  Beginner
-  Intermediate
-  Advanced
-}
-
-enum QuestType {
-  Daily
-  Weekly
-  Monthly
-  OneTime
-}
-
-enum QuestSource {
-  AI
-  TEMPLATE
-  MANUAL
-}
-
-enum TicketStatus {
-  PENDING
-  WORKING_ON
-  TO_BE_DONE_LATER
-  APPROVED
-  REJECTED
-  CANCELLED
-}
-
-enum SubjectType {
-  ACCOUNT_ISSUE
-  PAYMENT_ISSUE
-  BUG_REPORT
-  FEATURE_REQUEST
-  PERFORMANCE_ISSUE
-  COMMUNITY_MANAGEMENT
-  CLAN_MANAGEMENT
-  QUEST_MANAGEMENT
-  OTHER
-}
-
-enum TicketPriority {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
+  @@index([userId])
+  @@index([userSkillId])
 }
 
 model Ticket {

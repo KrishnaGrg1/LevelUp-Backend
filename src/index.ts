@@ -4,6 +4,7 @@ import env from './helpers/config';
 import translationMiddeware from './middlewares/translationMiddleware';
 import helmet from 'helmet';
 import cors from 'cors';
+import { startJobs } from './jobs';
 
 const app = express();
 const port = env.PORT;
@@ -33,4 +34,7 @@ app.use('/api/v1/', translationMiddeware, mainRoutes);
 
 app.listen(port, () => {
   console.log('Server running on port', port);
+  
+  // Initialize cron jobs for daily quest generation and token refill
+  startJobs();
 });
