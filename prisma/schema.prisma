@@ -13,20 +13,20 @@ enum Role {
 }
 
 model User {
-  id         String   @id @default(cuid())
-  UserName   String   @unique
-  email      String   @unique
-  password   String? // nullable for OAuth users
-  provider   String? // e.g., "github", "google"
-  providerId String? // provider-specific user ID
+  id             String   @id @default(cuid())
+  UserName       String   @unique
+  email          String   @unique
+  password       String? // nullable for OAuth users
+  provider       String? // e.g., "github", "google"
+  providerId     String? // provider-specific user ID
   profilePicture String? // path to profile picture
-  xp         Int      @default(0)
-  level      Int      @default(1)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  categoryId String?
-  isVerified Boolean  @default(false)
-  isAdmin    Boolean  @default(false)
+  xp             Int      @default(0)
+  level          Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  categoryId     String?
+  isVerified     Boolean  @default(false)
+  isAdmin        Boolean  @default(false)
 
   isBanned Boolean   @default(false)
   banUntil DateTime?
@@ -78,42 +78,42 @@ model Otp {
 }
 
 model Community {
-  id          String            @id @default(cuid())
-  name        String            @unique
+  id          String   @id @default(cuid())
+  name        String   @unique
   description String?
   photo       String? // path to community photo
-  isPrivate   Boolean           @default(false)
-  memberLimit Int               @default(100)
-  createdAt   DateTime          @default(now())
+  isPrivate   Boolean  @default(false)
+  memberLimit Int      @default(100)
+  createdAt   DateTime @default(now())
   ownerId     String
   categoryId  String?
-  updatedAt   DateTime          @updatedAt
-  clans       Clan[]
-  category    Category?         @relation(fields: [categoryId], references: [id])
-  owner       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  members     CommunityMember[]
+  updatedAt   DateTime @updatedAt
+
+  clans    Clan[]
+  category Category?         @relation(fields: [categoryId], references: [id])
+  owner    User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members  CommunityMember[]
 }
 
 model Clan {
-  id             String            @id @default(cuid())
-  name           String            @unique
-  slug           String?           @unique              // URL-friendly version of name
-  isPrivate      Boolean           @default(false)
-  xp             Int               @default(0)
+  id             String   @id @default(cuid())
+  name           String   @unique
+  slug           String?  @unique // URL-friendly version of name
+  isPrivate      Boolean  @default(false)
+  xp             Int      @default(0)
   description    String?
   ownerId        String
   communityId    String
-  limit          Int               @default(50)
-  welcomeMessage String?          
-  stats          Json?            
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  limit          Int      @default(50)
+  welcomeMessage String?
+  stats          Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  community      Community         @relation(fields: [communityId], references: [id])
-  owner          User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  members        CommunityMember[]
+  community Community         @relation(fields: [communityId], references: [id])
+  owner     User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members   CommunityMember[]
 }
-
 
 model CommunityMember {
   id          String       @id @default(cuid())
@@ -125,6 +125,7 @@ model CommunityMember {
   clanId      String?
   level       Int          @default(1)
   status      MemberStatus @default(Beginner)
+  isPinned    Boolean      @default(false)
 
   clan      Clan?     @relation(fields: [clanId], references: [id])
   community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
