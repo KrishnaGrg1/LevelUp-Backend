@@ -842,13 +842,13 @@ const toggleMultipleCommunityPin = async (req: AuthRequest, res: Response) => {
         return member;
       })
     );
-
+    const updatedMembers = updates.map((u) => ({
+      communityId: u.communityId,
+      isPinned: u.isPinned,
+    }));
     res.status(200).json({
       message: 'Updated pinned communities successfully',
-      updatedMembers: updates.map((u) => ({
-        communityId: u.communityId,
-        isPinned: u.isPinned,
-      })),
+      data: updatedMembers,
     });
   } catch (err) {
     console.error('Toggle pin error:', err);
