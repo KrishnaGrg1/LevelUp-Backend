@@ -7,6 +7,7 @@ import {
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { Language } from '../translation/translation';
 import { findUser } from '../helpers/auth/userHelper';
+import { startOfMonth, startOfDay, startOfWeek, format } from 'date-fns';
 
 const updateUserDetails = async (req: AuthRequest, res: Response) => {
   try {
@@ -43,15 +44,83 @@ const updateUserDetails = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const deleteUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const userId = req.body.id;
+
+    const user = await client.user.findUnique({
+      where: { id: userId },
+    });
+
+    const deleteUser = await client.user.delete({
+      where: { id: userId },
+    });
+
+    res
+      .status(200)
+      .json(makeSuccessResponse(user, 'success.admin.deleted_user', lang, 200));
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Update user details failed'),
+          'error.admin.update_user_details_failed',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const getOverview = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const userId = req.user?.id;
+    const user = await findUser(userId as string, res, lang);
+    if (!user) return; // If user not found, findUser already sent the response
+    const [totalUsers, verifiedUsers, adminUsers] = await Promise.all([
+      client.user.count(),
+      client.user.count({ where: { isVerified: true } }),
+      client.user.count({ where: { isAdmin: true } }),
+    ]);
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { totalUsers, verifiedUsers, adminUsers },
+          'success.admin.get_overview',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to get overview'),
+          'error.admin.failed_to_get_overview',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const viewUserDetail = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
 
-    const adminId = req.user?.id; //from session
-
     const userId = req.params.id; //from params -- this is user(costumer)
 
     const user = await findUser(userId, res, lang);
+    if (!user) return; // If user not found, findUser already sent the response
+
     res
       .status(200)
       .json(
@@ -74,8 +143,8 @@ const viewUserDetail = async (req: AuthRequest, res: Response) => {
 
 const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const user=req.user
-    
+    const user = req.user;
+
     const lang = (req.language as Language) || 'eng';
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 10;
@@ -236,7 +305,6 @@ const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
 //   }
 // };
 
-
 const updateCommunityDetails = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
@@ -258,18 +326,23 @@ const updateCommunityDetails = async (req: AuthRequest, res: Response) => {
       );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    res.status(500).json(
-      makeErrorResponse(
-        e instanceof Error ? e : new Error('Update community failed'),
-        'error.admin.update_community_failed',
-        lang,
-        500
-      )
-    );
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Update community failed'),
+          'error.admin.update_community_failed',
+          lang,
+          500
+        )
+      );
   }
 };
 
-const getAllCommunities = async (req: AuthRequest, res: Response): Promise<void> => {
+const getAllCommunities = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
   try {
     const lang = (req.language as Language) || 'eng';
     const page = parseInt(req.query.page as string) || 1;
@@ -283,8 +356,7 @@ const getAllCommunities = async (req: AuthRequest, res: Response): Promise<void>
       }),
       client.community.count(),
     ]);
-    res.status(200)
-    .json(
+    res.status(200).json(
       makeSuccessResponse(
         {
           communities,
@@ -302,23 +374,153 @@ const getAllCommunities = async (req: AuthRequest, res: Response): Promise<void>
     );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    res.status(500).json(
-      makeErrorResponse(
-        e instanceof Error ? e : new Error('Get all communities failed'),
-        'error.admin.get_all_communities_failed',
-        lang,
-        500
-      )
-    );
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Get all communities failed'),
+          'error.admin.get_all_communities_failed',
+          lang,
+          500
+        )
+      );
   }
 };
 
+const getUserGrowth = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    const range = (req.query.range as string) || 'day';
+    //  Define time window
+    const now = new Date();
+    let startDate: Date;
+
+    switch (range) {
+      case 'day':
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 30
+        );
+        break;
+      case 'week':
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 90
+        );
+        break;
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+    }
+
+    //  Fetch users created after that date
+    const users = await client.user.findMany({
+      where: {
+        createdAt: {
+          gte: startDate,
+        },
+      },
+      select: {
+        createdAt: true,
+      },
+    });
+
+    // Group by the selected range using JS (safe, since dataset is smaller)
+    const growthMap: Record<string, number> = {};
+
+    for (const user of users) {
+      let key: string;
+      const date = new Date(user.createdAt);
+
+      if (range === 'day') {
+        key = format(startOfDay(date), 'yyyy-MM-dd');
+      } else if (range === 'week') {
+        key = format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd'); // Monday start
+      } else {
+        key = format(startOfMonth(date), 'yyyy-MM');
+      }
+
+      growthMap[key] = (growthMap[key] || 0) + 1;
+    }
+
+    //  Convert map to sorted array
+    const growthData = Object.entries(growthMap)
+      .sort(([a], [b]) => (a > b ? 1 : -1))
+      .map(([period, count]) => ({ period, count }));
+
+    //  Return the analytics data
+    res.status(200).json(
+      makeSuccessResponse(
+        {
+          range,
+          totalNewUsers: users.length,
+          growth: growthData,
+        },
+        'success.admin.user_growth_fetched',
+        lang,
+        200
+      )
+    );
+  } catch (e) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Failed to fetch user growth'),
+          'error.admin.user_growth_failed',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const updateTicket = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const lang = req.language as Language;
+    const ticketId = req.params.id;
+    const { status, priority, expectedDateOfCompletion } = req.body;
+    const updatedTicket = await client.ticket.update({
+      where: { id: ticketId },
+      data: { status, priority, expectedDateOfCompletion },
+    });
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          updatedTicket,
+          'success.admin.updated_ticket',
+          lang,
+          200
+        )
+      );
+    return;
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Update ticket failed'),
+          'error.admin.update_ticket_failed',
+          lang,
+          500
+        )
+      );
+  }
+};
 const adminController = {
   updateUserDetails,
   viewUserDetail,
   getAllUsers,
   updateCommunityDetails,
   getAllCommunities,
+  deleteUser,
+  getOverview,
+  getUserGrowth,
+  updateTicket,
   // banUser,
   // unbanUser,
   // deletePost,

@@ -40,6 +40,20 @@
     "failed_to_get_clans": "获取氏族失败。请再试一次。",
     "failed_to_get_clan_info": "获取氏族信息失败。请再试一次。",
     "failed_to_get_clan_members": "获取氏族成员失败。请再试一次。",
-    "failed_to_get_user_clans": "获取用户氏族失败。请再试一次。"
+    "failed_to_get_user_clans": "获取用户氏族失败。请再试一次。",
+    "user_not_found": "系统中未找到用户"
+  },
+  "ticket": {
+    "failed_to_create": "创建工单失败。请再试一次。",
+    "failed_to_get_ticket": "检索工单失败",
+    "failed_to_get_all": "检索工单失败",
+    "not_found": "未找到工单",
+    "forbidden": "您无权访问此工单"
+  },
+  "upload": {
+    "no_file": "未上传文件",
+    "failed_to_upload": "文件上传失败。请再试一次。",
+    "invalid_file_type": "无效的文件类型。仅允许图像。",
+    "file_too_large": "文件大小过大"
   }
 }

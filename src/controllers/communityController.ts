@@ -8,8 +8,9 @@ import { AuthRequest } from '../middlewares/authMiddleware';
 import { Language } from '../translation/translation';
 import { findUser } from '../helpers/auth/userHelper';
 import authorizeAdmin from '../helpers/auth/adminHelper';
+import { deleteFile, extractPublicId } from '../helpers/multer';
 
-const createCommunity = async (req: AuthRequest, res: Response) => {
+const myCommunities = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
 
@@ -22,7 +23,71 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
     const user = await findUser(userId as string, res, lang);
     if (!user) return;
 
-    const { communityName, memberLimit, isPrivate } = req.body;
+    const communities = await client.communityMember.findMany({
+      where: { userId: user.id },
+      include: {
+        community: {
+          include: {
+            _count: {
+              select: { members: true },
+            },
+          },
+        },
+      },
+      orderBy: [
+        { isPinned: 'desc' }, // ✅ isPinned is directly on CommunityMember
+        { joinedAt: 'desc' },
+      ],
+    });
+
+    const formattedCommunities = communities.map((member) => ({
+      id: member.community.id,
+      name: member.community.name,
+      description: member.community.description,
+      currentMembers: member.community._count.members, // Prisma count
+      maxMembers: member.community.memberLimit,
+      visibility: member.community.isPrivate ? 'private' : 'public',
+      userRole: member.role,
+      isPinned: member.isPinned,
+    }));
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          formattedCommunities,
+          'success.community.fetched',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to join community'),
+          'error.community.failed_to_join_community',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const createCommunity = async (req: AuthRequest, res: Response) => {
+  const { communityName, memberLimit, isPrivate, description } = req.body;
+  const lang = req.language as Language;
+
+  const userId = req.user?.id; //from session -- logged in user
+  console.log('User ID IS', userId);
+  try {
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const user = await findUser(userId as string, res, lang);
+    if (!user) return;
 
     const communityExists = await client.community.findUnique({
       // check if community name already exists
@@ -41,13 +106,22 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
           )
         );
     }
+
+    // Get photo URL from uploaded file if available (Cloudinary)
+    const cloudinaryFile = req.file as any;
+    const photoPath = cloudinaryFile
+      ? cloudinaryFile.path || cloudinaryFile.url
+      : undefined;
+
     // create community
     const community = await client.community.create({
       data: {
         name: communityName,
+        description: description || '',
         ownerId: userId,
         memberLimit: memberLimit || 100,
         isPrivate: isPrivate,
+        photo: photoPath,
         members: {
           create: [
             {
@@ -80,10 +154,10 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
 };
 
 const joinCommunity = async (req: AuthRequest, res: Response) => {
+  const communityId = req.params.communityId;
+  const lang = req.language as Language;
+  const userId = req.user?.id; //from session -- logged in user
   try {
-    const lang = req.language as Language;
-
-    const userId = req.user?.id; //from session -- logged in user
     console.log('User ID IS', userId);
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -92,11 +166,9 @@ const joinCommunity = async (req: AuthRequest, res: Response) => {
     const user = await findUser(userId as string, res, lang);
     if (!user) return;
 
-    const { communityName } = req.body;
-
     const community = await client.community.findUnique({
       // check if community name  exists
-      where: { name: communityName },
+      where: { id: communityId },
       include: { members: true },
     });
 
@@ -170,42 +242,62 @@ const joinCommunity = async (req: AuthRequest, res: Response) => {
   }
 };
 
-const myCommunities = async (req: AuthRequest, res: Response) => {
+const leaveCommunity = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
+    const userId = req.user?.id;
+    const communityId = req.params.communityId;
 
-    const userId = req.user?.id; //from session -- logged in user
-    console.log('User ID IS', userId);
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+    const member = await client.communityMember.findFirst({
+      where: { userId, communityId },
+    });
+
+    if (!member) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('User not in community'),
+            'error.community.not_a_member',
+            lang,
+            404
+          )
+        );
     }
 
-    const user = await findUser(userId as string, res, lang);
-    if (!user) return;
-
-    const communities = await client.communityMember.findMany({
-      where: { userId: user.id },
-      include: { community: true },
+    // Check if user is the community owner
+    const community = await client.community.findUnique({
+      where: { id: communityId },
     });
-    const userCommunities = communities.map((cm) => cm.community);
-    res
-      .status(200)
-      .json(
-        makeSuccessResponse(
-          userCommunities,
-          'success.community.fetched',
-          lang,
-          200
-        )
-      );
-  } catch (e: unknown) {
+
+    if (community?.ownerId === userId) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error(
+              'Owner cannot leave their own community unless they transfer ownership'
+            ),
+            'error.community.owner_cannot_leave',
+            lang,
+            400
+          )
+        );
+    }
+
+    await client.communityMember.delete({ where: { id: member.id } });
+
+    res.json(makeSuccessResponse(null, 'success.community.left', lang, 200));
+  } catch (e) {
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
       .json(
         makeErrorResponse(
-          new Error('Failed to join community'),
-          'error.community.failed_to_join_community',
+          new Error('Failed to leave community'),
+          'error.community.failed_to_leave',
           lang,
           500
         )
@@ -213,10 +305,661 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const transferOwnership = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const userId = req.user?.id;
+    const communityId = req.params.communityId;
+    const { newOwnerId } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Find the community
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+      include: { members: true },
+    });
+
+    if (!community) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.community.not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    // Check if the logged-in user is the owner
+    if (community.ownerId !== userId) {
+      return res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Not authorized to transfer ownership'),
+            'error.community.not_owner',
+            lang,
+            403
+          )
+        );
+    }
+
+    // Check if the target user is a member of the community
+    const isMember = community.members.some((m) => m.userId === newOwnerId);
+    if (!isMember) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('New owner must be a member of the community'),
+            'error.community.new_owner_not_member',
+            lang,
+            400
+          )
+        );
+    }
+
+    // Perform ownership transfer
+    const updatedCommunity = await client.community.update({
+      where: { id: communityId },
+      data: { ownerId: newOwnerId },
+    });
+
+    // promote new owner to ADMIN role
+    await client.communityMember.updateMany({
+      where: { communityId, userId: newOwnerId },
+      data: { role: 'ADMIN' },
+    });
+
+    // Demote current owner to MEMBER role
+    await client.communityMember.updateMany({
+      where: { communityId, userId },
+      data: { role: 'MEMBER' },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          updatedCommunity,
+          'success.community.ownership_transferred',
+          lang,
+          200
+        )
+      );
+  } catch (e) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to transfer ownership'),
+          'error.community.failed_to_transfer_ownership',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const updateCommunity = async (req: AuthRequest, res: Response) => {
+  const lang = req.language as Language;
+  const { communityId, name, memberLimit, description, isPrivate } = req.body;
+  const userId = req.user?.id;
+  try {
+    // Check ownership
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+    });
+    if (community?.ownerId !== userId) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('User is not the owner of the community'),
+            'error.auth.not_owner',
+            lang,
+            400
+          )
+        );
+      return;
+    }
+
+    const updated = await client.community.update({
+      where: { id: communityId },
+      data: { name, description, memberLimit, isPrivate },
+    });
+
+    res.json(
+      makeSuccessResponse(updated, 'success.community.updated', lang, 200)
+    );
+    return;
+  } catch (e) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to update community'),
+          'error.community.failed_to_update',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const removeMember = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const userId = req.user?.id;
+    const { communityId, memberId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Find the community
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+      include: {
+        members: true,
+      },
+    });
+
+    if (!community) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.community.not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    // Check if current user is ADMIN or OWNER in that community
+    const requesterMembership = community.members.find(
+      (m) => m.userId === userId
+    );
+
+    if (
+      !requesterMembership ||
+      (requesterMembership.role !== 'ADMIN' && community.ownerId !== userId)
+    ) {
+      return res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Not authorized to remove members'),
+            'error.community.not_authorized',
+            lang,
+            403
+          )
+        );
+    }
+
+    // Prevent owner from being removed
+    if (memberId === community.ownerId) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Cannot remove the community owner'),
+            'error.community.cannot_remove_owner',
+            lang,
+            400
+          )
+        );
+    }
+
+    // Check if the target user is a member
+    const member = community.members.find((m) => m.userId === memberId);
+    if (!member) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('User not found in community'),
+            'error.community.member_not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    // Remove member
+    await client.communityMember.delete({
+      where: { id: member.id },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(null, 'success.community.member_removed', lang, 200)
+      );
+  } catch (e) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to remove member'),
+          'error.community.failed_to_remove_member',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const changeMemberRole = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const userId = req.user?.id;
+    const { communityId, memberId } = req.params;
+    const { role } = req.body; // expected: 'ADMIN' | 'MEMBER'
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Validate role
+    if (!['ADMIN', 'MEMBER'].includes(role)) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Invalid role'),
+            'error.community.invalid_role',
+            lang,
+            400
+          )
+        );
+    }
+
+    // Find the community
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+      include: { members: true },
+    });
+
+    if (!community) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.community.not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    // Check if current user is owner or admin
+    const requesterMembership = community.members.find(
+      (m) => m.userId === userId
+    );
+
+    if (
+      !requesterMembership ||
+      (requesterMembership.role !== 'ADMIN' && community.ownerId !== userId)
+    ) {
+      return res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Not authorized to change roles'),
+            'error.community.not_authorized',
+            lang,
+            403
+          )
+        );
+    }
+
+    // Prevent changing owner's role
+    if (memberId === community.ownerId) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Cannot change owner role'),
+            'error.community.cannot_change_owner_role',
+            lang,
+            400
+          )
+        );
+    }
+
+    // Check if target user exists in the community
+    const member = community.members.find((m) => m.userId === memberId);
+    if (!member) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Member not found'),
+            'error.community.member_not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    // Update member role
+    const updatedMember = await client.communityMember.update({
+      where: { id: member.id },
+      data: { role },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          updatedMember,
+          'success.community.role_changed',
+          lang,
+          200
+        )
+      );
+  } catch (e) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to change member role'),
+          'error.community.failed_to_change_role',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
+  const lang = (req.language as Language) || 'eng';
+  const communityId = req.params.communityId;
+
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
+    }
+
+    if (!req.file) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('No file uploaded'),
+            'error.upload.no_file',
+            lang,
+            400
+          )
+        );
+    }
+
+    const user = await findUser(userId as string, res, lang);
+    if (!user) return;
+
+    // Check if community exists and user is owner or admin
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+      include: {
+        members: true,
+      },
+    });
+
+    if (!community) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.community.community_not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    // Check if user is owner or admin of the community
+    const member = community.members.find((m) => m.userId === user.id);
+    if (!member || (member.role !== 'ADMIN' && community.ownerId !== user.id)) {
+      return res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Only community owner or admin can upload photo'),
+            'error.community.not_authorized',
+            lang,
+            403
+          )
+        );
+    }
+
+    // Delete old photo if it exists (from Cloudinary)
+    if (community.photo) {
+      const publicId = extractPublicId(community.photo);
+      if (publicId) {
+        await deleteFile(publicId);
+      }
+    }
+
+    // Get Cloudinary URL from uploaded file
+    const cloudinaryFile = req.file as any;
+    const photoUrl = cloudinaryFile.path || cloudinaryFile.url;
+
+    if (!photoUrl) {
+      return res
+        .status(500)
+        .json(
+          makeErrorResponse(
+            new Error('Failed to get Cloudinary URL'),
+            'error.upload.failed_to_upload',
+            lang,
+            500
+          )
+        );
+    }
+
+    // Update community with new photo URL (Cloudinary)
+    const updatedCommunity = await client.community.update({
+      where: { id: communityId },
+      data: {
+        photo: photoUrl,
+      },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { photo: updatedCommunity.photo },
+          'success.upload.community_photo_uploaded',
+          lang,
+          200
+        )
+      );
+  } catch (error) {
+    console.error('Error uploading community photo:', error);
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to upload community photo'),
+          'error.upload.failed_to_upload',
+          lang,
+          500
+        )
+      );
+  }
+};
+const toggleMultipleCommunityPin = async (req: AuthRequest, res: Response) => {
+  const { communityIds } = req.body; // array of IDs to pin
+  const userId = req.user?.id;
+
+  if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+
+  if (!Array.isArray(communityIds))
+    return res.status(400).json({ message: 'communityIds must be an array' });
+
+  try {
+    // Get all the user's communities
+    const userMemberships = await client.communityMember.findMany({
+      where: { userId },
+      select: { id: true, communityId: true, isPinned: true },
+    });
+
+    const updates = await Promise.all(
+      userMemberships.map(async (member) => {
+        const shouldBePinned = communityIds.includes(member.communityId);
+        if (member.isPinned !== shouldBePinned) {
+          return client.communityMember.update({
+            where: { id: member.id },
+            data: { isPinned: shouldBePinned },
+          });
+        }
+        return member;
+      })
+    );
+    const updatedMembers = updates.map((u) => ({
+      communityId: u.communityId,
+      isPinned: u.isPinned,
+    }));
+    res.status(200).json({
+      message: 'Updated pinned communities successfully',
+      data: updatedMembers,
+    });
+  } catch (err) {
+    console.error('Toggle pin error:', err);
+    res.status(500).json({
+      message: 'Failed to update pinned communities',
+      error: err,
+    });
+  }
+};
+
+// //pin the community
+// const pinCommunity = async (req: AuthRequest, res: Response) => {
+//   try {
+//     const userId = req.user?.id;
+//     const { id: communityId } = req.params;
+//     const lang = req.language as Language;
+
+//     if (!userId) {
+//       return res.status(401).json({ error: 'Not authenticated' });
+//     }
+
+//     // Update the CommunityMember record for this user and community
+//     const updated = await client.communityMember.updateMany({
+//       where: {
+//         userId: userId,
+//         communityId: communityId,
+//       },
+//       data: { isPinned: true },
+//     });
+
+//     if (updated.count === 0) {
+//       return res.status(404).json({
+//         error: 'Community membership not found',
+//       });
+//     }
+
+//     res
+//       .status(200)
+//       .json(
+//         makeSuccessResponse(updated, 'success.community.pinned', lang, 200)
+//       );
+//   } catch (e: unknown) {
+//     const lang = (req.language as Language) || 'eng';
+//     return res
+//       .status(500)
+//       .json(
+//         makeErrorResponse(
+//           new Error('Failed to pin community'),
+//           'error.community.failed_to_pin',
+//           lang,
+//           500
+//         )
+//       );
+//   }
+// };
+
+// // Unpin the communnity
+// const unpinCommunity = async (req: AuthRequest, res: Response) => {
+//   try {
+//     const userId = req.user?.id;
+//     const { id: communityId } = req.params;
+//     const lang = req.language as Language;
+
+//     if (!userId) {
+//       return res.status(401).json({ error: 'Not authenticated' });
+//     }
+
+//     const updated = await client.communityMember.updateMany({
+//       where: {
+//         userId: userId,
+//         communityId: communityId,
+//       },
+//       data: { isPinned: false },
+//     });
+
+//     if (updated.count === 0) {
+//       return res.status(404).json({
+//         error: 'Community membership not found',
+//       });
+//     }
+
+//     return res.json({
+//       message: 'Community unpinned successfully',
+//     });
+//   } catch (e: unknown) {
+//     const lang = (req.language as Language) || 'eng';
+//     return res
+//       .status(500)
+//       .json(
+//         makeErrorResponse(
+//           new Error('Failed to unpin community'),
+//           'error.community.failed_to_unpin',
+//           lang,
+//           500
+//         )
+//       );
+//   }
+// };
+
 const communityController = {
   createCommunity,
   joinCommunity,
   myCommunities,
+  leaveCommunity,
+  transferOwnership,
+  updateCommunity,
+  removeMember,
+  changeMemberRole,
+  uploadCommunityPhoto,
+  toggleMultipleCommunityPin,
+  // unpinCommunity,
 };
 
 export default communityController;

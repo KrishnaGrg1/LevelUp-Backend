@@ -30,5 +30,16 @@
     "info_retrieved": "クラン情報の取得に成功しました",
     "members_retrieved": "クランメンバーの取得に成功しました",
     "user_clans_retrieved": "ユーザーのクラン取得に成功しました"
+  },
+  "ticket": {
+    "create": "チケットの作成に成功しました",
+    "fetch": "チケットの取得に成功しました",
+    "fetch_all": "すべてのチケットの取得に成功しました",
+    "update": "チケットの更新に成功しました",
+    "delete": "チケットの削除に成功しました"
+  },
+  "upload": {
+    "profile_picture_uploaded": "プロフィール画像のアップロードに成功しました",
+    "community_photo_uploaded": "コミュニティ写真のアップロードに成功しました"
   }
 }

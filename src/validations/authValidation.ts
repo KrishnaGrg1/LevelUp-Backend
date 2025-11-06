@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { verify } from 'jsonwebtoken';
 
 const authValidation = {
   register: {
@@ -58,6 +59,20 @@ const authValidation = {
         'number.empty': 'OTP is required',
         'number.min': 'OTP must be a 6-digit number',
         'number.max': 'OTP must be a 6-digit number',
+      }),
+    }),
+  },
+  verify_email: {
+    body: Joi.object().keys({
+      userId: Joi.string().required().messages({
+        'string.empty': 'User ID is required',
+        'any.required': 'User ID is required',
+      }),
+      otp: Joi.string().min(6).max(6).required().messages({
+        'string.base': 'OTP must be a string',
+        'string.empty': 'OTP is required',
+        'string.min': 'OTP must be a 6-digit number',
+        'string.max': 'OTP must be a 6-digit number',
       }),
     }),
   },
