@@ -8,7 +8,8 @@
     "verify": "Email verified successfully",
     "email_verified": "Email verified successfully",
     "user_retrieved": "User retrieved successfully",
-    "retrieved_all_users": "All users retrieved successfully"
+    "retrieved_all_users": "All users retrieved successfully",
+    "change_password": "Password changed successfully"
   },
   "admin": {
     "updated_details": "User details updated successfully",

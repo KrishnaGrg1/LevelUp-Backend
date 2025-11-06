@@ -50,23 +50,23 @@ const register = async (
       if (user.isVerified === false) {
         await client.otp.deleteMany({ where: { userId: user.id } });
 
-        const otp = await sendEmailToken(
-          email,
-          email,
-          EmailTopic.VerifyEmail,
-          user.id
-        );
-        console.log('OTP sent:', otp);
-        const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
+          const otp = await sendEmailToken(
+            email,
+            email,
+            EmailTopic.VerifyEmail,
+            user.id
+          );
+          console.log('OTP sent:', otp);
+          const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
 
-        //create new otp
-        await client.otp.create({
-          data: {
-            otp_code: hashedOTP,
-            userId: user.id,
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
-          },
-        });
+          //create new otp
+          await client.otp.create({
+            data: {
+              otp_code: hashedOTP,
+              userId: user.id,
+              expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
+            },
+          });
 
         res.status(200).json(
           makeSuccessResponse(user, 'success.auth.otp_resent', lang, 200, {
@@ -838,6 +838,199 @@ const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
+  const lang = (req.language as Language) || 'eng';
+  
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json(
+        makeErrorResponse(
+          new Error('Not authenticated'),
+          'error.auth.not_authenticated',
+          lang,
+          401
+        )
+      );
+    }
+
+    if (!req.file) {
+      return res.status(400).json(
+        makeErrorResponse(
+          new Error('No file uploaded'),
+          'error.upload.no_file',
+          lang,
+          400
+        )
+      );
+    }
+
+    console.log('Uploaded file details:', JSON.stringify(req.file, null, 2));
+
+    const user = await client.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json(
+        makeErrorResponse(
+          new Error('User not found'),
+          'error.auth.user_not_found',
+          lang,
+          404
+        )
+      );
+    }
+
+    // Delete old profile picture from Cloudinary if it exists
+    if (user.profilePicture) {
+      const publicId = extractPublicId(user.profilePicture);
+      if (publicId) {
+        await deleteFile(publicId);
+      }
+    }
+
+    // Get Cloudinary URL from uploaded file
+    const cloudinaryFile = req.file as any;
+    const profilePictureUrl = cloudinaryFile.path || cloudinaryFile.url;
+
+    if (!profilePictureUrl) {
+      return res.status(500).json(
+        makeErrorResponse(
+          new Error('Failed to get Cloudinary URL'),
+          'error.upload.failed_to_upload',
+          lang,
+          500
+        )
+      );
+    }
+
+    // Update user with new profile picture URL from Cloudinary
+    const updatedUser = await client.user.update({
+      where: { id: userId },
+      data: {
+        profilePicture: profilePictureUrl, // Cloudinary URL
+      },
+    });
+
+    res.status(200).json(
+      makeSuccessResponse(
+        { profilePicture: updatedUser.profilePicture },
+        'success.upload.profile_picture_uploaded',
+        lang,
+        200
+      )
+    );
+  } catch (error) {
+    console.error('Error uploading profile picture:', error);
+    const lang = (req.language as Language) || 'eng';
+    res.status(500).json(
+      makeErrorResponse(
+        new Error('Failed to upload profile picture'),
+        'error.upload.failed_to_upload',
+        lang,
+        500
+      )
+    );
+  }
+};
+
+const changePassword = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  const { confirmNewPassword, currentPassword, newPassword } = req.body;
+
+  const userId = req.user?.id;
+  console.log('User id:', userId);
+  const lang = (req.language as Language) || 'eng';
+  try {
+    await client.$transaction(async (tx: any) => {
+      // Find user
+      const existingUser = await tx.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!existingUser) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('User not found'),
+              'error.auth.user_not_found',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
+
+      if (newPassword !== confirmNewPassword) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('New password and confirm password do not match'),
+              'error.auth.passwords_do_not_match',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
+
+      // Verify current password
+      const isCurrentPasswordValid = await bcrypt.compare(
+        currentPassword,
+        existingUser.password
+      );
+      if (!isCurrentPasswordValid) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('Current password is incorrect'),
+              'error.auth.incorrect_current_password',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Only updates
+      await client.$transaction([
+        client.user.update({
+          where: { id: userId },
+          data: { password: hashedPassword },
+        }),
+      ]);
+
+      res
+        .status(200)
+        .json(
+          makeSuccessResponse(null, 'success.auth.change_password', lang, 200)
+        );
+      return;
+    });
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Unexpected error'),
+          'error.auth.unexpected',
+          lang,
+          500
+        )
+      );
+    return;
+  }
+};
+
 const authController = {
   register,
   login,
@@ -848,6 +1041,7 @@ const authController = {
   logout,
   deleteAccount,
   uploadProfilePicture,
+  changePassword,
 };
 
 export default authController;

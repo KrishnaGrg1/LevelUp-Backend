@@ -44,4 +44,11 @@ authRoutes.post(
 );
 
 authRoutes.post('/oauth/register', oauthController.oauthLogin);
+
+authRoutes.post(
+  '/change-password',
+  validate(authValidation.change_password),
+  authMiddleware,
+  authController.changePassword
+);
 export default authRoutes;
