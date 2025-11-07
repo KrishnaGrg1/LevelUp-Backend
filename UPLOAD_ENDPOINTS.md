@@ -5,10 +5,12 @@ This document describes the file upload endpoints for profile pictures and commu
 ## Setup
 
 The application uses `multer` with `multer-storage-cloudinary` for handling file uploads. Files are stored on Cloudinary cloud storage:
+
 - Profile pictures: Stored in `levelup/profiles/` folder with 500x500px transformation
 - Community photos: Stored in `levelup/communities/` folder with 1200x630px transformation
 
 ### Environment Variables Required:
+
 ```env
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
@@ -26,9 +28,11 @@ CLOUDINARY_API_SECRET=your_api_secret
 **Content-Type:** `multipart/form-data`
 
 **Request Body:**
+
 - `profilePicture` (file): The image file to upload
 
 **Accepted File Types:**
+
 - JPEG (.jpeg, .jpg)
 - PNG (.png)
 - GIF (.gif)
@@ -39,6 +43,7 @@ CLOUDINARY_API_SECRET=your_api_secret
 **Image Transformation:** Automatically resized to 500x500px
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -50,12 +55,14 @@ CLOUDINARY_API_SECRET=your_api_secret
 ```
 
 **Error Responses:**
+
 - `401 Unauthorized`: User not authenticated
 - `400 Bad Request`: No file uploaded or invalid file type
 - `404 Not Found`: User not found
 - `500 Internal Server Error`: Failed to upload
 
 **Example cURL:**
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/auth/upload-profile-picture \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -63,6 +70,7 @@ curl -X POST http://localhost:3000/api/v1/auth/upload-profile-picture \
 ```
 
 **Notes:**
+
 - Old profile pictures are automatically deleted from Cloudinary when uploading a new one
 - Images are stored with optimized format and quality
 
@@ -77,12 +85,14 @@ curl -X POST http://localhost:3000/api/v1/auth/upload-profile-picture \
 **Content-Type:** `multipart/form-data`
 
 **Request Body:**
+
 - `communityName` (string, required): Name of the community
 - `memberLimit` (number, optional): Maximum number of members (default: 100)
 - `isPrivate` (boolean, optional): Whether the community is private (default: false)
 - `photo` (file, optional): Community photo
 
 **Accepted File Types:**
+
 - JPEG (.jpeg, .jpg)
 - PNG (.png)
 - GIF (.gif)
@@ -93,6 +103,7 @@ curl -X POST http://localhost:3000/api/v1/auth/upload-profile-picture \
 **Image Transformation:** Automatically resized to 1200x630px
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -113,11 +124,13 @@ curl -X POST http://localhost:3000/api/v1/auth/upload-profile-picture \
 ```
 
 **Error Responses:**
+
 - `401 Unauthorized`: User not authenticated
 - `400 Bad Request`: Community name already exists or invalid file type
 - `500 Internal Server Error`: Failed to create community
 
 **Example cURL:**
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/community/create \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -138,12 +151,15 @@ curl -X POST http://localhost:3000/api/v1/community/create \
 **Content-Type:** `multipart/form-data`
 
 **URL Parameters:**
+
 - `communityId` (string, required): ID of the community
 
 **Request Body:**
+
 - `photo` (file, required): Community photo to upload
 
 **Accepted File Types:**
+
 - JPEG (.jpeg, .jpg)
 - PNG (.png)
 - GIF (.gif)
@@ -154,6 +170,7 @@ curl -X POST http://localhost:3000/api/v1/community/create \
 **Image Transformation:** Automatically resized to 1200x630px
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
@@ -165,6 +182,7 @@ curl -X POST http://localhost:3000/api/v1/community/create \
 ```
 
 **Error Responses:**
+
 - `401 Unauthorized`: User not authenticated
 - `400 Bad Request`: No file uploaded or invalid file type
 - `403 Forbidden`: User is not owner or admin of the community
@@ -172,6 +190,7 @@ curl -X POST http://localhost:3000/api/v1/community/create \
 - `500 Internal Server Error`: Failed to upload
 
 **Example cURL:**
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/community/COMMUNITY_ID/upload-photo \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -179,6 +198,7 @@ curl -X POST http://localhost:3000/api/v1/community/COMMUNITY_ID/upload-photo \
 ```
 
 **Notes:**
+
 - Old community photos are automatically deleted from Cloudinary when uploading a new one
 - Only community owners and admins can upload photos
 
@@ -189,6 +209,7 @@ curl -X POST http://localhost:3000/api/v1/community/COMMUNITY_ID/upload-photo \
 All files are stored on **Cloudinary** cloud storage:
 
 ### Folder Structure
+
 ```
 levelup/
 ├── profiles/      (Profile pictures - 500x500px)
@@ -196,11 +217,13 @@ levelup/
 ```
 
 ### File Naming Convention
+
 Files are automatically named with timestamps and unique identifiers by Cloudinary.
 
 ## Accessing Uploaded Files
 
 Uploaded files are accessible via Cloudinary CDN URLs:
+
 ```
 https://res.cloudinary.com/{cloud_name}/image/upload/v{version}/levelup/profiles/{filename}
 https://res.cloudinary.com/{cloud_name}/image/upload/v{version}/levelup/communities/{filename}
@@ -216,14 +239,14 @@ These URLs are automatically returned in API responses and stored in the databas
    - File type (only images: JPEG, PNG, GIF, WebP)
    - File size (5MB for profiles, 10MB for communities)
 
-3. **Image Transformations**: 
+3. **Image Transformations**:
    - Profile pictures: Automatically resized to 500x500px
    - Community photos: Automatically resized to 1200x630px
    - Format optimization handled by Cloudinary
 
 4. **CDN Delivery**: Images are served via Cloudinary's global CDN for fast loading worldwide.
 
-5. **Security**: 
+5. **Security**:
    - All upload endpoints require valid authentication tokens
    - Cloudinary credentials stored in environment variables
    - Old images automatically cleaned up to save storage
@@ -241,6 +264,7 @@ These URLs are automatically returned in API responses and stored in the databas
 ## Database Schema Changes
 
 ### User Model
+
 ```prisma
 model User {
   // ... other fields
@@ -250,6 +274,7 @@ model User {
 ```
 
 ### Community Model
+
 ```prisma
 model Community {
   // ... other fields

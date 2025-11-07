@@ -50,23 +50,23 @@ const register = async (
       if (user.isVerified === false) {
         await client.otp.deleteMany({ where: { userId: user.id } });
 
-          const otp = await sendEmailToken(
-            email,
-            email,
-            EmailTopic.VerifyEmail,
-            user.id
-          );
-          console.log('OTP sent:', otp);
-          const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
+        const otp = await sendEmailToken(
+          email,
+          email,
+          EmailTopic.VerifyEmail,
+          user.id
+        );
+        console.log('OTP sent:', otp);
+        const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
 
-          //create new otp
-          await client.otp.create({
-            data: {
-              otp_code: hashedOTP,
-              userId: user.id,
-              expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
-            },
-          });
+        //create new otp
+        await client.otp.create({
+          data: {
+            otp_code: hashedOTP,
+            userId: user.id,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
+          },
+        });
 
         res.status(200).json(
           makeSuccessResponse(user, 'success.auth.otp_resent', lang, 200, {
@@ -741,32 +741,35 @@ const deleteAccount = async (
   }
 };
 
-
 const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
   const lang = (req.language as Language) || 'eng';
-  
+
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json(
-        makeErrorResponse(
-          new Error('Not authenticated'),
-          'error.auth.not_authenticated',
-          lang,
-          401
-        )
-      );
+      return res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
     }
 
     if (!req.file) {
-      return res.status(400).json(
-        makeErrorResponse(
-          new Error('No file uploaded'),
-          'error.upload.no_file',
-          lang,
-          400
-        )
-      );
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('No file uploaded'),
+            'error.upload.no_file',
+            lang,
+            400
+          )
+        );
     }
 
     console.log('Uploaded file details:', JSON.stringify(req.file, null, 2));
@@ -776,14 +779,16 @@ const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
     });
 
     if (!user) {
-      return res.status(404).json(
-        makeErrorResponse(
-          new Error('User not found'),
-          'error.auth.user_not_found',
-          lang,
-          404
-        )
-      );
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('User not found'),
+            'error.auth.user_not_found',
+            lang,
+            404
+          )
+        );
     }
 
     // Delete old profile picture from Cloudinary if it exists
@@ -799,14 +804,16 @@ const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
     const profilePictureUrl = cloudinaryFile.path || cloudinaryFile.url;
 
     if (!profilePictureUrl) {
-      return res.status(500).json(
-        makeErrorResponse(
-          new Error('Failed to get Cloudinary URL'),
-          'error.upload.failed_to_upload',
-          lang,
-          500
-        )
-      );
+      return res
+        .status(500)
+        .json(
+          makeErrorResponse(
+            new Error('Failed to get Cloudinary URL'),
+            'error.upload.failed_to_upload',
+            lang,
+            500
+          )
+        );
     }
 
     // Update user with new profile picture URL from Cloudinary
@@ -817,25 +824,29 @@ const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    res.status(200).json(
-      makeSuccessResponse(
-        { profilePicture: updatedUser.profilePicture },
-        'success.upload.profile_picture_uploaded',
-        lang,
-        200
-      )
-    );
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { profilePicture: updatedUser.profilePicture },
+          'success.upload.profile_picture_uploaded',
+          lang,
+          200
+        )
+      );
   } catch (error) {
     console.error('Error uploading profile picture:', error);
     const lang = (req.language as Language) || 'eng';
-    res.status(500).json(
-      makeErrorResponse(
-        new Error('Failed to upload profile picture'),
-        'error.upload.failed_to_upload',
-        lang,
-        500
-      )
-    );
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to upload profile picture'),
+          'error.upload.failed_to_upload',
+          lang,
+          500
+        )
+      );
   }
 };
 
