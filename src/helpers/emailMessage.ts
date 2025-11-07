@@ -19,7 +19,7 @@ const message = (topic: EmailTopic): string => {
     case EmailTopic.ForgotPassword:
       return 'You requested to reset your password. Use the token below to complete the process:';
     case EmailTopic.VerifyEmail:
-      return 'Thank you for signing up! Please use the token below to verify your email address:';
+      return 'Thank you for signing up! Please click the button below to verify your email address:';
     default:
       return '';
   }
@@ -118,9 +118,7 @@ const html = ({ token, topic, username, userId }: HtmlProps): string => {
                
                
                 
-                <p style="margin-top:20px;">⚠️ Do not share this code with anyone.</p>
-                <p style="margin-top:20px;">  Otherwise Click this button</p>
-        
+                       
                  <div style="margin:30px 0; text-align:center;">
                     ${verifyEmailButton(topic, token, userId)}
                     
