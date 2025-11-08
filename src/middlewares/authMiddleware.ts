@@ -23,12 +23,15 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ) => {
-  console.log('Cookies:', req.headers.cookie);
+  console.log('🔍 Auth Debug:');
+  console.log('- Cookies:', req.headers.cookie);
+  console.log('- Origin:', req.headers.origin);
+  console.log('- NODE_ENV:', process.env.NODE_ENV);
 
   // Try session-based auth first (Lucia)
   const sessionId = lucia.readSessionCookie(req.headers.cookie ?? '');
   const lang = req.language as Language;
-  console.log('Session ID from cookie:', sessionId);
+  console.log('- Session ID from cookie:', sessionId);
   if (sessionId) {
     try {
       const { session, user } = await lucia.validateSession(sessionId);
