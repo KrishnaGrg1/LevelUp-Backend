@@ -14,8 +14,9 @@ const corsOptions = {
     // Allow requests from these origins
     const allowedOrigins = [
       'http://localhost:3000',
-      'https://melevelup.me', // Add your production domain
+      'https://www.melevelup.me', // ✅ Added www subdomain
       process.env.NEXT_PUBLIC_APP_URL,
+      process.env.FRONTEND_URL,
     ].filter(Boolean);
 
     // Allow requests with no origin (like mobile apps, Postman, curl)
