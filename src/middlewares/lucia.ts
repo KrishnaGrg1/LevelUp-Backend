@@ -22,8 +22,9 @@ export const lucia = new Lucia(adapter, {
   sessionCookie: {
     name: 'auth-session', // optional: cookie name
     attributes: {
-      secure: env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: env.NODE_ENV === 'production', // true in production (HTTPS required)
+      sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-origin in production
+      domain: env.NODE_ENV === 'production' ? '.melevelup.me' : undefined, // Share cookie across subdomains
     },
   },
   getUserAttributes: (attributes) => ({

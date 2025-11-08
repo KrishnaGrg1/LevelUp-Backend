@@ -10,17 +10,20 @@ const port = env.PORT;
 
 // CORS configuration
 const corsOptions = {
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  origin: (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void
+  ) => {
     // Allow requests from these origins
     const allowedOrigins = [
       'http://localhost:3000',
-      'https://melevelup.me', // Add your production domain
+      'https://www.melevelup.me', // ✅ Added www subdomain
       process.env.NEXT_PUBLIC_APP_URL,
     ].filter(Boolean);
 
     // Allow requests with no origin (like mobile apps, Postman, curl)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -30,7 +33,12 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-language', 'X-Requested-With'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'x-language',
+    'X-Requested-With',
+  ],
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
   maxAge: 600, // Cache preflight requests for 10 minutes
 };
@@ -38,10 +46,12 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Security headers - Configure helmet to work with CORS
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
-}));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  })
+);
 
 // Request logging middleware
 app.use((req, res, next) => {
