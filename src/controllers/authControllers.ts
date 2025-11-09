@@ -251,12 +251,6 @@ const verifyEmail = async (
       res.status(200).json(
         makeSuccessResponse(
           {
-            id: user.id,
-            UserName: user.UserName,
-            email: user.email,
-            isVerified: true,
-            xp: user.xp,
-            level: user.level,
             isAdmin: user.isAdmin,
             expiredAt: session.expiresAt,
           },
