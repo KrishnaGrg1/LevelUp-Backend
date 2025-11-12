@@ -17,8 +17,15 @@ communityRoutes.post(
 //  Get my communities
 communityRoutes.get(
   '/my',
-  validate(communityValidation.joinCommunity),
+
   communityController.myCommunities
+);
+
+//  Search communities
+communityRoutes.get(
+  '/search',
+
+  communityController.searchCommunities
 );
 
 //  Join a community
