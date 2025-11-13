@@ -208,7 +208,21 @@ const verifyEmail = async (
           );
         return;
       }
-      const validOTP = await bcrypt.compare(otp.toString(), otpDoc.otp_code);
+      const providedOtp = otp?.toString().trim();
+      if (!providedOtp) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('OTP required'),
+              'error.auth.invalid_otp',
+              lang,
+              400
+            )
+          );
+        return;
+      }
+      const validOTP = await bcrypt.compare(providedOtp, otpDoc.otp_code);
       if (!validOTP) {
         res
           .status(400)
@@ -237,12 +251,6 @@ const verifyEmail = async (
       res.status(200).json(
         makeSuccessResponse(
           {
-            id: user.id,
-            UserName: user.UserName,
-            email: user.email,
-            isVerified: true,
-            xp: user.xp,
-            level: user.level,
             isAdmin: user.isAdmin,
             expiredAt: session.expiresAt,
           },
@@ -542,15 +550,43 @@ const resetPassword = async (
         return;
       }
 
-      // Find OTP
-      const existingOtp = await tx.otp.findFirst({
-        where: {
-          userId,
-          otp_code: otp,
-        },
+      // Fetch latest OTP and compare hashed value (otp_code is a hashed string)
+      const latestOtp = await tx.otp.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
       });
 
-      if (!existingOtp) {
+      if (!latestOtp) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('Invalid OTP'),
+              'error.auth.invalid_otp',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
+
+      const providedOtp = otp?.toString().trim();
+      if (!providedOtp) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('OTP required'),
+              'error.auth.invalid_otp',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
+
+      const otpValid = await bcrypt.compare(providedOtp, latestOtp.otp_code);
+      if (!otpValid) {
         res
           .status(400)
           .json(
@@ -567,15 +603,12 @@ const resetPassword = async (
       // Hash the new password
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      // ✅ Only updates are atomic
-      await client.$transaction([
-        client.user.update({
-          where: { id: userId },
-          data: { password: hashedPassword },
-        }),
-        client.otp.delete({ where: { id: existingOtp.id } }),
-      ]);
-      await client.otp.delete({ where: { id: existingOtp.id } });
+      // Update password & delete OTP inside the same ongoing transaction
+      await tx.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
+      });
+      await tx.otp.delete({ where: { id: latestOtp.id } });
       res
         .status(200)
         .json(

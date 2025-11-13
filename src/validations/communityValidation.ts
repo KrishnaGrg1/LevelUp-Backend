@@ -22,13 +22,35 @@ const communityValidation = {
       }),
     }),
   },
+  getAllCommunities: {
+    query: Joi.object().keys({
+      page: Joi.number().integer().min(1).optional().messages({
+        'number.base': 'Page must be a number',
+        'number.min': 'Page must be at least 1',
+      }),
+      limit: Joi.number().integer().min(1).max(100).optional().messages({
+        'number.base': 'Limit must be a number',
+        'number.min': 'Limit must be at least 1',
+        'number.max': 'Limit cannot exceed 100',
+      }),
+      q: Joi.string().max(200).optional().messages({
+        'string.max': 'Search query must not exceed 200 characters',
+      }),
+    }),
+  },
 
   joinCommunity: {
-    body: Joi.object().keys({
-      communityName: Joi.string().min(3).max(150).required().messages({
-        'string.empty': 'Community Name is required',
-        'string.min': 'Username must contain altleast 3 characters long',
-        'string.max': 'Username mustnot exceed 150 characters long',
+    params: Joi.object().keys({
+      // communityName: Joi.string().min(3).max(150).required().messages({
+      //   'string.empty': 'Community Name is required',
+      //   'string.min': 'Username must contain altleast 3 characters long',
+      //   'string.max': 'Username mustnot exceed 150 characters long',
+      // }),
+
+      communityId: Joi.string().min(3).max(150).required().messages({
+        'string.empty': 'Community ID is required',
+        'string.min': 'Community ID must contain at least 3 characters long',
+        'string.max': 'Community ID must not exceed 150 characters long',
       }),
     }),
   },

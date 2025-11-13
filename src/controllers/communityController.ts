@@ -10,6 +10,106 @@ import { findUser } from '../helpers/auth/userHelper';
 import authorizeAdmin from '../helpers/auth/adminHelper';
 import { deleteFile, extractPublicId } from '../helpers/multer';
 
+// Get all communities
+export const getAllCommunities = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const userId = req.user?.id || undefined;
+
+    // Optional query params: pagination and search
+    const queryParams = req.query || {};
+   const page = Number(queryParams.page) || 1;   // default to 1
+const limit = Number(queryParams.limit) || 20; // default to 20
+// sanitize limits
+const safePage = Math.max(page, 1);
+const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const q = typeof queryParams.q === 'string' ? queryParams.q.trim() : undefined;
+
+    const where: any = q
+      ? {
+          OR: [
+            { name: { contains: q, mode: 'insensitive' } },
+            { description: { contains: q, mode: 'insensitive' } },
+          ],
+        }
+      : {};
+
+    // Build include shape dynamically to add user membership info when logged in
+    const include: any = {
+      _count: { select: { members: true } },
+    };
+    if (userId) {
+      include.members = {
+        where: { userId },
+        select: { role: true },
+      };
+    }
+
+    const [total, communities] = await Promise.all([
+      client.community.count({ where }),
+      client.community.findMany({
+        where,
+        include,
+        orderBy: { createdAt: 'desc' },
+        skip: (safePage - 1) * safeLimit,
+        take: safeLimit,
+      }),
+    ]);
+
+    const formattedCommunities = communities.map((community: any) => {
+      const membership = userId && Array.isArray(community.members)
+        ? community.members[0] || null
+        : null;
+
+      return {
+        id: community.id,
+        name: community.name,
+        description: community.description,
+        photo: community.photo || null,
+        ownerId: community.ownerId,
+        categoryId: community.categoryId || null,
+        createdAt: community.createdAt,
+        updatedAt: community.updatedAt,
+        currentMembers: community._count?.members ?? 0,
+        maxMembers: community.memberLimit,
+        visibility: community.isPrivate ? 'private' : 'public',
+        ...(userId
+          ? {
+              isMember: Boolean(membership),
+              userRole: membership?.role || null,
+              isPinned: membership?.isPinned ?? false,
+            }
+          : {}),
+      };
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          formattedCommunities,
+          'success.community.fetched',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    console.error('Error in getAllCommunities:', e);
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to fetch communities'),
+          'error.community.failed_to_fetch_communities',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+
 const myCommunities = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
@@ -59,6 +159,56 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
           lang,
           200
         )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to join community'),
+          'error.community.failed_to_join_community',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const searchCommunities = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const q = req.query.q;
+
+    const userId = req.user?.id; //from session -- logged in user
+    console.log('User ID IS', userId);
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const user = await findUser(userId as string, res, lang);
+    if (!user) return;
+
+    const communities = await client.community.findMany({
+      where: {
+        name: {
+          contains: q as string,
+          mode: 'insensitive',
+        },
+      },
+      include: {
+        _count: {
+          select: { members: true },
+        },
+      },
+
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(communities, 'success.community.fetched', lang, 200)
       );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
@@ -952,6 +1102,7 @@ const communityController = {
   createCommunity,
   joinCommunity,
   myCommunities,
+  getAllCommunities,
   leaveCommunity,
   transferOwnership,
   updateCommunity,
@@ -960,6 +1111,7 @@ const communityController = {
   uploadCommunityPhoto,
   toggleMultipleCommunityPin,
   // unpinCommunity,
+  searchCommunities,
 };
 
 export default communityController;

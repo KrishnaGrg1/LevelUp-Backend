@@ -14,11 +14,26 @@ communityRoutes.post(
   validate(communityValidation.createCommunity),
   communityController.createCommunity
 );
+
+//Get all communities
+communityRoutes.get(
+  '/',
+  validate(communityValidation.getAllCommunities),
+  communityController.getAllCommunities
+);
+
 //  Get my communities
 communityRoutes.get(
   '/my',
-  validate(communityValidation.joinCommunity),
+
   communityController.myCommunities
+);
+
+//  Search communities
+communityRoutes.get(
+  '/search',
+
+  communityController.searchCommunities
 );
 
 //  Join a community
