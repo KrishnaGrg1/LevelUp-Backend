@@ -40,11 +40,17 @@ const communityValidation = {
   },
 
   joinCommunity: {
-    body: Joi.object().keys({
-      communityName: Joi.string().min(3).max(150).required().messages({
-        'string.empty': 'Community Name is required',
-        'string.min': 'Username must contain altleast 3 characters long',
-        'string.max': 'Username mustnot exceed 150 characters long',
+    params: Joi.object().keys({
+      // communityName: Joi.string().min(3).max(150).required().messages({
+      //   'string.empty': 'Community Name is required',
+      //   'string.min': 'Username must contain altleast 3 characters long',
+      //   'string.max': 'Username mustnot exceed 150 characters long',
+      // }),
+
+      communityId: Joi.string().min(3).max(150).required().messages({
+        'string.empty': 'Community ID is required',
+        'string.min': 'Community ID must contain at least 3 characters long',
+        'string.max': 'Community ID must not exceed 150 characters long',
       }),
     }),
   },

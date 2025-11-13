@@ -175,6 +175,56 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const searchCommunities = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const q = req.query.q;
+
+    const userId = req.user?.id; //from session -- logged in user
+    console.log('User ID IS', userId);
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const user = await findUser(userId as string, res, lang);
+    if (!user) return;
+
+    const communities = await client.community.findMany({
+      where: {
+        name: {
+          contains: q as string,
+          mode: 'insensitive',
+        },
+      },
+      include: {
+        _count: {
+          select: { members: true },
+        },
+      },
+
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(communities, 'success.community.fetched', lang, 200)
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to join community'),
+          'error.community.failed_to_join_community',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const createCommunity = async (req: AuthRequest, res: Response) => {
   const { communityName, memberLimit, isPrivate, description } = req.body;
   const lang = req.language as Language;
@@ -1061,6 +1111,7 @@ const communityController = {
   uploadCommunityPhoto,
   toggleMultipleCommunityPin,
   // unpinCommunity,
+  searchCommunities,
 };
 
 export default communityController;
