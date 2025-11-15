@@ -30,16 +30,17 @@ const validate = (validateSchema: IvalidatonSchema = {}) => {
         req.params = validateResult;
       }
       if (query) {
-        const validateResult = await query.validateAsync(req.query, {
+        // Validate query but don't try to reassign - just validate it exists and is correct
+        await query.validateAsync(req.query, {
           abortEarly: true,
         });
-        req.query = validateResult;
+        // Don't reassign: req.query is read-only in newer Express versions
       }
       if (headers) {
         const validateResult = await headers.validateAsync(req.headers, {
           abortEarly: true,
         });
-        req.headers = validateResult;
+        req.headers = validateResult as any;
       }
       next();
     } catch (e) {

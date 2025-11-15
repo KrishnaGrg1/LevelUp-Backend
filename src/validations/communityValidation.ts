@@ -22,6 +22,22 @@ const communityValidation = {
       }),
     }),
   },
+  getAllCommunities: {
+    query: Joi.object().keys({
+      page: Joi.number().integer().min(1).optional().messages({
+        'number.base': 'Page must be a number',
+        'number.min': 'Page must be at least 1',
+      }),
+      limit: Joi.number().integer().min(1).max(100).optional().messages({
+        'number.base': 'Limit must be a number',
+        'number.min': 'Limit must be at least 1',
+        'number.max': 'Limit cannot exceed 100',
+      }),
+      q: Joi.string().max(200).optional().messages({
+        'string.max': 'Search query must not exceed 200 characters',
+      }),
+    }),
+  },
 
   joinCommunity: {
     params: Joi.object().keys({

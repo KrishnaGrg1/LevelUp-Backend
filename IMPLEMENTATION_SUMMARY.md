@@ -1,11 +1,13 @@
 # File Upload Implementation Summary
 
 ## Overview
+
 Implemented file upload functionality for user profile pictures and community photos using Multer with Cloudinary cloud storage.
 
 ## Files Created
 
 ### 1. `src/helpers/multer.ts`
+
 - Multer configuration with `multer-storage-cloudinary` for cloud storage
 - Separate storage configurations for profile pictures and community photos
 - **Profile storage:** Uploads to `levelup/profiles/` folder with 500x500px transformation
@@ -17,22 +19,26 @@ Implemented file upload functionality for user profile pictures and community ph
   - `extractPublicId(url)`: Extracts public_id from Cloudinary URLs for deletion
 
 ### 2. `src/helpers/cloudinary.ts`
+
 - Cloudinary v2 configuration
 - Uses environment variables: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
 
 ## Files Modified
 
 ### 1. `prisma/schema.prisma`
+
 - Added `profilePicture String?` field to User model (stores Cloudinary URL)
 - Added `photo String?` field to Community model (stores Cloudinary URL)
 
 ### 2. `src/controllers/authControllers.ts`
+
 - Added `uploadProfilePicture` function to handle profile picture uploads
 - Deletes old profile picture from Cloudinary when new one is uploaded
 - Uses `extractPublicId()` to parse public_id from stored URL
 - Returns the Cloudinary URL path
 
 ### 3. `src/controllers/communityController.ts`
+
 - Modified `createCommunity` function to accept optional photo upload
 - Photo URL from Cloudinary is saved to the database if provided
 - Added `uploadCommunityPhoto` function to handle community photo uploads
@@ -41,24 +47,29 @@ Implemented file upload functionality for user profile pictures and community ph
 - Uses `extractPublicId()` to parse public_id from stored URL
 
 ### 4. `src/routes/authRoutes.ts`
+
 - Added POST `/upload-profile-picture` route
 - Uses `authMiddleware` for authentication
 - Uses `uploadProfilePicture.single('profilePicture')` middleware
 
 ### 5. `src/routes/communityRoutes.ts`
+
 - Modified POST `/create` route to include photo upload
 - Added `uploadCommunityPhoto.single('photo')` middleware before validation
 - Added POST `/:communityId/upload-photo` route for updating community photos
 - Upload photo route checks for owner/admin permissions
 
 ### 6. `src/index.ts`
+
 - Removed local static file serving (no longer needed with Cloudinary)
 - Files are now served via Cloudinary CDN URLs
 
 ### 7. `.gitignore`
+
 - Added `uploads/` directory (though no longer actively used)
 
 ### 8. `package.json` (via pnpm install)
+
 - Added `multer` dependency
 - Added `@types/multer` dev dependency
 - Added `multer-storage-cloudinary` dependency
@@ -67,6 +78,7 @@ Implemented file upload functionality for user profile pictures and community ph
 ## Documentation Files
 
 ### 1. `UPLOAD_ENDPOINTS.md`
+
 - Complete API documentation for both upload endpoints
 - Updated with Cloudinary URLs and transformations
 - Examples using cURL
@@ -75,6 +87,7 @@ Implemented file upload functionality for user profile pictures and community ph
 - Environment variable setup instructions
 
 ### 2. Bruno API Files
+
 - `LevelUp-Api/Auth/Upload Profile Picture.bru`
 - `LevelUp-Api/Community/Create Community with Photo.bru`
 - `LevelUp-Api/Community/Upload Community Photo.bru`
@@ -83,6 +96,7 @@ Implemented file upload functionality for user profile pictures and community ph
 ## Database Changes
 
 Pushed schema changes to database using `pnpm db:push`:
+
 - Added `profilePicture` column to `User` table (stores Cloudinary URL)
 - Added `photo` column to `Community` table (stores Cloudinary URL)
 
@@ -103,18 +117,21 @@ Cloudinary (levelup/):
 ## API Endpoints
 
 ### 1. Upload Profile Picture
+
 - **Endpoint:** POST `/api/v1/auth/upload-profile-picture`
 - **Auth:** Required
 - **Body:** multipart/form-data with `profilePicture` field
 - **Response:** Returns Cloudinary URL
 
 ### 2. Create Community (with photo)
+
 - **Endpoint:** POST `/api/v1/community/create`
 - **Auth:** Required (via validation)
 - **Body:** multipart/form-data with optional `photo` field
 - **Response:** Returns created community with Cloudinary photo URL
 
 ### 3. Upload Community Photo
+
 - **Endpoint:** POST `/api/v1/community/:communityId/upload-photo`
 - **Auth:** Required (must be owner or admin)
 - **Body:** multipart/form-data with `photo` field

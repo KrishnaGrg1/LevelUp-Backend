@@ -208,7 +208,21 @@ const verifyEmail = async (
           );
         return;
       }
-      const validOTP = await bcrypt.compare(otp.toString(), otpDoc.otp_code);
+      const providedOtp = otp?.toString().trim();
+      if (!providedOtp) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('OTP required'),
+              'error.auth.invalid_otp',
+              lang,
+              400
+            )
+          );
+        return;
+      }
+      const validOTP = await bcrypt.compare(providedOtp, otpDoc.otp_code);
       if (!validOTP) {
         res
           .status(400)
@@ -237,12 +251,6 @@ const verifyEmail = async (
       res.status(200).json(
         makeSuccessResponse(
           {
-            id: user.id,
-            UserName: user.UserName,
-            email: user.email,
-            isVerified: true,
-            xp: user.xp,
-            level: user.level,
             isAdmin: user.isAdmin,
             expiredAt: session.expiresAt,
           },
@@ -542,15 +550,43 @@ const resetPassword = async (
         return;
       }
 
-      // Find OTP
-      const existingOtp = await tx.otp.findFirst({
-        where: {
-          userId,
-          otp_code: otp,
-        },
+      // Fetch latest OTP and compare hashed value (otp_code is a hashed string)
+      const latestOtp = await tx.otp.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
       });
 
-      if (!existingOtp) {
+      if (!latestOtp) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('Invalid OTP'),
+              'error.auth.invalid_otp',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
+
+      const providedOtp = otp?.toString().trim();
+      if (!providedOtp) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('OTP required'),
+              'error.auth.invalid_otp',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
+
+      const otpValid = await bcrypt.compare(providedOtp, latestOtp.otp_code);
+      if (!otpValid) {
         res
           .status(400)
           .json(
@@ -567,15 +603,12 @@ const resetPassword = async (
       // Hash the new password
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      // ✅ Only updates are atomic
-      await client.$transaction([
-        client.user.update({
-          where: { id: userId },
-          data: { password: hashedPassword },
-        }),
-        client.otp.delete({ where: { id: existingOtp.id } }),
-      ]);
-      await client.otp.delete({ where: { id: existingOtp.id } });
+      // Update password & delete OTP inside the same ongoing transaction
+      await tx.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
+      });
+      await tx.otp.delete({ where: { id: latestOtp.id } });
       res
         .status(200)
         .json(
@@ -743,29 +776,33 @@ const deleteAccount = async (
 
 const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
   const lang = (req.language as Language) || 'eng';
-  
+
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json(
-        makeErrorResponse(
-          new Error('Not authenticated'),
-          'error.auth.not_authenticated',
-          lang,
-          401
-        )
-      );
+      return res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
     }
 
     if (!req.file) {
-      return res.status(400).json(
-        makeErrorResponse(
-          new Error('No file uploaded'),
-          'error.upload.no_file',
-          lang,
-          400
-        )
-      );
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('No file uploaded'),
+            'error.upload.no_file',
+            lang,
+            400
+          )
+        );
     }
 
     console.log('Uploaded file details:', JSON.stringify(req.file, null, 2));
@@ -775,14 +812,16 @@ const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
     });
 
     if (!user) {
-      return res.status(404).json(
-        makeErrorResponse(
-          new Error('User not found'),
-          'error.auth.user_not_found',
-          lang,
-          404
-        )
-      );
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('User not found'),
+            'error.auth.user_not_found',
+            lang,
+            404
+          )
+        );
     }
 
     // Delete old profile picture from Cloudinary if it exists
@@ -798,14 +837,16 @@ const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
     const profilePictureUrl = cloudinaryFile.path || cloudinaryFile.url;
 
     if (!profilePictureUrl) {
-      return res.status(500).json(
-        makeErrorResponse(
-          new Error('Failed to get Cloudinary URL'),
-          'error.upload.failed_to_upload',
-          lang,
-          500
-        )
-      );
+      return res
+        .status(500)
+        .json(
+          makeErrorResponse(
+            new Error('Failed to get Cloudinary URL'),
+            'error.upload.failed_to_upload',
+            lang,
+            500
+          )
+        );
     }
 
     // Update user with new profile picture URL from Cloudinary
@@ -816,25 +857,125 @@ const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    res.status(200).json(
-      makeSuccessResponse(
-        { profilePicture: updatedUser.profilePicture },
-        'success.upload.profile_picture_uploaded',
-        lang,
-        200
-      )
-    );
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { profilePicture: updatedUser.profilePicture },
+          'success.upload.profile_picture_uploaded',
+          lang,
+          200
+        )
+      );
   } catch (error) {
     console.error('Error uploading profile picture:', error);
     const lang = (req.language as Language) || 'eng';
-    res.status(500).json(
-      makeErrorResponse(
-        new Error('Failed to upload profile picture'),
-        'error.upload.failed_to_upload',
-        lang,
-        500
-      )
-    );
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to upload profile picture'),
+          'error.upload.failed_to_upload',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const changePassword = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  const { confirmNewPassword, currentPassword, newPassword } = req.body;
+
+  const userId = req.user?.id;
+  console.log('User id:', userId);
+  const lang = (req.language as Language) || 'eng';
+  try {
+    await client.$transaction(async (tx: any) => {
+      // Find user
+      const existingUser = await tx.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!existingUser) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('User not found'),
+              'error.auth.user_not_found',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
+
+      if (newPassword !== confirmNewPassword) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('New password and confirm password do not match'),
+              'error.auth.passwords_do_not_match',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
+
+      // Verify current password
+      const isCurrentPasswordValid = await bcrypt.compare(
+        currentPassword,
+        existingUser.password
+      );
+      if (!isCurrentPasswordValid) {
+        res
+          .status(400)
+          .json(
+            makeErrorResponse(
+              new Error('Current password is incorrect'),
+              'error.auth.incorrect_current_password',
+              req.language as Language,
+              400
+            )
+          );
+        return;
+      }
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Only updates
+      await client.$transaction([
+        client.user.update({
+          where: { id: userId },
+          data: { password: hashedPassword },
+        }),
+      ]);
+
+      res
+        .status(200)
+        .json(
+          makeSuccessResponse(null, 'success.auth.change_password', lang, 200)
+        );
+      return;
+    });
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Unexpected error'),
+          'error.auth.unexpected',
+          lang,
+          500
+        )
+      );
+    return;
   }
 };
 
@@ -848,6 +989,7 @@ const authController = {
   logout,
   deleteAccount,
   uploadProfilePicture,
+  changePassword,
 };
 
 export default authController;

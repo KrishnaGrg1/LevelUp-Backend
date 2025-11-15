@@ -2,16 +2,17 @@ import nodemailer from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport'; // 👈 add this
 import env from './config';
 import html, { EmailTopic } from './emailMessage';
-
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: Number(env.SMTP_PORT),
-  secure: Number(env.SMTP_PORT) === 465,
-  auth: {
-    user: env.SMTP_USER,
-    pass: env.SMTP_PASS,
-  },
-} as SMTPTransport.Options);
+import { Resend } from 'resend';
+// const transporter = nodemailer.createTransport({
+//   host: env.SMTP_HOST,
+//   port: Number(env.SMTP_PORT),
+//   secure: Number(env.SMTP_PORT) === 465,
+//   auth: {
+//     user: env.SMTP_USER,
+//     pass: env.SMTP_PASS,
+//   },
+// } as SMTPTransport.Options);
+const resend = new Resend(env.RESEND_API_KEY as string);
 
 function generateToken(): string {
   return (100000 + Math.floor(Math.random() * 900000)).toString();
@@ -22,15 +23,19 @@ async function sendEmail(
   htmlMsg: string
 ): Promise<any> {
   try {
-    const info = await transporter.sendMail({
-      from: `"LevelUp" `,
-      to,
-      subject,
+    console.log('Sending email to:', to);
+    const { data, error } = await resend.emails.send({
+      from: env.RESEND_EMAIL_FROM as string,
+      to: [to],
+      subject: subject,
       html: htmlMsg,
     });
-
-    console.log('Message sent: %s', info.messageId);
-    return info;
+    if (error) {
+      console.error('Resend API error:', error);
+      throw new Error(error.message);
+    }
+    console.log('Message sent: %s', data);
+    return data;
   } catch (error) {
     console.error('Failed to send email:', error);
     throw new Error('Email service failure');
