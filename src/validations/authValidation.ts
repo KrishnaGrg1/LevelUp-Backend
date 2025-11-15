@@ -76,6 +76,25 @@ const authValidation = {
       }),
     }),
   },
+  change_password: {
+    body: Joi.object().keys({
+      currentPassword: Joi.string().min(6).max(50).required().messages({
+        'string.empty': 'Password is required',
+        'string.min': 'Password must be at least 6 characters long',
+        'string.max': 'Password must not exceed 50 characters',
+      }),
+      newPassword: Joi.string().min(6).max(50).required().messages({
+        'string.empty': 'Password is required',
+        'string.min': 'Password must be at least 6 characters long',
+        'string.max': 'Password must not exceed 50 characters',
+      }),
+      confirmNewPassword: Joi.string().min(6).max(50).required().messages({
+        'string.empty': 'Password is required',
+        'string.min': 'Password must be at least 6 characters long',
+        'string.max': 'Password must not exceed 50 characters',
+      }),
+    }),
+  },
 };
 
 export default authValidation;

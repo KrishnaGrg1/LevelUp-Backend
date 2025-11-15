@@ -14,6 +14,14 @@ communityRoutes.post(
   validate(communityValidation.createCommunity),
   communityController.createCommunity
 );
+
+//Get all communities
+communityRoutes.get(
+  '/',
+  validate(communityValidation.getAllCommunities),
+  communityController.getAllCommunities
+);
+
 //  Get my communities
 communityRoutes.get(
   '/my',
