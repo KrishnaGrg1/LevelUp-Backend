@@ -8,7 +8,7 @@ const adminValidation = {
         'string.min': 'UserName must contain altleast 2 characters long',
         'string.max': 'UserName mustnot exceed 150 characters long',
       }),
-      email: Joi.string().email().required().messages({
+      email: Joi.string().email().optional().messages({
         'string.empty': 'Username is required',
         'string.email': 'Username must be valid email address',
       }),
