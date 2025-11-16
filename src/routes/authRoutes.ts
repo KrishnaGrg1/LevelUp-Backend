@@ -4,7 +4,7 @@ import validate from '../middlewares/validation';
 import authValidation from '../validations/authValidation';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import oauthController from '../controllers/oauthController';
-import { uploadProfilePicture } from '../helpers/multer';
+import { uploadProfilePicture } from '../helpers/files/multer';
 
 const authRoutes = Router();
 
