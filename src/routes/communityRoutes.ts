@@ -3,7 +3,7 @@ import communityController from '../controllers/communityController';
 import validate from '../middlewares/validation';
 import communityValidation from '../validations/communityValidation';
 import { checkRole } from '../middlewares/roleMiddleware';
-import { uploadCommunityPhoto } from '../helpers/multer';
+import { uploadCommunityPhoto } from '../helpers/files/multer';
 
 const communityRoutes = Router();
 

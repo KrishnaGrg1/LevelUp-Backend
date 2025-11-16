@@ -12,7 +12,7 @@ import { Language } from '../translation/translation';
 import { EmailTopic } from '../helpers/emailMessage';
 import { lucia } from '../middlewares/lucia';
 import { AuthRequest } from '../middlewares/authMiddleware';
-import { deleteFile, extractPublicId } from '../helpers/multer';
+import { deleteFile, extractPublicId } from '../helpers/files/multer';
 
 const register = async (
   req: TranslationRequest,
