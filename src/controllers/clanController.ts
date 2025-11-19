@@ -132,9 +132,8 @@ const joinClan = async (req: AuthRequest, res: Response) => {
 
     const clan = await client.clan.findUnique({
       where: { id: clanId },
-      include: { 
-        community: true,
-        members: true 
+      include: {
+        _count: { select: { members: true } },
       },
     });
 
@@ -152,7 +151,7 @@ const joinClan = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if clan is full
-    if (clan.members.length >= clan.limit) {
+    if ((clan._count?.members ?? 0) >= clan.limit) {
       return res
         .status(400)
         .json(

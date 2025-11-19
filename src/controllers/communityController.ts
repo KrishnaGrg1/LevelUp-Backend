@@ -358,9 +358,7 @@ const joinCommunity = async (req: AuthRequest, res: Response) => {
     if (!user) return;
 
     const community = await client.community.findUnique({
-      // check if community name  exists
       where: { id: communityId },
-      include: { members: true },
     });
 
     if (!community) {
@@ -377,7 +375,9 @@ const joinCommunity = async (req: AuthRequest, res: Response) => {
     }
 
     //check if a user is already a member of the community
-    const alreadyMember = community.members.some((m) => m.userId === user.id);
+    const alreadyMember = await client.communityMember.findFirst({
+      where: { communityId: community.id, userId: user.id },
+    });
     if (alreadyMember) {
       return res
         .status(400)
@@ -510,7 +510,6 @@ const transferOwnership = async (req: AuthRequest, res: Response) => {
     // Find the community
     const community = await client.community.findUnique({
       where: { id: communityId },
-      include: { members: true },
     });
 
     if (!community) {
@@ -541,7 +540,9 @@ const transferOwnership = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if the target user is a member of the community
-    const isMember = community.members.some((m) => m.userId === newOwnerId);
+    const isMember = await client.communityMember.findFirst({
+      where: { communityId, userId: newOwnerId },
+    });
     if (!isMember) {
       return res
         .status(400)

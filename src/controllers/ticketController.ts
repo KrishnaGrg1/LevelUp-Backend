@@ -18,6 +18,7 @@ const createTicket = async (req: AuthRequest, res: Response): Promise<void> => {
         subject,
         message,
         priority,
+        updatedAt: new Date(),
       },
     });
     res
