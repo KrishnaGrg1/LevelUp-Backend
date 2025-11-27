@@ -46,6 +46,8 @@
     "chat": "AI चैट प्रतिक्रिया उत्पन्न हुई",
     "quests_generated": "क्वेस्ट सफलतापूर्वक जनरेट हुए",
     "no_response": "कोई प्रतिक्रिया नहीं",
-    "fallback_description": "{difficulty} स्तर पर {skill} पर 30 मिनट काम करें।"
+    "fallback_description": "{difficulty} स्तर पर {skill} पर 30 मिनट काम करें।",
+    "health": "AI कॉन्फ़िगर्ड और स्वस्थ है",
+    "config": "AI कॉन्फ़िगरेशन सफलतापूर्वक प्राप्त हुआ"
   }
 }

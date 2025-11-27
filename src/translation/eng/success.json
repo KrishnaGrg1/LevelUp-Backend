@@ -49,6 +49,8 @@
     "chat": "AI chat response generated",
     "quests_generated": "Quests generated successfully",
     "no_response": "No response",
-    "fallback_description": "Work on {skill} at {difficulty} level for 30 minutes."
+    "fallback_description": "Work on {skill} at {difficulty} level for 30 minutes.",
+    "health": "AI is configured and healthy",
+    "config": "AI config fetched successfully"
   }
 }

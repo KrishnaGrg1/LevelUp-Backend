@@ -46,6 +46,8 @@
     "chat": "Respuesta de IA generada",
     "quests_generated": "Misiones generadas exitosamente",
     "no_response": "Sin respuesta",
-    "fallback_description": "Trabaja en {skill} a nivel {difficulty} durante 30 minutos."
+    "fallback_description": "Trabaja en {skill} a nivel {difficulty} durante 30 minutos.",
+    "health": "La IA está configurada y saludable",
+    "config": "Configuración de IA obtenida correctamente"
   }
 }
