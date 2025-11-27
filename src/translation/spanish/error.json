@@ -64,5 +64,12 @@
     "failed_to_upload": "No se pudo subir el archivo. Por favor, intenta de nuevo.",
     "invalid_file_type": "Tipo de archivo no válido. Solo se permiten imágenes.",
     "file_too_large": "El tamaño del archivo es demasiado grande"
+  },
+  "ai": {
+    "prompt_required": "Se requiere un prompt",
+    "not_configured": "La IA no está configurada",
+    "chat_failed": "Falló el chat de IA",
+    "generate_failed": "No se pudieron generar las misiones",
+    "goals_required": "Se requieren objetivos"
   }
 }

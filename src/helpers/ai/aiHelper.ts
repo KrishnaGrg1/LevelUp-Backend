@@ -13,6 +13,13 @@ const openai = new OpenAI({
 
 export default async function OpenAIChat({ prompt }: { prompt: string }) {
   try {
+    const debug = (env.NODE_ENV as string) !== 'production';
+    const started = Date.now();
+    if (debug) {
+      console.debug(
+        `[AI] chat.completions.create → model=${env.MODEL_NAME} promptChars=${prompt?.length ?? 0}`
+      );
+    }
     const completion = await openai.chat.completions.create({
       model: env.MODEL_NAME as string,
       messages: [
@@ -23,13 +30,18 @@ export default async function OpenAIChat({ prompt }: { prompt: string }) {
       ],
     });
 
-    // Log before returning
-    // console.log(completion.choices[0].message);
-
-    // Return the message content directly
-    return completion.choices[0].message;
+    const duration = Date.now() - started;
+    const msg = completion.choices?.[0]?.message;
+    if (debug) {
+      const contentPreview = (msg?.content ?? '').slice(0, 200).replace(/\s+/g, ' ');
+      const usage = (completion as any).usage || {};
+      console.debug(
+        `[AI] response ok in ${duration}ms chars=${(msg?.content ?? '').length} preview="${contentPreview}" tokens=${usage.total_tokens ?? 'n/a'}`
+      );
+    }
+    return msg;
   } catch (error) {
-    console.error("OpenAIChat error:", error);
+    console.error("[AI] OpenAIChat error:", error);
     throw error;
   }
 }

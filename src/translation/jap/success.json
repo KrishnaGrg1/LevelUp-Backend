@@ -41,5 +41,11 @@
   "upload": {
     "profile_picture_uploaded": "プロフィール画像のアップロードに成功しました",
     "community_photo_uploaded": "コミュニティ写真のアップロードに成功しました"
+  },
+  "ai": {
+    "chat": "AI チャットの応答を生成しました",
+    "quests_generated": "クエストを正常に生成しました",
+    "no_response": "応答なし",
+    "fallback_description": "{difficulty} レベルで {skill} を30分取り組みましょう。"
   }
 }

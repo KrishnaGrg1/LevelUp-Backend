@@ -41,5 +41,11 @@
   "upload": {
     "profile_picture_uploaded": "个人资料图片上传成功",
     "community_photo_uploaded": "社区照片上传成功"
+  },
+  "ai": {
+    "chat": "AI 聊天回复已生成",
+    "quests_generated": "任务生成成功",
+    "no_response": "无回复",
+    "fallback_description": "以{difficulty}水平练习 {skill} 30 分钟。"
   }
 }

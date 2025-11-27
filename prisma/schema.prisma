@@ -214,12 +214,14 @@ model Ticket {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// Chat messages per community
 model Message {
-  id          String    @id @default(uuid())
-  community   Community @relation(fields: [communityId], references: [id])
-  communityId String
-  sender      User      @relation("senderMessages", fields: [senderId], references: [id])
-  senderId    String
+  id          String   @id @default(cuid())
   content     String
-  createdAt   DateTime  @default(now())
+  communityId String
+  senderId    String
+  createdAt   DateTime @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  sender    User      @relation("senderMessages", fields: [senderId], references: [id], onDelete: Cascade)
 }

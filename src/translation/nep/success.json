@@ -41,5 +41,11 @@
   "upload": {
     "profile_picture_uploaded": "प्रोफाइल तस्वीर सफलतापूर्वक अपलोड भयो",
     "community_photo_uploaded": "समुदाय फोटो सफलतापूर्वक अपलोड भयो"
+  },
+  "ai": {
+    "chat": "AI च्याट प्रतिक्रिया सिर्जना भयो",
+    "quests_generated": "क्वेस्टहरू सफलतापूर्वक सिर्जना भए",
+    "no_response": "कुनै प्रतिक्रिया छैन",
+    "fallback_description": "{difficulty} तहमा {skill} मा ३० मिनेट काम गर्नुहोस्।"
   }
 }
