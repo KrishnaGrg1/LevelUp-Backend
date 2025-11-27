@@ -6,6 +6,7 @@ import adminRoutes from './adminRoutes';
 import communityRoutes from './communityRoutes';
 import { adminMiddleware } from '../middlewares/adminMiddleware';
 import clanRoutes from './clanRoutes';
+import aiRoutes from './aiRoutes';
 import ticketRoutes from './ticketRoutes';
 import messageRoutes from './messageRoutes';
 
@@ -15,6 +16,7 @@ mainRoutes.use('/auth', authRoutes);
 mainRoutes.use('/admin', authMiddleware, adminMiddleware, adminRoutes);
 mainRoutes.use('/community', authMiddleware, communityRoutes);
 mainRoutes.use('/clan', authMiddleware, clanRoutes);
+mainRoutes.use('/ai', authMiddleware, aiRoutes);
 // mainRoutes.use('/goal', authMiddleware, goalRoute);
 mainRoutes.use('/ticket', authMiddleware, ticketRoutes);
 mainRoutes.use('/community', authMiddleware, messageRoutes);
