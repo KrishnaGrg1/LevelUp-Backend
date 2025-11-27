@@ -22,6 +22,8 @@ model User {
   profilePicture String? // path to profile picture
   xp             Int      @default(0)
   level          Int      @default(1)
+  tokens         Int      @default(50)
+  timezone       String   @default("UTC")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   categoryId     String?
@@ -148,9 +150,14 @@ model Quest {
   communityMemberId String?
   description       String
   source            QuestSource @default(AI)
+  periodStatus      PeriodStatus @default(NONE)
+  periodKey         String?
 
   CommunityMember CommunityMember? @relation(fields: [communityMemberId], references: [id])
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, date])
+  @@unique([userId, type, periodKey])
 }
 
 enum MemberStatus {
@@ -170,6 +177,17 @@ enum QuestSource {
   AI
   TEMPLATE
   MANUAL
+}
+
+// Tracks position of a quest in recent daily/weekly rolls
+enum PeriodStatus {
+  TODAY
+  YESTERDAY
+  DAY_BEFORE_YESTERDAY
+  THIS_WEEK
+  LAST_WEEK
+  TWO_WEEKS_AGO
+  NONE
 }
 
 enum TicketStatus {

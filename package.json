@@ -9,6 +9,8 @@
     "start": "nodemon dist/index.js",
     "start:cron": "nodemon dist/jobs/worker.js",
     "dev:cron": "npm run build && npm run start:cron",
+    "run:daily:now": "npm run build && node dist/jobs/runDailyNow.js",
+    "run:weekly:now": "npm run build && node dist/jobs/runWeeklyNow.js",
     "dev": "npm run build && npm run start",
     "start:dev": "nodemon --watch src --exec \"npm run build && node dist/index.js\"",
     "db:push": "prisma db push",
