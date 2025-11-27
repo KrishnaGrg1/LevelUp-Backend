@@ -36,6 +36,13 @@ communityRoutes.get(
   communityController.searchCommunities
 );
 
+//  Get specific community details
+communityRoutes.get(
+  '/:communityId',
+
+  communityController.specificCommunity
+);
+
 //  Join a community
 communityRoutes.post(
   '/:communityId/join',

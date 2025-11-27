@@ -19,12 +19,13 @@ export const getAllCommunities = async (req: AuthRequest, res: Response) => {
 
     // Optional query params: pagination and search
     const queryParams = req.query || {};
-   const page = Number(queryParams.page) || 1;   // default to 1
-const limit = Number(queryParams.limit) || 20; // default to 20
-// sanitize limits
-const safePage = Math.max(page, 1);
-const safeLimit = Math.min(Math.max(limit, 1), 100);
-    const q = typeof queryParams.q === 'string' ? queryParams.q.trim() : undefined;
+    const page = Number(queryParams.page) || 1; // default to 1
+    const limit = Number(queryParams.limit) || 20; // default to 20
+    // sanitize limits
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const q =
+      typeof queryParams.q === 'string' ? queryParams.q.trim() : undefined;
 
     const where: any = q
       ? {
@@ -58,9 +59,10 @@ const safeLimit = Math.min(Math.max(limit, 1), 100);
     ]);
 
     const formattedCommunities = communities.map((community: any) => {
-      const membership = userId && Array.isArray(community.members)
-        ? community.members[0] || null
-        : null;
+      const membership =
+        userId && Array.isArray(community.members)
+          ? community.members[0] || null
+          : null;
 
       return {
         id: community.id,
@@ -110,7 +112,6 @@ const safeLimit = Math.min(Math.max(limit, 1), 100);
   }
 };
 
-
 const myCommunities = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
@@ -138,10 +139,7 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
             },
           },
         },
-        orderBy: [
-          { isPinned: 'desc' },
-          { joinedAt: 'desc' },
-        ],
+        orderBy: [{ isPinned: 'desc' }, { joinedAt: 'desc' }],
       });
     } catch (err: any) {
       // Fallback in case the DB schema hasn't added `isPinned` yet
@@ -191,6 +189,92 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
           lang,
           200
         )
+      );
+  } catch (e: unknown) {
+    console.error('Error in myCommunities:', e);
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to fetch my communities'),
+          'error.community.failed_to_fetch_my_communities',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const specificCommunity = async (req: AuthRequest, res: Response) => {
+  const lang = req.language as Language;
+
+  const userId = req.user?.id; //from session -- logged in user
+  const communityId = req.params.communityId;
+  console.log('User ID IS', userId);
+
+  try {
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const user = await findUser(userId as string, res, lang);
+    if (!user) return;
+
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        photo: true,
+        isPrivate: true,
+        memberLimit: true,
+        _count: {
+          select: { members: true, clans: true },
+        },
+      },
+    });
+
+    if (!community) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.community.not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    //check membership
+    const membership = await client.communityMember.findUnique({
+      where: {
+        userId_communityId: {
+          userId: user.id,
+          communityId: community.id,
+        },
+      },
+    });
+    if (!membership) {
+      return res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Access Denied: Not a community member'),
+            'error.community.access_denied',
+            lang,
+            403
+          )
+        );
+    }
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(community, 'success.community.fetched', lang, 200)
       );
   } catch (e: unknown) {
     console.error('Error in myCommunities:', e);
@@ -292,9 +376,10 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
 
     // Coerce types from multipart/form-data (strings)
     const memberLimitNum = Number(memberLimit) || 100;
-    const isPrivateBool = typeof isPrivate === 'boolean'
-      ? isPrivate
-      : ['true', '1', 'yes', 'on'].includes(String(isPrivate).toLowerCase());
+    const isPrivateBool =
+      typeof isPrivate === 'boolean'
+        ? isPrivate
+        : ['true', '1', 'yes', 'on'].includes(String(isPrivate).toLowerCase());
     const descriptionStr = typeof description === 'string' ? description : '';
 
     // Get photo URL from uploaded file if available (Cloudinary)
@@ -1154,6 +1239,7 @@ const communityController = {
   toggleMultipleCommunityPin,
   // unpinCommunity,
   searchCommunities,
+  specificCommunity,
 };
 
 export default communityController;
