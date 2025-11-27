@@ -152,12 +152,13 @@ model Quest {
   source            QuestSource @default(AI)
   periodStatus      PeriodStatus @default(NONE)
   periodKey         String?
+  periodSeq         Int          @default(0) // 1..5 for daily/weekly sets
 
   CommunityMember CommunityMember? @relation(fields: [communityMemberId], references: [id])
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, type, date])
-  @@unique([userId, type, periodKey])
+  @@unique([userId, type, periodKey, periodSeq])
 }
 
 enum MemberStatus {

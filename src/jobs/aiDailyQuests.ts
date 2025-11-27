@@ -33,7 +33,7 @@ function getUserLocalComponents(tz: string) {
   return { dateKey, hour: parseInt(hourStr, 10), weekday: weekdayMap[weekdayStr] ?? 0 };
 }
 
-async function generateQuestForUser(userId: string) {
+async function generateQuestForUser(userId: string, force = false) {
   const user = await client.user.findUnique({
     where: { id: userId },
     include: {
@@ -50,15 +50,13 @@ async function generateQuestForUser(userId: string) {
   const tz = (user as any).timezone || 'UTC';
   const { dateKey, hour } = getUserLocalComponents(tz);
 
-  // Only attempt generation around local midnight hour to reduce load
-  if (hour !== 0) return;
+  // Only attempt generation around local midnight hour to reduce load unless forced
+  if (!force && hour !== 0) return;
 
-  // If today's daily already exists for this user (by periodKey), skip
-  const existing = await (client as any).quest.findFirst({
+  // Clear any partial 'today' creations for idempotent replace
+  await (client as any).quest.deleteMany({
     where: { userId: user.id, type: 'Daily', source: 'AI', periodKey: dateKey },
-    select: { id: true },
   });
-  if (existing) return;
 
   const membership = user.CommunityMember?.[0];
   const status: MemberStatus = (membership?.status as MemberStatus) || MemberStatus.Beginner;
@@ -94,79 +92,95 @@ async function generateQuestForUser(userId: string) {
   const progressive = Boolean(currentToday?.isCompleted);
   const effLevel = progressive ? (level + 1) : level;
 
+  const count = 5;
   if (!ensureAIConfigured()) {
-    await (client as any).quest.create({
-      data: {
-        userId: user.id,
-        xpValue: Math.max(10, effLevel * 10),
-        isCompleted: false,
-        date: startOfDay(new Date()),
-        type: QuestType.Daily,
-        description: progressive
-          ? `Level up ${skillName}: attempt a slightly harder 20–40 min task building on yesterday's success.`
-          : `Stay consistent in ${skillName}: repeat a similar 20–40 min task with clear criteria to complete.`,
-        source: QuestSource.AI,
-        periodStatus: 'TODAY',
-        periodKey: dateKey,
-      },
-    });
-    console.log(`[DailyQuest] Fallback quest created for user=${user.id} skill=\"${skillName}\" progressive=${progressive}`);
+    for (let i = 1; i <= count; i++) {
+      await (client as any).quest.create({
+        data: {
+          userId: user.id,
+          xpValue: Math.max(10, effLevel * 10),
+          isCompleted: false,
+          date: startOfDay(new Date()),
+          type: QuestType.Daily,
+          description: progressive
+            ? `(${i}/5) Level up ${skillName}: attempt a slightly harder 20–40 min task building on yesterday's success.`
+            : `(${i}/5) Stay consistent in ${skillName}: repeat a similar 20–40 min task with clear criteria to complete.`,
+          source: QuestSource.AI,
+          periodStatus: 'TODAY',
+          periodKey: dateKey,
+          periodSeq: i,
+        },
+      });
+    }
+    console.log(`[DailyQuest] Fallback ${count} quests created for user=${user.id} skill="${skillName}" progressive=${progressive}`);
     return;
   }
-  const prompt = getDailyQuestPrompt(skillName, effLevel, status, xp);
+  const prompts = Array.from({ length: count }, () => getDailyQuestPrompt(skillName, effLevel, status, xp));
   try {
-    const message = await OpenAIChat({ prompt });
-    const content = message?.content ?? '{}';
-    let description = '';
-    let xpReward = Math.max(10, effLevel * 10);
-    try {
-      const parsed = JSON.parse(content);
-      description = String(parsed.description ?? '');
-      xpReward = Number(parsed.xpReward ?? xpReward);
-    } catch {
-      description = progressive
-        ? `Level up ${skillName}: attempt a slightly harder 20–40 min task building on yesterday's success.`
-        : `Stay consistent in ${skillName}: repeat a similar 20–40 min task with clear criteria to complete.`;
+    const results = await Promise.allSettled(prompts.map((p) => OpenAIChat({ prompt: p })));
+    for (let i = 0; i < count; i++) {
+      const res = results[i];
+      let description = '';
+      let xpReward = Math.max(10, effLevel * 10);
+      if (res.status === 'fulfilled') {
+        const content = res.value?.content ?? '{}';
+        try {
+          const parsed = JSON.parse(content);
+          description = String(parsed.description ?? '');
+          xpReward = Number(parsed.xpReward ?? xpReward);
+        } catch {
+          description = progressive
+            ? `(${i + 1}/5) Level up ${skillName}: attempt a slightly harder 20–40 min task building on yesterday's success.`
+            : `(${i + 1}/5) Stay consistent in ${skillName}: repeat a similar 20–40 min task with clear criteria to complete.`;
+        }
+      } else {
+        description = progressive
+          ? `(${i + 1}/5) Level up ${skillName}: attempt a slightly harder 20–40 min task building on yesterday's success.`
+          : `(${i + 1}/5) Stay consistent in ${skillName}: repeat a similar 20–40 min task with clear criteria to complete.`;
+      }
+      if (!description || description.trim().length < 10) {
+        description = `(${i + 1}/5) Focus on ${skillName}: complete a specific 20–40 min task with clear success criteria.`;
+      }
+      await (client as any).quest.create({
+        data: {
+          userId: user.id,
+          xpValue: Number.isFinite(xpReward) ? Math.max(1, Math.floor(xpReward)) : Math.max(10, effLevel * 10),
+          isCompleted: false,
+          date: startOfDay(new Date()),
+          type: QuestType.Daily,
+          description,
+          source: QuestSource.AI,
+          periodStatus: 'TODAY',
+          periodKey: dateKey,
+          periodSeq: i + 1,
+        },
+      });
     }
-
-    if (!description || description.trim().length < 10) {
-      description = `Focus on ${skillName}: complete a specific 20–40 min task with clear success criteria.`;
-    }
-
-    await (client as any).quest.create({
-      data: {
-        userId: user.id,
-        xpValue: Number.isFinite(xpReward) ? Math.max(1, Math.floor(xpReward)) : Math.max(10, effLevel * 10),
-        isCompleted: false,
-        date: startOfDay(new Date()),
-        type: QuestType.Daily,
-        description,
-        source: QuestSource.AI,
-        periodStatus: 'TODAY',
-        periodKey: dateKey,
-      },
-    });
-    console.log(`[DailyQuest] AI quest created for user=${user.id} skill="${skillName}"`);
+    console.log(`[DailyQuest] AI ${count} quests created for user=${user.id} skill="${skillName}"`);
   } catch (err) {
     console.error(`[DailyQuest] AI generation failed for user=${user.id}`, err);
   }
 }
 
-async function runDailyQuestGenerationBatch() {
-  console.log(`[DailyQuest] Hourly sweep for user-local midnights started at ${new Date().toISOString()}`);
-  const users = await client.user.findMany({ where: { isBanned: false }, select: { id: true } });
+async function runDailyQuestGenerationBatch(force = false, onlyUserId?: string) {
+  console.log(
+    `[DailyQuest] ${force ? 'Forced' : 'Hourly'} run started at ${new Date().toISOString()}${onlyUserId ? ` for user=${onlyUserId}` : ''}`
+  );
+  const where: any = { isBanned: false };
+  if (onlyUserId) where.id = onlyUserId;
+  const users = await client.user.findMany({ where, select: { id: true } });
   for (const u of users) {
     // eslint-disable-next-line no-await-in-loop
-    await generateQuestForUser(u.id);
+    await generateQuestForUser(u.id, force);
   }
-  console.log(`[DailyQuest] Completed hourly sweep for ${users.length} users`);
+  console.log(`[DailyQuest] Completed ${force ? 'forced' : 'hourly'} run for ${users.length} users`);
 }
 
 export function startDailyAiQuestJob() {
   // Run hourly to catch user-local midnight across timezones
   cron.schedule('0 * * * *', async () => {
     try {
-      await runDailyQuestGenerationBatch();
+      await runDailyQuestGenerationBatch(false);
     } catch (e) {
       console.error('[DailyQuest] Batch run failed', e);
     }
@@ -175,5 +189,5 @@ export function startDailyAiQuestJob() {
 }
 
 export async function runDailyAiQuestNow() {
-  await runDailyQuestGenerationBatch();
+  await runDailyQuestGenerationBatch(true);
 }
