@@ -13,10 +13,18 @@ const updateUserDetails = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
     const userId = req.params.id;
-    const { username } = req.body;
+    const { UserName, email, xp, level, isVerified } = req.body;
+
+    const updateData: any = {};
+    if (email !== undefined) updateData.email = email;
+    if (UserName !== undefined) updateData.UserName = UserName;
+    if (xp !== undefined) updateData.xp = xp;
+    if (level !== undefined) updateData.level = level;
+    if (isVerified !== undefined) updateData.isVerified = isVerified;
+
     const updatedUser = await client.user.update({
       where: { id: userId },
-      data: { UserName: username },
+      data: updateData,
     });
 
     res

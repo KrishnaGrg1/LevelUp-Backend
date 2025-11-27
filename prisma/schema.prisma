@@ -31,6 +31,7 @@ model User {
   isBanned Boolean   @default(false)
   banUntil DateTime?
 
+  messages        Message[]         @relation("senderMessages")
   Clan            Clan[]
   Community       Community[]
   CommunityMember CommunityMember[]
@@ -93,6 +94,7 @@ model Community {
   category Category?         @relation(fields: [categoryId], references: [id])
   owner    User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   members  CommunityMember[]
+  messages Message[]
 }
 
 model Clan {
@@ -210,4 +212,14 @@ model Ticket {
   updatedAt                DateTime       @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id          String    @id @default(uuid())
+  community   Community @relation(fields: [communityId], references: [id])
+  communityId String
+  sender      User      @relation("senderMessages", fields: [senderId], references: [id])
+  senderId    String
+  content     String
+  createdAt   DateTime  @default(now())
 }

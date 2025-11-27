@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { Prisma } from '@prisma/client';
 import client from '../helpers/prisma';
 import {
   makeErrorResponse,
@@ -8,7 +9,7 @@ import { AuthRequest } from '../middlewares/authMiddleware';
 import { Language } from '../translation/translation';
 import { findUser } from '../helpers/auth/userHelper';
 import authorizeAdmin from '../helpers/auth/adminHelper';
-import { deleteFile, extractPublicId } from '../helpers/multer';
+import { deleteFile, extractPublicId } from '../helpers/files/multer';
 
 // Get all communities
 export const getAllCommunities = async (req: AuthRequest, res: Response) => {
@@ -18,12 +19,13 @@ export const getAllCommunities = async (req: AuthRequest, res: Response) => {
 
     // Optional query params: pagination and search
     const queryParams = req.query || {};
-   const page = Number(queryParams.page) || 1;   // default to 1
-const limit = Number(queryParams.limit) || 20; // default to 20
-// sanitize limits
-const safePage = Math.max(page, 1);
-const safeLimit = Math.min(Math.max(limit, 1), 100);
-    const q = typeof queryParams.q === 'string' ? queryParams.q.trim() : undefined;
+    const page = Number(queryParams.page) || 1; // default to 1
+    const limit = Number(queryParams.limit) || 20; // default to 20
+    // sanitize limits
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const q =
+      typeof queryParams.q === 'string' ? queryParams.q.trim() : undefined;
 
     const where: any = q
       ? {
@@ -57,9 +59,10 @@ const safeLimit = Math.min(Math.max(limit, 1), 100);
     ]);
 
     const formattedCommunities = communities.map((community: any) => {
-      const membership = userId && Array.isArray(community.members)
-        ? community.members[0] || null
-        : null;
+      const membership =
+        userId && Array.isArray(community.members)
+          ? community.members[0] || null
+          : null;
 
       return {
         id: community.id,
@@ -109,7 +112,6 @@ const safeLimit = Math.min(Math.max(limit, 1), 100);
   }
 };
 
-
 const myCommunities = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
@@ -123,30 +125,58 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
     const user = await findUser(userId as string, res, lang);
     if (!user) return;
 
-    const communities = await client.communityMember.findMany({
-      where: { userId: user.id },
-      include: {
-        community: {
-          include: {
-            _count: {
-              select: { members: true },
+    let communities;
+    try {
+      // Prefer ordering by pinned first, then most recently joined
+      communities = await client.communityMember.findMany({
+        where: { userId: user.id },
+        include: {
+          community: {
+            include: {
+              _count: {
+                select: { members: true },
+              },
             },
           },
         },
-      },
-      orderBy: [
-        { isPinned: 'desc' }, // ✅ isPinned is directly on CommunityMember
-        { joinedAt: 'desc' },
-      ],
-    });
+        orderBy: [{ isPinned: 'desc' }, { joinedAt: 'desc' }],
+      });
+    } catch (err: any) {
+      // Fallback in case the DB schema hasn't added `isPinned` yet
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        (err.code === 'P2022' || err.code === 'P2010')
+      ) {
+        console.warn(
+          'myCommunities: falling back order (missing isPinned column or raw query failure):',
+          err.message
+        );
+        communities = await client.communityMember.findMany({
+          where: { userId: user.id },
+          include: {
+            community: {
+              include: {
+                _count: {
+                  select: { members: true },
+                },
+              },
+            },
+          },
+          orderBy: [{ joinedAt: 'desc' }],
+        });
+      } else {
+        throw err;
+      }
+    }
 
     const formattedCommunities = communities.map((member) => ({
-      id: member.community.id,
-      name: member.community.name,
-      description: member.community.description,
-      currentMembers: member.community._count.members, // Prisma count
-      maxMembers: member.community.memberLimit,
-      visibility: member.community.isPrivate ? 'private' : 'public',
+      id: member.community?.id,
+      name: member.community?.name,
+      description: member.community?.description,
+      photo: member.community?.photo ?? null,
+      currentMembers: member.community?._count?.members ?? 0,
+      maxMembers: member.community?.memberLimit,
+      visibility: member.community?.isPrivate ? 'private' : 'public',
       userRole: member.role,
       isPinned: member.isPinned,
     }));
@@ -161,13 +191,100 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
         )
       );
   } catch (e: unknown) {
+    console.error('Error in myCommunities:', e);
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
       .json(
         makeErrorResponse(
-          new Error('Failed to join community'),
-          'error.community.failed_to_join_community',
+          new Error('Failed to fetch my communities'),
+          'error.community.failed_to_fetch_my_communities',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const specificCommunity = async (req: AuthRequest, res: Response) => {
+  const lang = req.language as Language;
+
+  const userId = req.user?.id; //from session -- logged in user
+  const communityId = req.params.communityId;
+  console.log('User ID IS', userId);
+
+  try {
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const user = await findUser(userId as string, res, lang);
+    if (!user) return;
+
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        photo: true,
+        isPrivate: true,
+        memberLimit: true,
+        _count: {
+          select: { members: true, clans: true },
+        },
+      },
+    });
+
+    if (!community) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.community.not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    //check membership
+    const membership = await client.communityMember.findUnique({
+      where: {
+        userId_communityId: {
+          userId: user.id,
+          communityId: community.id,
+        },
+      },
+    });
+    if (!membership) {
+      return res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Access Denied: Not a community member'),
+            'error.community.access_denied',
+            lang,
+            403
+          )
+        );
+    }
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(community, 'success.community.fetched', lang, 200)
+      );
+  } catch (e: unknown) {
+    console.error('Error in myCommunities:', e);
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to fetch my communities'),
+          'error.community.failed_to_fetch_my_communities',
           lang,
           500
         )
@@ -257,6 +374,14 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
         );
     }
 
+    // Coerce types from multipart/form-data (strings)
+    const memberLimitNum = Number(memberLimit) || 100;
+    const isPrivateBool =
+      typeof isPrivate === 'boolean'
+        ? isPrivate
+        : ['true', '1', 'yes', 'on'].includes(String(isPrivate).toLowerCase());
+    const descriptionStr = typeof description === 'string' ? description : '';
+
     // Get photo URL from uploaded file if available (Cloudinary)
     const cloudinaryFile = req.file as any;
     const photoPath = cloudinaryFile
@@ -267,10 +392,10 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
     const community = await client.community.create({
       data: {
         name: communityName,
-        description: description || '',
+        description: descriptionStr,
         ownerId: userId,
-        memberLimit: memberLimit || 100,
-        isPrivate: isPrivate,
+        memberLimit: memberLimitNum,
+        isPrivate: isPrivateBool,
         photo: photoPath,
         members: {
           create: [
@@ -289,13 +414,14 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
         makeSuccessResponse(community, 'success.community.created', lang, 200)
       );
   } catch (e: unknown) {
+    console.error('Error in createCommunity:', e);
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
       .json(
         makeErrorResponse(
           new Error('Failed to create community'),
-          'error.cpmmunity.failed_to_create_community',
+          'error.community.failed_to_create_community',
           lang,
           500
         )
@@ -317,9 +443,7 @@ const joinCommunity = async (req: AuthRequest, res: Response) => {
     if (!user) return;
 
     const community = await client.community.findUnique({
-      // check if community name  exists
       where: { id: communityId },
-      include: { members: true },
     });
 
     if (!community) {
@@ -336,7 +460,9 @@ const joinCommunity = async (req: AuthRequest, res: Response) => {
     }
 
     //check if a user is already a member of the community
-    const alreadyMember = community.members.some((m) => m.userId === user.id);
+    const alreadyMember = await client.communityMember.findFirst({
+      where: { communityId: community.id, userId: user.id },
+    });
     if (alreadyMember) {
       return res
         .status(400)
@@ -469,7 +595,6 @@ const transferOwnership = async (req: AuthRequest, res: Response) => {
     // Find the community
     const community = await client.community.findUnique({
       where: { id: communityId },
-      include: { members: true },
     });
 
     if (!community) {
@@ -500,7 +625,9 @@ const transferOwnership = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if the target user is a member of the community
-    const isMember = community.members.some((m) => m.userId === newOwnerId);
+    const isMember = await client.communityMember.findFirst({
+      where: { communityId, userId: newOwnerId },
+    });
     if (!isMember) {
       return res
         .status(400)
@@ -1112,6 +1239,7 @@ const communityController = {
   toggleMultipleCommunityPin,
   // unpinCommunity,
   searchCommunities,
+  specificCommunity,
 };
 
 export default communityController;

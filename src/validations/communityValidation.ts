@@ -8,7 +8,14 @@ const communityValidation = {
         'string.min': 'Username must contain altleast 3 characters long',
         'string.max': 'Username mustnot exceed 150 characters long',
       }),
-      isPrivate: Joi.boolean().messages({
+      isPrivate: Joi.boolean()
+        .truthy('true')
+        .truthy('1')
+        .truthy('yes')
+        .falsy('false')
+        .falsy('0')
+        .falsy('no')
+        .messages({
         'boolean.base': 'isPrivate must be a boolean',
       }),
 

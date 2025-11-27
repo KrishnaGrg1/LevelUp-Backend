@@ -3,10 +3,27 @@ import Joi from 'joi';
 const adminValidation = {
   updateDetails: {
     body: Joi.object().keys({
-      username: Joi.string().min(2).max(150).required().messages({
+      UserName: Joi.string().min(2).max(150).optional().messages({
+        'string.empty': 'UserName is required',
+        'string.min': 'UserName must contain altleast 2 characters long',
+        'string.max': 'UserName mustnot exceed 150 characters long',
+      }),
+      email: Joi.string().email().optional().messages({
         'string.empty': 'Username is required',
-        'string.min': 'Username must contain altleast 2 characters long',
-        'string.max': 'Username mustnot exceed 150 characters long',
+        'string.email': 'Username must be valid email address',
+      }),
+      level: Joi.number().integer().min(0).optional().messages({
+        'number.base': 'Level must be a number',
+        'number.integer': 'Level must be an integer',
+        'number.min': 'Level cannot be negative',
+      }),
+      isVerified: Joi.boolean().optional().messages({
+        'boolean.base': 'isVerified must be a boolean',
+      }),
+      xp: Joi.number().integer().min(0).optional().messages({
+        'number.base': 'XP must be a number',
+        'number.integer': 'XP must be an integer',
+        'number.min': 'XP cannot be negative',
       }),
     }),
   },

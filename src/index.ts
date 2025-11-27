@@ -4,9 +4,32 @@ import env from './helpers/config';
 import translationMiddeware from './middlewares/translationMiddleware';
 import helmet from 'helmet';
 import cors from 'cors';
-
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import initializeSocket from './sockets';
 const app = express();
 const port = env.PORT;
+
+//create HTTP Server (required for Socket.IO)
+const httpServer = createServer(app);
+
+// Socket.IO server setup
+export const io = new Server(httpServer, {
+  cors: {
+    origin: [
+      'http://localhost:3000',
+      'https://www.melevelup.me',
+      env.NEXT_PUBLIC_APP_URL,
+    ].filter(Boolean) as string[],
+    credentials: true,
+    methods: ['GET', 'POST'],
+  },
+  pingTimeout: 60000,
+  pingInterval: 25000,
+});
+
+//io is a Socket.IO instance attached to the HTTP server.
+// It wraps the server to enable real-time communication (
 
 // CORS configuration
 const corsOptions = {
@@ -23,9 +46,7 @@ const corsOptions = {
     ].filter(Boolean);
 
     // Allow requests with no origin (like mobile apps, Postman, curl)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn(`❌ CORS blocked origin: ${origin}`);
@@ -64,6 +85,11 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use('/api/v1/', translationMiddeware, mainRoutes);
 
-app.listen(port, () => {
+//Initialize Socket.IO wit handlers
+initializeSocket(io);
+
+httpServer.listen(port, () => {
   console.log('Server running on port', port);
+  console.log(`💬 Socket.IO initialized for real-time chat`);
+  console.log(`🌍 Environment: ${env.NODE_ENV}`);
 });
