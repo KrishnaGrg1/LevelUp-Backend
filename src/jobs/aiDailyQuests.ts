@@ -3,7 +3,7 @@ import { addDays, startOfDay } from 'date-fns';
 import client from '../helpers/prisma';
 import env from '../helpers/config';
 import OpenAIChat from '../helpers/ai/aiHelper';
-import { getDailyQuestPrompt } from '../helpers/ai/prompts';
+import { getDailyQuestSetPrompt } from '../helpers/ai/prompts';
 import { MemberStatus, QuestSource, QuestType } from '@prisma/client';
 
 function ensureAIConfigured(): boolean {
@@ -39,7 +39,6 @@ async function generateQuestForUser(userId: string, force = false) {
     include: {
       category: true,
       CommunityMember: {
-        take: 1,
         include: { community: { include: { category: true } } },
       },
     },
@@ -53,20 +52,10 @@ async function generateQuestForUser(userId: string, force = false) {
   // Only attempt generation around local midnight hour to reduce load unless forced
   if (!force && hour !== 0) return;
 
-  // Clear any partial 'today' creations for idempotent replace
-  await (client as any).quest.deleteMany({
-    where: { userId: user.id, type: 'Daily', source: 'AI', periodKey: dateKey },
-  });
+  // We will delete per-community below before insert to keep idempotent replace
 
-  const membership = user.CommunityMember?.[0];
-  const status: MemberStatus = (membership?.status as MemberStatus) || MemberStatus.Beginner;
   const level = user.level ?? 1;
   const xp = user.xp ?? 0;
-  const skillName =
-    user.category?.name ||
-    membership?.community?.category?.name ||
-    membership?.community?.name ||
-    'Personal Development';
 
   // Fetch current TODAY quest (before shifting) to decide progression
   const currentToday = await (client as any).quest.findFirst({
@@ -94,69 +83,91 @@ async function generateQuestForUser(userId: string, force = false) {
 
   const count = 5;
   if (!ensureAIConfigured()) {
-    for (let i = 1; i <= count; i++) {
-      await (client as any).quest.create({
-        data: {
-          userId: user.id,
-          xpValue: Math.max(10, effLevel * 10),
-          isCompleted: false,
-          date: startOfDay(new Date()),
-          type: QuestType.Daily,
-          description: progressive
-            ? `(${i}/5) Level up ${skillName}: attempt a slightly harder 20–40 min task building on yesterday's success.`
-            : `(${i}/5) Stay consistent in ${skillName}: repeat a similar 20–40 min task with clear criteria to complete.`,
-          source: QuestSource.AI,
-          periodStatus: 'TODAY',
-          periodKey: dateKey,
-          periodSeq: i,
-        },
+    for (const membership of user.CommunityMember) {
+      const skillNameFallback =
+        user.category?.name ||
+        membership?.community?.category?.name ||
+        membership?.community?.name ||
+        'Personal Development';
+      // Clear any partial 'today' creations for this community
+      await (client as any).quest.deleteMany({
+        where: { userId: user.id, type: 'Daily', source: 'AI', periodKey: dateKey, communityId: membership.communityId },
       });
+      for (let i = 1; i <= count; i++) {
+        await (client as any).quest.create({
+          data: {
+            userId: user.id,
+            communityId: membership.communityId,
+            xpValue: Math.max(10, effLevel * 10),
+            isCompleted: false,
+            date: startOfDay(new Date()),
+            type: QuestType.Daily,
+            description: progressive
+              ? `(${i}/5) Level up ${skillNameFallback}: attempt a slightly harder 20–40 min task building on yesterday's success.`
+              : `(${i}/5) Stay consistent in ${skillNameFallback}: repeat a similar 20–40 min task with clear criteria to complete.`,
+            source: QuestSource.AI,
+            periodStatus: 'TODAY',
+            periodKey: dateKey,
+            periodSeq: i,
+          },
+        });
+      }
+      console.log(`[DailyQuest] Fallback ${count} quests created for user=${user.id} community=${membership.communityId}`);
     }
-    console.log(`[DailyQuest] Fallback ${count} quests created for user=${user.id} skill="${skillName}" progressive=${progressive}`);
     return;
   }
-  const prompts = Array.from({ length: count }, () => getDailyQuestPrompt(skillName, effLevel, status, xp));
   try {
-    const results = await Promise.allSettled(prompts.map((p) => OpenAIChat({ prompt: p })));
-    for (let i = 0; i < count; i++) {
-      const res = results[i];
-      let description = '';
-      let xpReward = Math.max(10, effLevel * 10);
-      if (res.status === 'fulfilled') {
-        const content = res.value?.content ?? '{}';
-        try {
-          const parsed = JSON.parse(content);
-          description = String(parsed.description ?? '');
-          xpReward = Number(parsed.xpReward ?? xpReward);
-        } catch {
-          description = progressive
-            ? `(${i + 1}/5) Level up ${skillName}: attempt a slightly harder 20–40 min task building on yesterday's success.`
-            : `(${i + 1}/5) Stay consistent in ${skillName}: repeat a similar 20–40 min task with clear criteria to complete.`;
-        }
-      } else {
-        description = progressive
-          ? `(${i + 1}/5) Level up ${skillName}: attempt a slightly harder 20–40 min task building on yesterday's success.`
-          : `(${i + 1}/5) Stay consistent in ${skillName}: repeat a similar 20–40 min task with clear criteria to complete.`;
-      }
-      if (!description || description.trim().length < 10) {
-        description = `(${i + 1}/5) Focus on ${skillName}: complete a specific 20–40 min task with clear success criteria.`;
-      }
-      await (client as any).quest.create({
-        data: {
-          userId: user.id,
-          xpValue: Number.isFinite(xpReward) ? Math.max(1, Math.floor(xpReward)) : Math.max(10, effLevel * 10),
-          isCompleted: false,
-          date: startOfDay(new Date()),
-          type: QuestType.Daily,
-          description,
-          source: QuestSource.AI,
-          periodStatus: 'TODAY',
-          periodKey: dateKey,
-          periodSeq: i + 1,
-        },
+    for (const membership of user.CommunityMember) {
+      const status: MemberStatus = (membership?.status as MemberStatus) || MemberStatus.Beginner;
+      const skillName =
+        user.category?.name ||
+        membership?.community?.category?.name ||
+        membership?.community?.name ||
+        'Personal Development';
+
+      // Clear any partial 'today' creations for this community
+      await (client as any).quest.deleteMany({
+        where: { userId: user.id, type: 'Daily', source: 'AI', periodKey: dateKey, communityId: membership.communityId },
       });
+
+      const prompt = getDailyQuestSetPrompt(skillName, effLevel, status, xp);
+      const res = await OpenAIChat({ prompt });
+      const content = res?.content ?? '{}';
+      let quests: Array<{ description: string; xpReward?: number }> = [];
+      try {
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed?.quests)) quests = parsed.quests;
+      } catch {}
+      if (!quests.length) {
+        quests = Array.from({ length: count }, (_, idx) => ({
+          description: progressive
+            ? `(${idx + 1}/5) Level up ${skillName}: attempt a slightly harder 20–40 min task building on yesterday's success.`
+            : `(${idx + 1}/5) Stay consistent in ${skillName}: repeat a similar 20–40 min task with clear criteria to complete.`,
+          xpReward: Math.max(10, effLevel * 10),
+        }));
+      }
+      const toCreate = quests.slice(0, count);
+      for (let i = 0; i < toCreate.length; i++) {
+        const q = toCreate[i];
+        const xpReward = Number.isFinite(q.xpReward as number) ? Math.max(1, Math.floor(q.xpReward as number)) : Math.max(10, effLevel * 10);
+        await (client as any).quest.create({
+          data: {
+            userId: user.id,
+            communityId: membership.communityId,
+            xpValue: xpReward,
+            isCompleted: false,
+            date: startOfDay(new Date()),
+            type: QuestType.Daily,
+            description: String(q.description || ''),
+            source: QuestSource.AI,
+            periodStatus: 'TODAY',
+            periodKey: dateKey,
+            periodSeq: i + 1,
+          },
+        });
+      }
+      console.log(`[DailyQuest] AI ${toCreate.length} quests created for user=${user.id} community=${membership.communityId} skill="${skillName}"`);
     }
-    console.log(`[DailyQuest] AI ${count} quests created for user=${user.id} skill="${skillName}"`);
   } catch (err) {
     console.error(`[DailyQuest] AI generation failed for user=${user.id}`, err);
   }

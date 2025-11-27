@@ -37,6 +37,40 @@ Return **ONLY valid JSON** with no surrounding text.`;
 }
 
 /**
+ * Get structured prompt for generating a SET of 5 daily quests (single call)
+ */
+export function getDailyQuestSetPrompt(
+  skillName: string,
+  level: number,
+  status: MemberStatus,
+  xp: number
+): string {
+  return `
+You are an AI Quest Designer for the LevelUp platform.
+
+Generate exactly FIVE daily quests for the skill "${skillName}".
+
+Constraints:
+- Each quest should take 15–60 minutes
+- Difficulty should match user's level & status
+- Specific, measurable, actionable; clear success criteria
+- Description max 500 chars
+
+Output JSON only:
+{
+  "quests": [
+    { "description": "...", "xpReward": ${Math.max(10, level * 10)} },
+    { "description": "...", "xpReward": ${Math.max(10, level * 10)} },
+    { "description": "...", "xpReward": ${Math.max(10, level * 10)} },
+    { "description": "...", "xpReward": ${Math.max(10, level * 10)} },
+    { "description": "...", "xpReward": ${Math.max(10, level * 10)} }
+  ]
+}
+
+Return ONLY valid JSON.`;
+}
+
+/**
  * Get structured prompt for generating extra quests (token-protected)
  */
 export function getExtraQuestPrompt(

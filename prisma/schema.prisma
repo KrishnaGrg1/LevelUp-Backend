@@ -97,6 +97,7 @@ model Community {
   owner    User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   members  CommunityMember[]
   messages Message[]
+  quests   Quest[]
 }
 
 model Clan {
@@ -142,6 +143,7 @@ model CommunityMember {
 model Quest {
   id                String      @id @default(cuid())
   userId            String
+  communityId       String?
   xpValue           Int
   isCompleted       Boolean     @default(false)
   date              DateTime
@@ -156,9 +158,9 @@ model Quest {
 
   CommunityMember CommunityMember? @relation(fields: [communityMemberId], references: [id])
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community       Community?       @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
-  @@index([userId, type, date])
-  @@unique([userId, type, periodKey, periodSeq])
+  @@index([userId, communityId, type, date])
 }
 
 enum MemberStatus {
