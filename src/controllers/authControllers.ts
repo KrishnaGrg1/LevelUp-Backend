@@ -500,7 +500,7 @@ const forgetPassword = async (
       .status(200)
       .json(
         makeSuccessResponse(
-          { otpId: newOtp.id },
+          { userId: existingUser.id },
           'success.auth.otp_sent',
           lang,
           200
