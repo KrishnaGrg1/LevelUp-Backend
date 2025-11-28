@@ -52,6 +52,9 @@ async function generateQuestForUser(userId: string, force = false) {
   // Only attempt generation around local midnight hour to reduce load unless forced
   if (!force && hour !== 0) return;
 
+  // If TODAY already exists for this periodKey, skip shifting to avoid double-shift.
+  const hasToday = await (client as any).quest.count({ where: { userId: user.id, type: 'Daily', periodStatus: 'TODAY', periodKey: dateKey } });
+
   // We will delete per-community below before insert to keep idempotent replace
 
   const level = user.level ?? 1;
@@ -63,19 +66,21 @@ async function generateQuestForUser(userId: string, force = false) {
     orderBy: { createdAt: 'desc' },
   });
 
-  // Shift statuses: TODAY -> YESTERDAY, YESTERDAY -> DAY_BEFORE_YESTERDAY, DAY_BEFORE_YESTERDAY -> NONE
-  await (client as any).quest.updateMany({
-    where: { userId: user.id, type: 'Daily', periodStatus: 'DAY_BEFORE_YESTERDAY' },
-    data: { periodStatus: 'NONE' },
-  });
-  await (client as any).quest.updateMany({
-    where: { userId: user.id, type: 'Daily', periodStatus: 'YESTERDAY' },
-    data: { periodStatus: 'DAY_BEFORE_YESTERDAY' },
-  });
-  await (client as any).quest.updateMany({
-    where: { userId: user.id, type: 'Daily', periodStatus: 'TODAY' },
-    data: { periodStatus: 'YESTERDAY' },
-  });
+  if (!hasToday) {
+    // Shift statuses: TODAY -> YESTERDAY, YESTERDAY -> DAY_BEFORE_YESTERDAY, DAY_BEFORE_YESTERDAY -> NONE
+    await (client as any).quest.updateMany({
+      where: { userId: user.id, type: 'Daily', periodStatus: 'DAY_BEFORE_YESTERDAY' },
+      data: { periodStatus: 'NONE' },
+    });
+    await (client as any).quest.updateMany({
+      where: { userId: user.id, type: 'Daily', periodStatus: 'YESTERDAY' },
+      data: { periodStatus: 'DAY_BEFORE_YESTERDAY' },
+    });
+    await (client as any).quest.updateMany({
+      where: { userId: user.id, type: 'Daily', periodStatus: 'TODAY' },
+      data: { periodStatus: 'YESTERDAY' },
+    });
+  }
 
   // Decide difficulty bump if last TODAY quest was completed
   const progressive = Boolean(currentToday?.isCompleted);
@@ -91,7 +96,7 @@ async function generateQuestForUser(userId: string, force = false) {
         'Personal Development';
       // Clear any partial 'today' creations for this community
       await (client as any).quest.deleteMany({
-        where: { userId: user.id, type: 'Daily', source: 'AI', periodKey: dateKey, communityId: membership.communityId },
+        where: { userId: user.id, type: 'Daily', source: 'AI', periodKey: dateKey, periodStatus: 'TODAY', communityId: membership.communityId },
       });
       for (let i = 1; i <= count; i++) {
         await (client as any).quest.create({
@@ -201,4 +206,8 @@ export function startDailyAiQuestJob() {
 
 export async function runDailyAiQuestNow() {
   await runDailyQuestGenerationBatch(true);
+}
+
+export async function runDailyAiQuestForUser(userId: string) {
+  await runDailyQuestGenerationBatch(true, userId);
 }
