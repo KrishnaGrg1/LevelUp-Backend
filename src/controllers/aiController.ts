@@ -68,6 +68,8 @@ const chat = async (req: AuthRequest, res: Response) => {
 };
 
 const generateDailyQuests = async (req: AuthRequest, res: Response) => {
+
+  console.log('generateDailyQuests called');
   try {
     const lang = (req.language as Language) || 'eng';
     const userId = req.user?.id;
@@ -101,6 +103,7 @@ const generateWeeklyQuests = async (req: AuthRequest, res: Response) => {
 };
 
 const getDailyQuests = async (req: AuthRequest, res: Response) => {
+  console.log('getDailyQuests called');
   const lang = (req.language as Language) || 'eng';
   const userId = req.user?.id;
   if (!userId) {

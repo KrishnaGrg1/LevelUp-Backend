@@ -111,53 +111,58 @@ async function generateWeeklyQuestForUser(userId: string, force = false) {
     return;
   }
 
-  try {
-    for (const membership of user.CommunityMember) {
-      const status: MemberStatus = (membership?.status as MemberStatus) || MemberStatus.Beginner;
-      const skillName = user.category?.name || membership?.community?.category?.name || membership?.community?.name || 'Personal Development';
+  for (const membership of user.CommunityMember) {
+    const status: MemberStatus = (membership?.status as MemberStatus) || MemberStatus.Beginner;
+    const skillName = user.category?.name || membership?.community?.category?.name || membership?.community?.name || 'Personal Development';
 
-      await (client as any).quest.deleteMany({ where: { userId: user.id, type: 'Weekly', source: 'AI', periodKey: weekKey, communityId: membership.communityId } });
+    // Clear only THIS_WEEK quests for this community and weekKey
+    await (client as any).quest.deleteMany({ 
+      where: { userId: user.id, type: 'Weekly', source: 'AI', periodKey: weekKey, periodStatus: 'THIS_WEEK', communityId: membership.communityId } 
+    });
 
+    let quests: Array<{ description: string; xpReward?: number }> = [];
+    
+    try {
       const prompt = getDailyQuestSetPrompt(skillName, effLevel + 1, status, xp + 20);
       const res = await OpenAIChat({ prompt });
       const content = res?.content ?? '{}';
-      let quests: Array<{ description: string; xpReward?: number }> = [];
-      try {
-        const parsed = JSON.parse(content);
-        if (Array.isArray(parsed?.quests)) quests = parsed.quests;
-      } catch {}
-      if (!quests.length) {
-        quests = Array.from({ length: count }, (_, idx) => ({
-          description: progressive
-            ? `(${idx + 1}/5) Choose a harder ${skillName} project for this week with clear deliverables and stretch goals.`
-            : `(${idx + 1}/5) Repeat a similar ${skillName} weekly project focusing on consistency and solid deliverables.`,
-          xpReward: Math.max(30, (effLevel + 1) * 20),
-        }));
-      }
-      const toCreate = quests.slice(0, count);
-      for (let i = 0; i < toCreate.length; i++) {
-        const q = toCreate[i];
-        const xpReward = Number.isFinite(q.xpReward as number) ? Math.max(1, Math.floor(q.xpReward as number)) : Math.max(30, (effLevel + 1) * 20);
-        await (client as any).quest.create({
-          data: {
-            userId: user.id,
-            communityId: membership.communityId,
-            xpValue: xpReward,
-            isCompleted: false,
-            date: startOfDay(new Date()),
-            type: QuestType.Weekly,
-            description: String(q.description || ''),
-            source: QuestSource.AI,
-            periodStatus: 'THIS_WEEK',
-            periodKey: weekKey,
-            periodSeq: i + 1,
-          },
-        });
-      }
-      console.log(`[WeeklyQuest] AI ${toCreate.length} weekly quests created for user=${user.id} community=${membership.communityId}`);
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed?.quests)) quests = parsed.quests;
+    } catch (err) {
+      console.log(`[WeeklyQuest] AI failed for community=${membership.communityId}, using fallback`);
     }
-  } catch (err) {
-    console.error(`[WeeklyQuest] AI generation failed for user=${user.id}`, err);
+
+    // Use fallback if AI failed or returned no quests
+    if (!quests.length) {
+      quests = Array.from({ length: count }, (_, idx) => ({
+        description: progressive
+          ? `(${idx + 1}/5) Choose a harder ${skillName} project for this week with clear deliverables and stretch goals.`
+          : `(${idx + 1}/5) Repeat a similar ${skillName} weekly project focusing on consistency and solid deliverables.`,
+        xpReward: Math.max(30, (effLevel + 1) * 20),
+      }));
+    }
+
+    const toCreate = quests.slice(0, count);
+    for (let i = 0; i < toCreate.length; i++) {
+      const q = toCreate[i];
+      const xpReward = Number.isFinite(q.xpReward as number) ? Math.max(1, Math.floor(q.xpReward as number)) : Math.max(30, (effLevel + 1) * 20);
+      await (client as any).quest.create({
+        data: {
+          userId: user.id,
+          communityId: membership.communityId,
+          xpValue: xpReward,
+          isCompleted: false,
+          date: startOfDay(new Date()),
+          type: QuestType.Weekly,
+          description: String(q.description || ''),
+          source: QuestSource.AI,
+          periodStatus: 'THIS_WEEK',
+          periodKey: weekKey,
+          periodSeq: i + 1,
+        },
+      });
+    }
+    console.log(`[WeeklyQuest] ${toCreate.length} quests created for user=${user.id} community=${membership.communityId} skill="${skillName}"`);
   }
 }
 
