@@ -52,11 +52,6 @@ async function generateQuestForUser(userId: string, force = false) {
   // Only attempt generation around local midnight hour to reduce load unless forced
   if (!force && hour !== 0) return;
 
-  // If TODAY already exists for this periodKey, skip shifting to avoid double-shift.
-  const hasToday = await (client as any).quest.count({ where: { userId: user.id, type: 'Daily', periodStatus: 'TODAY', periodKey: dateKey } });
-
-  // We will delete per-community below before insert to keep idempotent replace
-
   const level = user.level ?? 1;
   const xp = user.xp ?? 0;
 
@@ -66,12 +61,15 @@ async function generateQuestForUser(userId: string, force = false) {
     orderBy: { createdAt: 'desc' },
   });
 
-  if (!hasToday) {
-    // Shift statuses: TODAY -> YESTERDAY, YESTERDAY -> DAY_BEFORE_YESTERDAY, DAY_BEFORE_YESTERDAY -> NONE
-    await (client as any).quest.updateMany({
+  // Check if TODAY quests already have the current periodKey (already generated today)
+  const todayAlreadyGenerated = currentToday && (currentToday as any).periodKey === dateKey;
+
+  if (!todayAlreadyGenerated) {
+    // Delete old DAY_BEFORE_YESTERDAY quests (they're no longer needed)
+    await (client as any).quest.deleteMany({
       where: { userId: user.id, type: 'Daily', periodStatus: 'DAY_BEFORE_YESTERDAY' },
-      data: { periodStatus: 'NONE' },
     });
+    // Shift statuses: YESTERDAY -> DAY_BEFORE_YESTERDAY, TODAY -> YESTERDAY
     await (client as any).quest.updateMany({
       where: { userId: user.id, type: 'Daily', periodStatus: 'YESTERDAY' },
       data: { periodStatus: 'DAY_BEFORE_YESTERDAY' },

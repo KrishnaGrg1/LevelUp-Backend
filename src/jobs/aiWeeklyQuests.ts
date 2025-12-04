@@ -58,11 +58,6 @@ async function generateWeeklyQuestForUser(userId: string, force = false) {
   if (!force && !(hour === 0 && weekday === 1)) return; // Only run at local Monday 00:00 unless forced
   const weekKey = computeWeekKeyFromLocal(dateKey, weekday);
 
-  // If THIS_WEEK already exists for this weekKey, skip shifting to avoid double-shift.
-  const hasThisWeek = await (client as any).quest.count({ where: { userId: user.id, type: 'Weekly', periodStatus: 'THIS_WEEK', periodKey: weekKey } });
-
-  // We'll clear per-community below before insert
-
   const level = user.level ?? 1;
   const xp = user.xp ?? 0;
 
@@ -72,11 +67,23 @@ async function generateWeeklyQuestForUser(userId: string, force = false) {
     orderBy: { createdAt: 'desc' },
   });
 
-  if (!hasThisWeek) {
-    // Shift week statuses: THIS_WEEK->LAST_WEEK, LAST_WEEK->TWO_WEEKS_AGO, TWO_WEEKS_AGO->NONE
-    await (client as any).quest.updateMany({ where: { userId: user.id, type: 'Weekly', periodStatus: 'TWO_WEEKS_AGO' }, data: { periodStatus: 'NONE' } });
-    await (client as any).quest.updateMany({ where: { userId: user.id, type: 'Weekly', periodStatus: 'LAST_WEEK' }, data: { periodStatus: 'TWO_WEEKS_AGO' } });
-    await (client as any).quest.updateMany({ where: { userId: user.id, type: 'Weekly', periodStatus: 'THIS_WEEK' }, data: { periodStatus: 'LAST_WEEK' } });
+  // Check if THIS_WEEK quests already have the current weekKey (already generated this week)
+  const thisWeekAlreadyGenerated = currentThisWeek && (currentThisWeek as any).periodKey === weekKey;
+
+  if (!thisWeekAlreadyGenerated) {
+    // Delete old TWO_WEEKS_AGO quests (they're no longer needed)
+    await (client as any).quest.deleteMany({ 
+      where: { userId: user.id, type: 'Weekly', periodStatus: 'TWO_WEEKS_AGO' } 
+    });
+    // Shift week statuses: LAST_WEEK->TWO_WEEKS_AGO, THIS_WEEK->LAST_WEEK
+    await (client as any).quest.updateMany({ 
+      where: { userId: user.id, type: 'Weekly', periodStatus: 'LAST_WEEK' }, 
+      data: { periodStatus: 'TWO_WEEKS_AGO' } 
+    });
+    await (client as any).quest.updateMany({ 
+      where: { userId: user.id, type: 'Weekly', periodStatus: 'THIS_WEEK' }, 
+      data: { periodStatus: 'LAST_WEEK' } 
+    });
   }
 
   const progressive = Boolean(currentThisWeek?.isCompleted);
