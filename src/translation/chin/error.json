@@ -64,5 +64,12 @@
     "failed_to_upload": "文件上传失败。请再试一次。",
     "invalid_file_type": "无效的文件类型。仅允许图像。",
     "file_too_large": "文件大小过大"
+  },
+  "ai": {
+    "prompt_required": "需要提示",
+    "not_configured": "AI 未配置",
+    "chat_failed": "AI 聊天失败",
+    "generate_failed": "生成任务失败",
+    "goals_required": "需要目标"
   }
 }

@@ -64,5 +64,12 @@
     "failed_to_upload": "ファイルのアップロードに失敗しました。もう一度試してください。",
     "invalid_file_type": "無効なファイルタイプです。画像のみ許可されています。",
     "file_too_large": "ファイルサイズが大きすぎます"
+  },
+  "ai": {
+    "prompt_required": "プロンプトが必要です",
+    "not_configured": "AI が設定されていません",
+    "chat_failed": "AI チャットに失敗しました",
+    "generate_failed": "クエストの生成に失敗しました",
+    "goals_required": "目標が必要です"
   }
 }
