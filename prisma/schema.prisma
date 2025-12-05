@@ -244,8 +244,6 @@ model Message {
   senderId    String
   content     String
   createdAt   DateTime   @default(now())
-  createdAt   DateTime @default(now())
-
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  sender    User      @relation("senderMessages", fields: [senderId], references: [id], onDelete: Cascade)
+ 
+  
 }
