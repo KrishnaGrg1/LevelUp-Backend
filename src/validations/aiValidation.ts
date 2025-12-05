@@ -14,6 +14,18 @@ const aiValidation = {
 			questId: Joi.string().required(),
 		}),
 	},
+	questId: {
+		params: Joi.object({
+			questId: Joi.string().required(),
+		}),
+	},
+	completedQuests: {
+		query: Joi.object({
+			page: Joi.number().integer().min(1).optional(),
+			limit: Joi.number().integer().min(1).max(100).optional(),
+			type: Joi.string().valid('Daily', 'Weekly').optional(),
+		}),
+	},
 };
 
 export default aiValidation;

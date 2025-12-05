@@ -84,6 +84,6 @@ export async function runDailyAiQuestNow(): Promise<void> {
 /**
  * Force run daily quest generation for a specific user
  */
-export async function runDailyAiQuestForUser(userId: string): Promise<void> {
-  await runDailyQuestGenerationBatch(true, userId);
+export async function runDailyAiQuestForUser(userId: string, force = false): Promise<void> {
+  await runDailyQuestGenerationBatch(force, userId);
 }

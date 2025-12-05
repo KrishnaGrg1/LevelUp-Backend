@@ -85,6 +85,6 @@ export async function runWeeklyAiQuestNow(): Promise<void> {
 /**
  * Force run weekly quest generation for a specific user
  */
-export async function runWeeklyAiQuestForUser(userId: string): Promise<void> {
-  await runWeeklyQuestGenerationBatch(true, userId);
+export async function runWeeklyAiQuestForUser(userId: string, force = false): Promise<void> {
+  await runWeeklyQuestGenerationBatch(force, userId);
 }
