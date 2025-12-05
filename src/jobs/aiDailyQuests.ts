@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { addDays, startOfDay } from 'date-fns';
+import { startOfDay } from 'date-fns';
 import client from '../helpers/prisma';
 import env from '../helpers/config';
 import OpenAIChat from '../helpers/ai/aiHelper';
@@ -20,17 +20,14 @@ function getUserLocalComponents(tz: string) {
     month: '2-digit',
     day: '2-digit',
   }).format(now); // YYYY-MM-DD
+
   const hourStr = new Intl.DateTimeFormat('en-US', {
     timeZone: tz,
     hour12: false,
     hour: '2-digit',
   }).format(now);
-  const weekdayStr = new Intl.DateTimeFormat('en-US', {
-    timeZone: tz,
-    weekday: 'short',
-  }).format(now);
-  const weekdayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-  return { dateKey, hour: parseInt(hourStr, 10), weekday: weekdayMap[weekdayStr] ?? 0 };
+
+  return { dateKey, hour: parseInt(hourStr, 10) };
 }
 
 async function generateQuestForUser(userId: string, force = false) {
@@ -49,55 +46,90 @@ async function generateQuestForUser(userId: string, force = false) {
   const tz = (user as any).timezone || 'UTC';
   const { dateKey, hour } = getUserLocalComponents(tz);
 
-  // Only attempt generation around local midnight hour to reduce load unless forced
   if (!force && hour !== 0) return;
 
   const level = user.level ?? 1;
   const xp = user.xp ?? 0;
 
-  // Fetch current TODAY quest (before shifting) to decide progression
-  const currentToday = await (client as any).quest.findFirst({
-    where: { userId: user.id, type: 'Daily', periodStatus: 'TODAY' },
+  const currentToday = await client.quest.findFirst({
+    where: {
+      userId: user.id,
+      type: 'Daily',
+      periodStatus: 'TODAY',
+    },
     orderBy: { createdAt: 'desc' },
   });
 
-  // Check if TODAY quests already have the current periodKey (already generated today)
-  const todayAlreadyGenerated = currentToday && (currentToday as any).periodKey === dateKey;
+  const todayAlreadyGenerated =
+    currentToday && currentToday.periodKey === dateKey;
 
+  // -------------------------------------------------------
+  // SHIFT CYCLE
+  // -------------------------------------------------------
   if (!todayAlreadyGenerated) {
-    // Delete old DAY_BEFORE_YESTERDAY quests (they're no longer needed)
-    await (client as any).quest.deleteMany({
-      where: { userId: user.id, type: 'Daily', periodStatus: 'DAY_BEFORE_YESTERDAY' },
+    // 1) Delete DAY-BEFORE-YESTERDAY
+    await client.quest.deleteMany({
+      where: {
+        userId: user.id,
+        type: 'Daily',
+        periodStatus: 'DAY_BEFORE_YESTERDAY',
+      },
     });
-    // Shift statuses: YESTERDAY -> DAY_BEFORE_YESTERDAY, TODAY -> YESTERDAY
-    await (client as any).quest.updateMany({
-      where: { userId: user.id, type: 'Daily', periodStatus: 'YESTERDAY' },
-      data: { periodStatus: 'DAY_BEFORE_YESTERDAY' },
+
+    // 2) Move YESTERDAY → DAY-BEFORE-YESTERDAY
+    await client.quest.updateMany({
+      where: {
+        userId: user.id,
+        type: 'Daily',
+        periodStatus: 'YESTERDAY',
+      },
+      data: {
+        periodStatus: 'DAY_BEFORE_YESTERDAY',
+      },
     });
-    await (client as any).quest.updateMany({
-      where: { userId: user.id, type: 'Daily', periodStatus: 'TODAY' },
-      data: { periodStatus: 'YESTERDAY' },
+
+    // 3) Move TODAY → YESTERDAY
+    await client.quest.updateMany({
+      where: {
+        userId: user.id,
+        type: 'Daily',
+        periodStatus: 'TODAY',
+      },
+      data: {
+        periodStatus: 'YESTERDAY',
+      },
     });
   }
+  // -------------------------------------------------------
 
-  // Decide difficulty bump if last TODAY quest was completed
   const progressive = Boolean(currentToday?.isCompleted);
-  const effLevel = progressive ? (level + 1) : level;
+  const effLevel = progressive ? level + 1 : level;
+  const QUEST_COUNT = 5;
 
-  const count = 5;
+  // =======================================================
+  // ✨ GENERATE NEW TODAY QUESTS (Fallback Mode)
+  // =======================================================
   if (!ensureAIConfigured()) {
     for (const membership of user.CommunityMember) {
-      const skillNameFallback =
-        user.category?.name ||
-        membership?.community?.category?.name ||
-        membership?.community?.name ||
-        'Personal Development';
-      // Clear any partial 'today' creations for this community
-      await (client as any).quest.deleteMany({
-        where: { userId: user.id, type: 'Daily', source: 'AI', periodKey: dateKey, periodStatus: 'TODAY', communityId: membership.communityId },
+      // Delete ONLY old TODAY quests NOT belonging to current date
+      await client.quest.deleteMany({
+        where: {
+          userId: user.id,
+          type: 'Daily',
+          periodStatus: 'TODAY',
+          communityId: membership.communityId,
+          periodKey: { not: dateKey },
+        },
       });
-      for (let i = 1; i <= count; i++) {
-        await (client as any).quest.create({
+
+      const skillName =
+        user.category?.name ||
+        membership.community.category?.name ||
+        membership.community.name ||
+        'Personal Development';
+
+      for (let i = 1; i <= QUEST_COUNT; i++) {
+        await client.quest.create({
           data: {
             userId: user.id,
             communityId: membership.communityId,
@@ -105,60 +137,67 @@ async function generateQuestForUser(userId: string, force = false) {
             isCompleted: false,
             date: startOfDay(new Date()),
             type: QuestType.Daily,
-            description: progressive
-              ? `(${i}/5) Level up ${skillNameFallback}: attempt a slightly harder 20–40 min task building on yesterday's success.`
-              : `(${i}/5) Stay consistent in ${skillNameFallback}: repeat a similar 20–40 min task with clear criteria to complete.`,
             source: QuestSource.AI,
+            description: progressive
+              ? `(${i}/5) Level up ${skillName}: attempt a slightly harder 20–40 min task building on yesterday's success.`
+              : `(${i}/5) Stay consistent in ${skillName}: repeat a similar 20–40 min task with clear completion criteria.`,
             periodStatus: 'TODAY',
             periodKey: dateKey,
             periodSeq: i,
           },
         });
       }
-      console.log(`[DailyQuest] Fallback ${count} quests created for user=${user.id} community=${membership.communityId}`);
     }
     return;
   }
-  for (const membership of user.CommunityMember) {
-    const status: MemberStatus = (membership?.status as MemberStatus) || MemberStatus.Beginner;
-    const skillName =
-      user.category?.name ||
-      membership?.community?.category?.name ||
-      membership?.community?.name ||
-      'Personal Development';
 
-    // Clear only TODAY quests for this community and periodKey
-    await (client as any).quest.deleteMany({
-      where: { userId: user.id, type: 'Daily', source: 'AI', periodKey: dateKey, periodStatus: 'TODAY', communityId: membership.communityId },
+  // =======================================================
+  // 🚀 GENERATE NEW TODAY QUESTS (AI Mode)
+  // =======================================================
+  for (const membership of user.CommunityMember) {
+    // Delete ONLY old TODAY quests NOT belonging to current date
+    await client.quest.deleteMany({
+      where: {
+        userId: user.id,
+        type: 'Daily',
+        periodStatus: 'TODAY',
+        communityId: membership.communityId,
+        periodKey: { not: dateKey },
+      },
     });
 
+    const status: MemberStatus =
+      (membership.status as MemberStatus) || MemberStatus.Beginner;
+    const skillName =
+      user.category?.name ||
+      membership.community.category?.name ||
+      membership.community.name ||
+      'Personal Development';
+
     let quests: Array<{ description: string; xpReward?: number }> = [];
-    
     try {
       const prompt = getDailyQuestSetPrompt(skillName, effLevel, status, xp);
       const res = await OpenAIChat({ prompt });
-      const content = res?.content ?? '{}';
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed?.quests)) quests = parsed.quests;
-    } catch (err) {
-      console.log(`[DailyQuest] AI failed for community=${membership.communityId}, using fallback`);
-    }
+      const parsed = JSON.parse(res?.content ?? '{}');
+      if (Array.isArray(parsed.quests)) quests = parsed.quests;
+    } catch {}
 
-    // Use fallback if AI failed or returned no quests
     if (!quests.length) {
-      quests = Array.from({ length: count }, (_, idx) => ({
+      quests = Array.from({ length: QUEST_COUNT }, (_, i) => ({
         description: progressive
-          ? `(${idx + 1}/5) Level up ${skillName}: attempt a slightly harder 20–40 min task building on yesterday's success.`
-          : `(${idx + 1}/5) Stay consistent in ${skillName}: repeat a similar 20–40 min task with clear criteria to complete.`,
+          ? `(${i + 1}/5) Level up ${skillName}: attempt a slightly harder 20–40 min task.`
+          : `(${i + 1}/5) Stay consistent in ${skillName}: repeat a similar validated task.`,
         xpReward: Math.max(10, effLevel * 10),
       }));
     }
 
-    const toCreate = quests.slice(0, count);
-    for (let i = 0; i < toCreate.length; i++) {
-      const q = toCreate[i];
-      const xpReward = Number.isFinite(q.xpReward as number) ? Math.max(1, Math.floor(q.xpReward as number)) : Math.max(10, effLevel * 10);
-      await (client as any).quest.create({
+    for (let i = 0; i < quests.length; i++) {
+      const q = quests[i];
+      const xpReward = Number.isFinite(q.xpReward)
+        ? Math.max(1, Math.floor(q.xpReward!))
+        : Math.max(10, effLevel * 10);
+
+      await client.quest.create({
         data: {
           userId: user.id,
           communityId: membership.communityId,
@@ -166,42 +205,39 @@ async function generateQuestForUser(userId: string, force = false) {
           isCompleted: false,
           date: startOfDay(new Date()),
           type: QuestType.Daily,
-          description: String(q.description || ''),
           source: QuestSource.AI,
+          description: q.description,
           periodStatus: 'TODAY',
           periodKey: dateKey,
           periodSeq: i + 1,
         },
       });
     }
-    console.log(`[DailyQuest] ${toCreate.length} quests created for user=${user.id} community=${membership.communityId} skill="${skillName}"`);
   }
 }
 
+// ====================================================================
+// BATCH HANDLERS + CRON
+// ====================================================================
+
 async function runDailyQuestGenerationBatch(force = false, onlyUserId?: string) {
-  console.log(
-    `[DailyQuest] ${force ? 'Forced' : 'Hourly'} run started at ${new Date().toISOString()}${onlyUserId ? ` for user=${onlyUserId}` : ''}`
-  );
   const where: any = { isBanned: false };
   if (onlyUserId) where.id = onlyUserId;
+
   const users = await client.user.findMany({ where, select: { id: true } });
   for (const u of users) {
-    // eslint-disable-next-line no-await-in-loop
     await generateQuestForUser(u.id, force);
   }
-  console.log(`[DailyQuest] Completed ${force ? 'forced' : 'hourly'} run for ${users.length} users`);
 }
 
 export function startDailyAiQuestJob() {
-  // Run hourly to catch user-local midnight across timezones
   cron.schedule('0 * * * *', async () => {
     try {
       await runDailyQuestGenerationBatch(false);
-    } catch (e) {
-      console.error('[DailyQuest] Batch run failed', e);
+    } catch (err) {
+      console.error('[DailyQuest] Error', err);
     }
   });
-  console.log('[DailyQuest] Cron scheduled hourly at minute 0 (user-local midnight sweep)');
 }
 
 export async function runDailyAiQuestNow() {
