@@ -11,6 +11,7 @@ aiRoutes.post('/generate/daily', validate(aiValidation.generateTrigger), aiContr
 aiRoutes.post('/generate/weekly', validate(aiValidation.generateTrigger), aiController.generateWeeklyQuests);
 aiRoutes.get('/quests/daily', aiController.getDailyQuests);
 aiRoutes.get('/quests/weekly', aiController.getWeeklyQuests);
+aiRoutes.patch('/quests/complete', validate(aiValidation.completeQuest), aiController.completeQuest);
 aiRoutes.get('/health', aiController.health);
 aiRoutes.get('/config', aiController.config);
 export default aiRoutes;

@@ -169,12 +169,89 @@ const config = async (req: AuthRequest, res: Response) => {
   );
 };
 
+const completeQuest = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    const userId = req.user?.id;
+    const { questId } = req.body as { questId: string };
+
+    if (!userId) {
+      return res.status(401).json(
+        makeErrorResponse(new Error('Not authenticated'), 'error.auth.not_authenticated', lang, 401)
+      );
+    }
+
+    if (!questId) {
+      return res.status(400).json(
+        makeErrorResponse(new Error('Quest ID is required'), 'error.ai.quest_id_required', lang, 400)
+      );
+    }
+
+    // Find the quest and verify ownership
+    const quest = await (client as any).quest.findUnique({
+      where: { id: questId },
+      select: { id: true, userId: true, isCompleted: true, description: true, xpValue: true },
+    });
+
+    if (!quest) {
+      return res.status(404).json(
+        makeErrorResponse(new Error('Quest not found'), 'error.ai.quest_not_found', lang, 404)
+      );
+    }
+
+    if (quest.userId !== userId) {
+      return res.status(403).json(
+        makeErrorResponse(new Error('Not authorized'), 'error.auth.not_authorized', lang, 403)
+      );
+    }
+
+    if (quest.isCompleted) {
+      return res.status(400).json(
+        makeErrorResponse(new Error('Quest already completed'), 'error.ai.quest_already_completed', lang, 400)
+      );
+    }
+
+    // Mark quest as completed and award XP
+    const [updatedQuest, updatedUser] = await Promise.all([
+      (client as any).quest.update({
+        where: { id: questId },
+        data: { isCompleted: true },
+      }),
+      (client as any).user.update({
+        where: { id: userId },
+        data: { xp: { increment: quest.xpValue } },
+        select: { xp: true, level: true },
+      }),
+    ]);
+
+    return res.status(200).json(
+      makeSuccessResponse(
+        {
+          quest: updatedQuest,
+          xpAwarded: quest.xpValue,
+          currentXp: updatedUser.xp,
+          currentLevel: updatedUser.level,
+        },
+        'success.ai.quest_completed',
+        lang,
+        200
+      )
+    );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    return res.status(500).json(
+      makeErrorResponse(new Error('Failed to complete quest'), 'error.ai.complete_quest_failed', lang, 500)
+    );
+  }
+};
+
 const aiController = {
   chat,
   generateDailyQuests,
   generateWeeklyQuests,
   getDailyQuests,
   getWeeklyQuests,
+  completeQuest,
   health,
   config,
 };

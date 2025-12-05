@@ -54,20 +54,23 @@ export async function generateQuestsForAllCommunities(
     console.log(`${logPrefix} AI not configured, using fallback mode for user ${userId}`);
   }
 
+  // Only delete and regenerate if it's a new period OR if forcing regeneration
+  // This prevents accumulating duplicates while preserving rotation behavior
+  if (options.isNewPeriod || options.force) {
+    await client.quest.deleteMany({
+      where: {
+        userId,
+        type: questType,
+        periodStatus: currentPeriodStatus,
+      },
+    });
+  }
+
   // Generate quests for each community
   for (const membership of user.CommunityMember) {
     if (!validateCommunity(membership, logPrefix)) {
       continue;
     }
-
-    // Cleanup orphaned quests
-    await cleanupOrphanedQuests(
-      userId,
-      membership.communityId,
-      questType,
-      currentPeriodStatus,
-      periodKey
-    );
 
     const skillName = getSkillName(user, membership, logPrefix);
     if (!skillName) {

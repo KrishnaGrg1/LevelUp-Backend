@@ -9,6 +9,11 @@ const aiValidation = {
 	generateTrigger: {
 		body: Joi.object({}).unknown(false),
 	},
+	completeQuest: {
+		body: Joi.object({
+			questId: Joi.string().required(),
+		}),
+	},
 };
 
 export default aiValidation;
