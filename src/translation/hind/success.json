@@ -43,11 +43,32 @@
     "community_photo_uploaded": "समुदाय फोटो सफलतापूर्वक अपलोड हुआ"
   },
   "ai": {
-    "chat": "AI चैट प्रतिक्रिया उत्पन्न हुई",
+    "chat": "AI चैट प्रतिक्रिया सफलतापूर्वक उत्पन्न हुई",
+    "chat_started": "AI चैट सत्र शुरू हुआ",
+    "chat_completed": "AI चैट सफलतापूर्वक पूरा हुआ",
+    "chat_cancelled": "AI चैट रद्द हुआ",
     "quests_generated": "क्वेस्ट सफलतापूर्वक जनरेट हुए",
-    "no_response": "कोई प्रतिक्रिया नहीं",
+    "quest_completed": "क्वेस्ट सफलतापूर्वक पूर्ण के रूप में चिह्नित हुआ",
+    "quest_fetched": "क्वेस्ट सफलतापूर्वक प्राप्त हुआ",
+    "quests_fetched": "क्वेस्ट सफलतापूर्वक प्राप्त हुए",
+    "daily_quests_fetched": "दैनिक क्वेस्ट सफलतापूर्वक प्राप्त हुए",
+    "weekly_quests_fetched": "साप्ताहिक क्वेस्ट सफलतापूर्वक प्राप्त हुए",
+    "completed_quests_fetched": "पूर्ण क्वेस्ट सफलतापूर्वक प्राप्त हुए",
+    "quest_deleted": "क्वेस्ट सफलतापूर्वक हटाया गया",
+    "chat_history_fetched": "चैट इतिहास सफलतापूर्वक प्राप्त हुआ",
+    "chat_history_deleted": "चैट इतिहास सफलतापूर्वक हटाया गया",
+    "all_chat_history_deleted": "सभी चैट इतिहास सफलतापूर्वक हटाया गया",
+    "token_balance_fetched": "टोकन शेष सफलतापूर्वक प्राप्त हुआ",
+    "tokens_available": "आपके पास {count} टोकन उपलब्ध हैं",
+    "tokens_deducted": "1 टोकन काटा गया। शेष: {remaining}",
+    "no_response": "AI से कोई प्रतिक्रिया नहीं",
     "fallback_description": "{difficulty} स्तर पर {skill} पर 30 मिनट काम करें।",
-    "health": "AI कॉन्फ़िगर्ड और स्वस्थ है",
-    "config": "AI कॉन्फ़िगरेशन सफलतापूर्वक प्राप्त हुआ"
+    "health_check_passed": "AI सेवा स्वस्थ और परिचालन में है",
+    "health_check_database_connected": "डेटाबेस कनेक्शन सत्यापित हुआ",
+    "config_fetched": "AI कॉन्फ़िगरेशन सफलतापूर्वक प्राप्त हुआ",
+    "daily_quests_forced": "दैनिक क्वेस्ट सफलतापूर्वक पुनः जनरेट हुए",
+    "weekly_quests_forced": "साप्ताहिक क्वेस्ट सफलतापूर्वक पुनः जनरेट हुए",
+    "quest_rotation_success": "क्वेस्ट रोटेशन सफलतापूर्वक पूरा हुआ",
+    "quest_period_updated": "क्वेस्ट अवधि स्थिति अपडेट हुई"
   }
 }

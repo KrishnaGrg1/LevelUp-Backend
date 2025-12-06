@@ -43,11 +43,32 @@
     "community_photo_uploaded": "社区照片上传成功"
   },
   "ai": {
-    "chat": "AI 聊天回复已生成",
+    "chat": "AI 聊天回复生成成功",
+    "chat_started": "AI 聊天会话已开始",
+    "chat_completed": "AI 聊天成功完成",
+    "chat_cancelled": "AI 聊天已取消",
     "quests_generated": "任务生成成功",
-    "no_response": "无回复",
+    "quest_completed": "任务标记完成成功",
+    "quest_fetched": "任务获取成功",
+    "quests_fetched": "任务列表获取成功",
+    "daily_quests_fetched": "每日任务获取成功",
+    "weekly_quests_fetched": "每周任务获取成功",
+    "completed_quests_fetched": "已完成任务获取成功",
+    "quest_deleted": "任务删除成功",
+    "chat_history_fetched": "聊天记录获取成功",
+    "chat_history_deleted": "聊天记录删除成功",
+    "all_chat_history_deleted": "所有聊天记录删除成功",
+    "token_balance_fetched": "代币余额获取成功",
+    "tokens_available": "您有 {count} 个可用代币",
+    "tokens_deducted": "扣除1个代币。剩余：{remaining}",
+    "no_response": "AI 无回复",
     "fallback_description": "以{difficulty}水平练习 {skill} 30 分钟。",
-    "health": "AI 已配置且健康",
-    "config": "AI 配置获取成功"
+    "health_check_passed": "AI 服务健康且正常运行",
+    "health_check_database_connected": "数据库连接已验证",
+    "config_fetched": "AI 配置获取成功",
+    "daily_quests_forced": "每日任务重新生成成功",
+    "weekly_quests_forced": "每周任务重新生成成功",
+    "quest_rotation_success": "任务轮换完成成功",
+    "quest_period_updated": "任务周期状态已更新"
   }
 }

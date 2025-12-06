@@ -70,6 +70,26 @@
     "not_configured": "AI कॉन्फ़िगर नहीं है",
     "chat_failed": "AI चैट विफल हुई",
     "generate_failed": "क्वेस्ट जनरेट करने में विफल",
-    "goals_required": "लक्ष्य आवश्यक हैं"
+    "goals_required": "लक्ष्य आवश्यक हैं",
+    "quest_not_found": "क्वेस्ट नहीं मिला",
+    "quest_already_completed": "क्वेस्ट पहले ही पूरा हो चुका है",
+    "quest_not_active": "क्वेस्ट आज सक्रिय नहीं है",
+    "unauthorized_quest": "आपके पास इस क्वेस्ट तक पहुँचने की अनुमति नहीं है",
+    "insufficient_tokens": "अपर्याप्त टोकन। कृपया अधिक टोकन खरीदें।",
+    "chat_history_not_found": "चैट इतिहास नहीं मिला",
+    "unauthorized_chat": "आपके पास इस चैट इतिहास तक पहुँचने की अनुमति नहीं है",
+    "invalid_prompt": "अमान्य या खाली प्रॉम्प्ट",
+    "prompt_too_long": "प्रॉम्प्ट अधिकतम लंबाई 4000 अक्षर से अधिक है",
+    "token_check_failed": "टोकन शेष जांचने में विफल",
+    "token_fetch_failed": "टोकन शेष प्राप्त करने में विफल",
+    "quest_completion_failed": "क्वेस्ट को पूर्ण के रूप में चिह्नित करने में विफल",
+    "quest_fetch_failed": "क्वेस्ट प्राप्त करने में विफल",
+    "quest_delete_failed": "क्वेस्ट हटाने में विफल",
+    "chat_history_delete_failed": "चैट इतिहास हटाने में विफल",
+    "quest_generation_timeout": "क्वेस्ट जनरेट करने में समय समाप्त। कृपया पुनः प्रयास करें।",
+    "no_community_memberships": "क्वेस्ट प्राप्त करने के लिए आपको समुदाय में शामिल होना होगा",
+    "force_generation_failed": "जबरन क्वेस्ट जनरेट करने में विफल",
+    "health_check_failed": "हेल्थ चेक विफल हुआ",
+    "config_fetch_failed": "कॉन्फ़िगरेशन प्राप्त करने में विफल"
   }
 }

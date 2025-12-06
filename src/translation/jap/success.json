@@ -43,11 +43,32 @@
     "community_photo_uploaded": "コミュニティ写真のアップロードに成功しました"
   },
   "ai": {
-    "chat": "AI チャットの応答を生成しました",
+    "chat": "AI チャットの応答を正常に生成しました",
+    "chat_started": "AI チャットセッションが開始されました",
+    "chat_completed": "AI チャットが正常に完了しました",
+    "chat_cancelled": "AI チャットがキャンセルされました",
     "quests_generated": "クエストを正常に生成しました",
-    "no_response": "応答なし",
+    "quest_completed": "クエストを完了としてマークしました",
+    "quest_fetched": "クエストを正常に取得しました",
+    "quests_fetched": "クエストを正常に取得しました",
+    "daily_quests_fetched": "デイリークエストを正常に取得しました",
+    "weekly_quests_fetched": "ウィークリークエストを正常に取得しました",
+    "completed_quests_fetched": "完了したクエストを正常に取得しました",
+    "quest_deleted": "クエストを正常に削除しました",
+    "chat_history_fetched": "チャット履歴を正常に取得しました",
+    "chat_history_deleted": "チャット履歴を正常に削除しました",
+    "all_chat_history_deleted": "すべてのチャット履歴を正常に削除しました",
+    "token_balance_fetched": "トークン残高を正常に取得しました",
+    "tokens_available": "{count} トークンが利用可能です",
+    "tokens_deducted": "1トークンを使用しました。残り：{remaining}",
+    "no_response": "AI からの応答がありません",
     "fallback_description": "{difficulty} レベルで {skill} を30分取り組みましょう。",
-    "health": "AI は設定済みで正常です",
-    "config": "AI 設定を取得しました"
+    "health_check_passed": "AI サービスは正常に動作しています",
+    "health_check_database_connected": "データベース接続を確認しました",
+    "config_fetched": "AI 設定を正常に取得しました",
+    "daily_quests_forced": "デイリークエストを正常に再生成しました",
+    "weekly_quests_forced": "ウィークリークエストを正常に再生成しました",
+    "quest_rotation_success": "クエストローテーションを正常に完了しました",
+    "quest_period_updated": "クエスト期間ステータスを更新しました"
   }
 }

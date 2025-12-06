@@ -70,6 +70,26 @@
     "not_configured": "La IA no está configurada",
     "chat_failed": "Falló el chat de IA",
     "generate_failed": "No se pudieron generar las misiones",
-    "goals_required": "Se requieren objetivos"
+    "goals_required": "Se requieren objetivos",
+    "quest_not_found": "Misión no encontrada",
+    "quest_already_completed": "La misión ya está completada",
+    "quest_not_active": "La misión no está activa hoy",
+    "unauthorized_quest": "No tienes autorización para acceder a esta misión",
+    "insufficient_tokens": "Tokens insuficientes. Por favor, compra más tokens.",
+    "chat_history_not_found": "Historial de chat no encontrado",
+    "unauthorized_chat": "No tienes autorización para acceder a este historial de chat",
+    "invalid_prompt": "Prompt inválido o vacío",
+    "prompt_too_long": "El prompt excede la longitud máxima de 4000 caracteres",
+    "token_check_failed": "Error al verificar el saldo de tokens",
+    "token_fetch_failed": "Error al obtener el saldo de tokens",
+    "quest_completion_failed": "Error al marcar la misión como completada",
+    "quest_fetch_failed": "Error al obtener las misiones",
+    "quest_delete_failed": "Error al eliminar la misión",
+    "chat_history_delete_failed": "Error al eliminar el historial de chat",
+    "quest_generation_timeout": "Tiempo agotado al generar la misión. Inténtalo de nuevo.",
+    "no_community_memberships": "Debes unirte a una comunidad para obtener misiones",
+    "force_generation_failed": "Error al forzar la generación de misiones",
+    "health_check_failed": "Error en la verificación de salud",
+    "config_fetch_failed": "Error al obtener la configuración"
   }
 }
