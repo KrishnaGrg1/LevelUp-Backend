@@ -6,8 +6,12 @@ import { adminMiddleware } from '../middlewares/adminMiddleware';
 
 const aiRoutes = Router();
 
-// AI Chat endpoint (token-protected)
+// AI Chat endpoints (token-protected)
 aiRoutes.post('/chat', validate(aiValidation.chat), aiController.chat);
+aiRoutes.get('/chat/history', validate(aiValidation.chatHistory), aiController.getChatHistory);
+aiRoutes.get('/chat/tokens', aiController.getTokenBalance);
+aiRoutes.delete('/chat/history', validate(aiValidation.deleteChatHistory), aiController.deleteChatHistory); // Delete all via ?all=true
+aiRoutes.delete('/chat/history/:chatId', validate(aiValidation.chatId), aiController.deleteChatHistory); // Delete specific
 
 // Quest generation endpoints
 aiRoutes.post('/generate/daily', validate(aiValidation.generateTrigger), aiController.generateDailyQuests);

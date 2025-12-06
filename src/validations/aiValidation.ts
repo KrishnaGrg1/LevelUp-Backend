@@ -26,6 +26,23 @@ const aiValidation = {
 			type: Joi.string().valid('Daily', 'Weekly').optional(),
 		}),
 	},
+	chatHistory: {
+		query: Joi.object({
+			page: Joi.number().integer().min(1).optional(),
+			limit: Joi.number().integer().min(1).max(100).optional(),
+			sessionId: Joi.string().optional(),
+		}),
+	},
+	chatId: {
+		params: Joi.object({
+			chatId: Joi.string().required(),
+		}),
+	},
+	deleteChatHistory: {
+		query: Joi.object({
+			all: Joi.string().valid('true', 'false').optional(),
+		}),
+	},
 };
 
 export default aiValidation;

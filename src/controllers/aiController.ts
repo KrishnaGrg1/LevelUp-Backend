@@ -631,6 +631,200 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
   }
 };
 
+/**
+ * Get AI chat history for authenticated user
+ */
+const getChatHistory = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json(
+        makeErrorResponse(new Error('Not authenticated'), 'error.auth.not_authenticated', lang, 401)
+      );
+    }
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+    const skip = (page - 1) * limit;
+    const sessionId = req.query.sessionId as string | undefined;
+
+    const whereClause: any = { userId };
+    if (sessionId) {
+      whereClause.sessionId = sessionId;
+    }
+
+    const [history, totalCount] = await Promise.all([
+      client.aIChatHistory.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          sessionId: true,
+          prompt: true,
+          response: true,
+          tokensUsed: true,
+          responseTime: true,
+          createdAt: true,
+        },
+      }),
+      client.aIChatHistory.count({ where: whereClause }),
+    ]);
+
+    return res.status(200).json(
+      makeSuccessResponse(
+        {
+          history,
+          pagination: {
+            page,
+            limit,
+            total: totalCount,
+            totalPages: Math.ceil(totalCount / limit),
+            hasMore: skip + history.length < totalCount,
+          },
+        },
+        'success.ai.chat_history_fetched',
+        lang,
+        200
+      )
+    );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    return res.status(500).json(
+      makeErrorResponse(new Error('Failed to fetch chat history'), 'error.ai.chat_history_failed', lang, 500)
+    );
+  }
+};
+
+/**
+ * Get user's token balance
+ */
+const getTokenBalance = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json(
+        makeErrorResponse(new Error('Not authenticated'), 'error.auth.not_authenticated', lang, 401)
+      );
+    }
+
+    const user = await client.user.findUnique({
+      where: { id: userId },
+      select: {
+        tokens: true,
+        _count: {
+          select: {
+            AIChatHistory: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json(
+        makeErrorResponse(new Error('User not found'), 'error.user.not_found', lang, 404)
+      );
+    }
+
+    return res.status(200).json(
+      makeSuccessResponse(
+        {
+          tokens: user.tokens,
+          totalChats: user._count.AIChatHistory,
+          costPerChat: 1,
+        },
+        'success.ai.token_balance_fetched',
+        lang,
+        200
+      )
+    );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    return res.status(500).json(
+      makeErrorResponse(new Error('Failed to fetch token balance'), 'error.ai.token_balance_failed', lang, 500)
+    );
+  }
+};
+
+/**
+ * Delete chat history (single or all)
+ */
+const deleteChatHistory = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    const userId = req.user?.id;
+    const { chatId } = req.params;
+    const deleteAll = req.query.all === 'true';
+
+    if (!userId) {
+      return res.status(401).json(
+        makeErrorResponse(new Error('Not authenticated'), 'error.auth.not_authenticated', lang, 401)
+      );
+    }
+
+    if (deleteAll) {
+      // Delete all chat history for user
+      const result = await client.aIChatHistory.deleteMany({
+        where: { userId },
+      });
+
+      return res.status(200).json(
+        makeSuccessResponse(
+          { deletedCount: result.count },
+          'success.ai.chat_history_deleted',
+          lang,
+          200
+        )
+      );
+    } else if (chatId) {
+      // Delete specific chat
+      const chat = await client.aIChatHistory.findUnique({
+        where: { id: chatId },
+        select: { userId: true },
+      });
+
+      if (!chat) {
+        return res.status(404).json(
+          makeErrorResponse(new Error('Chat not found'), 'error.ai.chat_not_found', lang, 404)
+        );
+      }
+
+      if (chat.userId !== userId) {
+        return res.status(403).json(
+          makeErrorResponse(new Error('Not authorized'), 'error.auth.not_authorized', lang, 403)
+        );
+      }
+
+      await client.aIChatHistory.delete({
+        where: { id: chatId },
+      });
+
+      return res.status(200).json(
+        makeSuccessResponse(
+          { deletedChatId: chatId },
+          'success.ai.chat_history_deleted',
+          lang,
+          200
+        )
+      );
+    } else {
+      return res.status(400).json(
+        makeErrorResponse(new Error('Chat ID required or use ?all=true'), 'error.ai.invalid_request', lang, 400)
+      );
+    }
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    return res.status(500).json(
+      makeErrorResponse(new Error('Failed to delete chat history'), 'error.ai.delete_chat_failed', lang, 500)
+    );
+  }
+};
+
 const aiController = {
   chat,
   generateDailyQuests,
@@ -643,6 +837,9 @@ const aiController = {
   forceWeeklyQuests,
   getCompletedQuests,
   completeQuest,
+  getChatHistory,
+  getTokenBalance,
+  deleteChatHistory,
   health,
   config,
 };

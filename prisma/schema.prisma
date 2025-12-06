@@ -43,6 +43,7 @@ model User {
   sessions        Session[]
   keys            Key[]
   Ticket          Ticket[]
+  AIChatHistory   AIChatHistory[]
 }
 
 model Session {
@@ -245,4 +246,21 @@ model Message {
 
   community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   sender    User      @relation("senderMessages", fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+// AI Chat History
+model AIChatHistory {
+  id           String   @id @default(cuid())
+  userId       String
+  sessionId    String? // Optional session grouping
+  prompt       String   @db.Text
+  response     String   @db.Text
+  tokensUsed   Int      @default(1)
+  responseTime Int? // Response time in milliseconds
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([sessionId])
 }
