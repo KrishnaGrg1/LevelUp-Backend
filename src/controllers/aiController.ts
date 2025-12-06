@@ -713,17 +713,17 @@ const getTokenBalance = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    const user = await client.user.findUnique({
-      where: { id: userId },
-      select: {
-        tokens: true,
-        _count: {
-          select: {
-            AIChatHistory: true,
-          },
+    const [user, totalChats] = await Promise.all([
+      client.user.findUnique({
+        where: { id: userId },
+        select: {
+          tokens: true,
         },
-      },
-    });
+      }),
+      client.aIChatHistory.count({
+        where: { userId },
+      }),
+    ]);
 
     if (!user) {
       return res.status(404).json(
@@ -735,7 +735,7 @@ const getTokenBalance = async (req: AuthRequest, res: Response) => {
       makeSuccessResponse(
         {
           tokens: user.tokens,
-          totalChats: user._count.AIChatHistory,
+          totalChats,
           costPerChat: 1,
         },
         'success.ai.token_balance_fetched',
