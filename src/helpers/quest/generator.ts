@@ -199,6 +199,15 @@ export async function generateQuestsWithLock(params: GenerationParams): Promise<
       return;
     }
 
+    // Daily token safety net: reset to 50 if below threshold during daily generation
+    if (questType === 'Daily' && user && typeof user.tokens === 'number' && user.tokens < 50) {
+      await client.user.update({
+        where: { id: userId },
+        data: { tokens: 50 },
+      });
+      console.log(`${logPrefix} Reset tokens to 50 for user ${userId} (was ${user.tokens})`);
+    }
+
     // Check timing (unless forced)
     if (!force) {
       if (expectedWeekday !== null && weekday !== null) {

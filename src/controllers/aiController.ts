@@ -576,7 +576,7 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
     // Find the quest and verify ownership
     const quest = await (client as any).quest.findUnique({
       where: { id: questId },
-      select: { id: true, userId: true, isCompleted: true, description: true, xpValue: true },
+      select: { id: true, userId: true, isCompleted: true, description: true, xpValue: true, type: true },
     });
 
     if (!quest) {
@@ -597,7 +597,10 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // Mark quest as completed and award XP
+    // Determine token reward based on quest type
+    const tokenReward = quest.type === 'Daily' ? 2 : quest.type === 'Weekly' ? 5 : 0;
+
+    // Mark quest as completed and award XP + tokens
     const [updatedQuest, updatedUser] = await Promise.all([
       (client as any).quest.update({
         where: { id: questId },
@@ -605,8 +608,8 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
       }),
       (client as any).user.update({
         where: { id: userId },
-        data: { xp: { increment: quest.xpValue } },
-        select: { xp: true, level: true },
+        data: { xp: { increment: quest.xpValue }, tokens: { increment: tokenReward } },
+        select: { xp: true, level: true, tokens: true },
       }),
     ]);
 
@@ -615,8 +618,10 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
         {
           quest: updatedQuest,
           xpAwarded: quest.xpValue,
+          tokensAwarded: tokenReward,
           currentXp: updatedUser.xp,
           currentLevel: updatedUser.level,
+          currentTokens: updatedUser.tokens,
         },
         'success.ai.quest_completed',
         lang,
