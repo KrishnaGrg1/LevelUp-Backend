@@ -26,6 +26,7 @@ aiRoutes.get('/quests/completed', validate(aiValidation.completedQuests), aiCont
 aiRoutes.get('/quests/:questId', validate(aiValidation.questId), aiController.getSingleQuest);
 
 // Quest actions
+aiRoutes.post('/quests/start', validate(aiValidation.startQuest), aiController.startQuest);
 aiRoutes.patch('/quests/complete', validate(aiValidation.completeQuest), aiController.completeQuest);
 aiRoutes.delete('/quests/:questId', adminMiddleware, validate(aiValidation.questId), aiController.deleteQuest);
 

@@ -156,6 +156,10 @@ model Quest {
   periodStatus      PeriodStatus @default(NONE)
   periodKey         String?
   periodSeq         Int          @default(0) // 1..5 for daily/weekly sets
+  viewedAt          DateTime?    // When user first viewed/opened the quest
+  startedAt         DateTime?    // When user clicked "Start Quest"
+  completedAt       DateTime?    // When user marked it complete
+  estimatedMinutes  Int          @default(30) // AI-generated estimated completion time in minutes
 
   CommunityMember CommunityMember? @relation(fields: [communityMemberId], references: [id])
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)

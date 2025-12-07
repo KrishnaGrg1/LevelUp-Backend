@@ -38,6 +38,7 @@ export function validateQuestResponse(parsed: any): boolean {
     typeof q.description === 'string' && 
     q.description.length > 0 &&
     q.description.length < 500 && // Reasonable max length
-    (q.xpReward === undefined || typeof q.xpReward === 'number')
+    (q.xpReward === undefined || typeof q.xpReward === 'number') &&
+    (q.estimatedMinutes === undefined || (typeof q.estimatedMinutes === 'number' && q.estimatedMinutes >= 5 && q.estimatedMinutes <= 20))
   );
 }

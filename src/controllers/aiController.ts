@@ -576,7 +576,7 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
     // Find the quest and verify ownership
     const quest = await (client as any).quest.findUnique({
       where: { id: questId },
-      select: { id: true, userId: true, isCompleted: true, description: true, xpValue: true, type: true, communityId: true },
+      select: { id: true, userId: true, isCompleted: true, description: true, xpValue: true, type: true, communityId: true, startedAt: true, estimatedMinutes: true },
     });
 
     if (!quest) {
@@ -597,6 +597,30 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
       );
     }
 
+    // Validate quest was started
+    if (!quest.startedAt) {
+      return res.status(400).json(
+        makeErrorResponse(new Error('Quest must be started before completion'), 'error.ai.quest_not_started', lang, 400)
+      );
+    }
+
+    // Validate minimum time elapsed using AI-generated estimatedMinutes
+    const timeElapsed = Date.now() - new Date(quest.startedAt).getTime();
+    const requiredMinutes = quest.estimatedMinutes || 30; // Fallback to 30 if not set
+    const minTimeRequired = requiredMinutes * 60 * 1000; // Convert to milliseconds
+    
+    if (timeElapsed < minTimeRequired) {
+      const remainingMinutes = Math.ceil((minTimeRequired - timeElapsed) / 60000);
+      return res.status(400).json(
+        makeErrorResponse(
+          new Error(`You must wait at least ${requiredMinutes} minutes before completing this quest. Time remaining: ${remainingMinutes} minutes.`),
+          'error.ai.quest_min_time_not_met',
+          lang,
+          400
+        )
+      );
+    }
+
     // Determine token reward based on quest type
     const tokenReward = quest.type === 'Daily' ? 2 : quest.type === 'Weekly' ? 5 : 0;
 
@@ -604,7 +628,7 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
     const [updatedQuest, updatedUser, updatedCommunityMember] = await Promise.all([
       (client as any).quest.update({
         where: { id: questId },
-        data: { isCompleted: true },
+        data: { isCompleted: true, completedAt: new Date() },
       }),
       (client as any).user.update({
         where: { id: userId },
@@ -643,6 +667,76 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
     const lang = (req.language as Language) || 'eng';
     return res.status(500).json(
       makeErrorResponse(new Error('Failed to complete quest'), 'error.ai.complete_quest_failed', lang, 500)
+    );
+  };
+};
+
+const startQuest = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    const userId = req.user?.id;
+    const { questId } = req.body as { questId: string };
+
+    if (!userId) {
+      return res.status(401).json(
+        makeErrorResponse(new Error('Not authenticated'), 'error.auth.not_authenticated', lang, 401)
+      );
+    }
+
+    if (!questId) {
+      return res.status(400).json(
+        makeErrorResponse(new Error('Quest ID is required'), 'error.ai.quest_id_required', lang, 400)
+      );
+    }
+
+    // Find the quest and verify ownership
+    const quest = await client.quest.findUnique({
+      where: { id: questId },
+      select: { id: true, userId: true, isCompleted: true, startedAt: true, description: true },
+    });
+
+    if (!quest) {
+      return res.status(404).json(
+        makeErrorResponse(new Error('Quest not found'), 'error.ai.quest_not_found', lang, 404)
+      );
+    }
+
+    if (quest.userId !== userId) {
+      return res.status(403).json(
+        makeErrorResponse(new Error('Not authorized'), 'error.auth.not_authorized', lang, 403)
+      );
+    }
+
+    if (quest.isCompleted) {
+      return res.status(400).json(
+        makeErrorResponse(new Error('Quest already completed'), 'error.ai.quest_already_completed', lang, 400)
+      );
+    }
+
+    if (quest.startedAt) {
+      return res.status(400).json(
+        makeErrorResponse(new Error('Quest already started'), 'error.ai.quest_already_started', lang, 400)
+      );
+    }
+
+    // Mark quest as started
+    const updatedQuest = await client.quest.update({
+      where: { id: questId },
+      data: { startedAt: new Date() },
+    });
+
+    return res.status(200).json(
+      makeSuccessResponse(
+        { quest: updatedQuest },
+        'success.ai.quest_started',
+        lang,
+        200
+      )
+    );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    return res.status(500).json(
+      makeErrorResponse(new Error('Failed to start quest'), 'error.ai.start_quest_failed', lang, 500)
     );
   }
 };
@@ -902,6 +996,7 @@ const aiController = {
   forceDailyQuests,
   forceWeeklyQuests,
   getCompletedQuests,
+  startQuest,
   completeQuest,
   getChatHistory,
   getTokenBalance,
