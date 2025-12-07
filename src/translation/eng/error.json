@@ -64,5 +64,12 @@
     "failed_to_upload": "Failed to upload file. Please try again.",
     "invalid_file_type": "Invalid file type. Only images are allowed.",
     "file_too_large": "File size is too large"
+  },
+  "ai": {
+    "prompt_required": "Prompt is required",
+    "not_configured": "AI is not configured",
+    "chat_failed": "AI chat failed",
+    "generate_failed": "Failed to generate quests",
+    "goals_required": "Goals are required"
   }
 }

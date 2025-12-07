@@ -41,5 +41,13 @@
   "upload": {
     "profile_picture_uploaded": "प्रोफ़ाइल चित्र सफलतापूर्वक अपलोड हुआ",
     "community_photo_uploaded": "समुदाय फोटो सफलतापूर्वक अपलोड हुआ"
+  },
+  "ai": {
+    "chat": "AI चैट प्रतिक्रिया उत्पन्न हुई",
+    "quests_generated": "क्वेस्ट सफलतापूर्वक जनरेट हुए",
+    "no_response": "कोई प्रतिक्रिया नहीं",
+    "fallback_description": "{difficulty} स्तर पर {skill} पर 30 मिनट काम करें।",
+    "health": "AI कॉन्फ़िगर्ड और स्वस्थ है",
+    "config": "AI कॉन्फ़िगरेशन सफलतापूर्वक प्राप्त हुआ"
   }
 }

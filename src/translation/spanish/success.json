@@ -41,5 +41,13 @@
   "upload": {
     "profile_picture_uploaded": "Foto de perfil subida exitosamente",
     "community_photo_uploaded": "Foto de la comunidad subida exitosamente"
+  },
+  "ai": {
+    "chat": "Respuesta de IA generada",
+    "quests_generated": "Misiones generadas exitosamente",
+    "no_response": "Sin respuesta",
+    "fallback_description": "Trabaja en {skill} a nivel {difficulty} durante 30 minutos.",
+    "health": "La IA está configurada y saludable",
+    "config": "Configuración de IA obtenida correctamente"
   }
 }
