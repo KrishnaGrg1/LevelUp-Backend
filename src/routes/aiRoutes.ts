@@ -32,5 +32,7 @@ aiRoutes.delete('/quests/:questId', adminMiddleware, validate(aiValidation.quest
 // System endpoints
 aiRoutes.get('/health', aiController.health);
 aiRoutes.get('/config', aiController.config);
+// Community memberships (XP per community)
+aiRoutes.get('/community/memberships', aiController.getCommunityMemberships);
 
 export default aiRoutes;

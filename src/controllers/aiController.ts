@@ -576,7 +576,7 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
     // Find the quest and verify ownership
     const quest = await (client as any).quest.findUnique({
       where: { id: questId },
-      select: { id: true, userId: true, isCompleted: true, description: true, xpValue: true, type: true },
+      select: { id: true, userId: true, isCompleted: true, description: true, xpValue: true, type: true, communityId: true },
     });
 
     if (!quest) {
@@ -600,8 +600,8 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
     // Determine token reward based on quest type
     const tokenReward = quest.type === 'Daily' ? 2 : quest.type === 'Weekly' ? 5 : 0;
 
-    // Mark quest as completed and award XP + tokens
-    const [updatedQuest, updatedUser] = await Promise.all([
+    // Mark quest as completed and award XP + tokens (global) + community XP
+    const [updatedQuest, updatedUser, updatedCommunityMember] = await Promise.all([
       (client as any).quest.update({
         where: { id: questId },
         data: { isCompleted: true },
@@ -611,6 +611,14 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
         data: { xp: { increment: quest.xpValue }, tokens: { increment: tokenReward } },
         select: { xp: true, level: true, tokens: true },
       }),
+      // Increment per-community XP if quest belongs to a community
+      quest.communityId
+        ? (client as any).communityMember.update({
+            where: { userId_communityId: { userId, communityId: quest.communityId } },
+            data: { totalXP: { increment: quest.xpValue } },
+            select: { totalXP: true, level: true, communityId: true },
+          })
+        : Promise.resolve(null),
     ]);
 
     return res.status(200).json(
@@ -622,6 +630,9 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
           currentXp: updatedUser.xp,
           currentLevel: updatedUser.level,
           currentTokens: updatedUser.tokens,
+          communityXp: updatedCommunityMember?.totalXP ?? undefined,
+          communityLevel: updatedCommunityMember?.level ?? undefined,
+          communityId: updatedCommunityMember?.communityId ?? quest.communityId ?? undefined,
         },
         'success.ai.quest_completed',
         lang,
@@ -757,6 +768,56 @@ const getTokenBalance = async (req: AuthRequest, res: Response) => {
 };
 
 /**
+ * Get community memberships for the authenticated user including totalXP
+ */
+const getCommunityMemberships = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json(
+        makeErrorResponse(new Error('Not authenticated'), 'error.auth.not_authenticated', lang, 401)
+      );
+    }
+
+    const memberships = await client.communityMember.findMany({
+      where: { userId },
+      select: {
+        communityId: true,
+        totalXP: true,
+        level: true,
+        status: true,
+        isPinned: true,
+        community: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            photo: true,
+          },
+        },
+      },
+      orderBy: { totalXP: 'desc' },
+    });
+
+    return res.status(200).json(
+      makeSuccessResponse(
+        { memberships },
+        'success.community.memberships_fetched',
+        lang,
+        200
+      )
+    );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    return res.status(500).json(
+      makeErrorResponse(new Error('Failed to fetch memberships'), 'error.community.memberships_failed', lang, 500)
+    );
+  }
+};
+
+/**
  * Delete chat history (single or all)
  */
 const deleteChatHistory = async (req: AuthRequest, res: Response) => {
@@ -847,6 +908,7 @@ const aiController = {
   deleteChatHistory,
   health,
   config,
+  getCommunityMemberships,
 };
 
 export default aiController;
