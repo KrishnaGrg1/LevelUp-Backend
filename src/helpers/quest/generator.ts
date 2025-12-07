@@ -81,6 +81,7 @@ export async function generateQuestsForAllCommunities(
 
     // Try AI generation if configured
     if (aiConfigured) {
+      let res: any;
       try {
         const status: MemberStatus = (membership.status as MemberStatus) || MemberStatus.Beginner;
         const xp = Math.max(0, user.xp ?? 0);
@@ -88,8 +89,21 @@ export async function generateQuestsForAllCommunities(
         const promptXp = questType === 'Weekly' ? xp + 20 : xp;
 
         const prompt = getDailyQuestSetPrompt(skillName, promptLevel, status, promptXp);
-        const res = await OpenAIChatWithTimeout({ prompt }, 30000);
-        const parsed = JSON.parse(res?.content ?? '{}');
+        res = await OpenAIChatWithTimeout({ prompt }, 30000);
+        
+        // Clean the response content before parsing
+        let content = res?.content ?? '{}';
+        
+        // Try to extract JSON if wrapped in markdown code blocks
+        const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+        if (jsonMatch) {
+          content = jsonMatch[1];
+        }
+        
+        // Remove any potential BOM or whitespace
+        content = content.trim();
+        
+        const parsed = JSON.parse(content);
 
         if (validateQuestResponse(parsed)) {
           quests = parsed.quests;
@@ -98,6 +112,9 @@ export async function generateQuestsForAllCommunities(
         }
       } catch (error) {
         console.error(`${logPrefix} AI failed for user ${userId}, community ${membership.communityId}:`, error);
+        if (error instanceof SyntaxError) {
+          console.error(`${logPrefix} JSON parse error. Response preview:`, res?.content?.substring(0, 500));
+        }
       }
     }
 

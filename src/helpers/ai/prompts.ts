@@ -55,6 +55,8 @@ Constraints:
 - Difficulty should match user's level & status
 - Specific, measurable, actionable; clear success criteria
 - Description max 500 chars
+- CRITICAL: Avoid using single quotes, apostrophes, or backslashes in descriptions
+- Use double quotes sparingly and escape them properly in JSON
 
 Output JSON only:
 {
@@ -67,7 +69,7 @@ Output JSON only:
   ]
 }
 
-Return ONLY valid JSON.`;
+Return ONLY valid JSON with properly escaped strings.`;
 }
 
 /**
