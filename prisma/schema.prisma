@@ -35,12 +35,14 @@ model User {
   Clan            Clan[]
   Community       Community[]
   CommunityMember CommunityMember[]
-  otps            Otp[]
-  Quest           Quest[]
-  category        Category?         @relation(fields: [categoryId], references: [id])
-  sessions        Session[]
-  keys            Key[]
-  Ticket          Ticket[]
+  ClanMember      ClanMember[]
+
+  otps     Otp[]
+  Quest    Quest[]
+  category Category? @relation(fields: [categoryId], references: [id])
+  sessions Session[]
+  keys     Key[]
+  Ticket   Ticket[]
 }
 
 model Session {
@@ -90,10 +92,12 @@ model Community {
   categoryId  String?
   updatedAt   DateTime @updatedAt
 
-  clans    Clan[]
-  category Category?         @relation(fields: [categoryId], references: [id])
-  owner    User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  members  CommunityMember[]
+  clans       Clan[]
+  category    Category?         @relation(fields: [categoryId], references: [id])
+  owner       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members     CommunityMember[]
+  clanMembers ClanMember[]
+
   messages Message[]
 }
 
@@ -112,29 +116,44 @@ model Clan {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  community Community         @relation(fields: [communityId], references: [id])
-  owner     User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  members   CommunityMember[]
+  community Community    @relation(fields: [communityId], references: [id])
+  owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members   ClanMember[]
+  messages  Message[]
 }
 
 model CommunityMember {
-  id          String       @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String
   communityId String
-  role        Role         @default(MEMBER)
-  joinedAt    DateTime     @default(now())
-  totalXP     Int          @default(0)
-  clanId      String?
-  level       Int          @default(1)
-  status      MemberStatus @default(Beginner)
-  isPinned    Boolean      @default(false)
+  role        Role     @default(MEMBER)
+  joinedAt    DateTime @default(now())
+  totalXP     Int      @default(0)
 
-  clan      Clan?     @relation(fields: [clanId], references: [id])
+  level    Int          @default(1)
+  status   MemberStatus @default(Beginner)
+  isPinned Boolean      @default(false)
+
   community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   quest     Quest[]
 
   @@unique([userId, communityId])
+}
+
+model ClanMember {
+  id          String   @id @default(cuid())
+  userId      String
+  clanId      String
+  communityId String // must match clan.communityId
+  joinedAt    DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clan      Clan      @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clanId]) // user cannot rejoin the same clan twice
+  @@index([userId, communityId]) // check clans inside a community
 }
 
 model Quest {
@@ -209,19 +228,22 @@ model Ticket {
   priority                 TicketPriority @default(LOW)
   expectedDateOfCompletion DateTime?
   createdAt                DateTime       @default(now())
-  updatedAt                DateTime       @updatedAt
+updatedAt                DateTime       @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Chat messages per community
 model Message {
-  id          String   @id @default(cuid())
-  content     String
-  communityId String
+  id          String     @id @default(uuid())
+  community   Community? @relation(fields: [communityId], references: [id])
+  communityId String?
+  clan        Clan?      @relation(fields: [clanId], references: [id])
+  clanId      String?
+  sender      User       @relation("senderMessages", fields: [senderId], references: [id])
   senderId    String
-  createdAt   DateTime @default(now())
-
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  sender    User      @relation("senderMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  content     String
+  createdAt   DateTime   @default(now())
+ 
+  
 }

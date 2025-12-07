@@ -28,6 +28,7 @@ export default function initializeSocket(io: Server) {
       console.error('🔴 Socket error:', {
         socketId: socket.id,
         user: socket.user?.UserName,
+
         error: error.message,
       });
     });
