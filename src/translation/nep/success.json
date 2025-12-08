@@ -43,11 +43,32 @@
     "community_photo_uploaded": "समुदाय फोटो सफलतापूर्वक अपलोड भयो"
   },
   "ai": {
-    "chat": "AI च्याट प्रतिक्रिया सिर्जना भयो",
+    "chat": "AI च्याट प्रतिक्रिया सफलतापूर्वक सिर्जना भयो",
+    "chat_started": "AI च्याट सत्र सुरु भयो",
+    "chat_completed": "AI च्याट सफलतापूर्वक पूरा भयो",
+    "chat_cancelled": "AI च्याट रद्द गरियो",
     "quests_generated": "क्वेस्टहरू सफलतापूर्वक सिर्जना भए",
-    "no_response": "कुनै प्रतिक्रिया छैन",
+    "quest_completed": "क्वेस्ट सफलतापूर्वक पूरा भएको रूपमा चिन्ह लगाइयो",
+    "quest_fetched": "क्वेस्ट सफलतापूर्वक प्राप्त भयो",
+    "quests_fetched": "क्वेस्टहरू सफलतापूर्वक प्राप्त भए",
+    "daily_quests_fetched": "दैनिक क्वेस्टहरू सफलतापूर्वक प्राप्त भए",
+    "weekly_quests_fetched": "साप्ताहिक क्वेस्टहरू सफलतापूर्वक प्राप्त भए",
+    "completed_quests_fetched": "पूरा भएका क्वेस्टहरू सफलतापूर्वक प्राप्त भए",
+    "quest_deleted": "क्वेस्ट सफलतापूर्वक मेटाइयो",
+    "chat_history_fetched": "च्याट इतिहास सफलतापूर्वक प्राप्त भयो",
+    "chat_history_deleted": "च्याट इतिहास सफलतापूर्वक मेटाइयो",
+    "all_chat_history_deleted": "सबै च्याट इतिहास सफलतापूर्वक मेटाइयो",
+    "token_balance_fetched": "टोकन ब्यालेन्स सफलतापूर्वक प्राप्त भयो",
+    "tokens_available": "तपाईंसँग {count} टोकनहरू उपलब्ध छन्",
+    "tokens_deducted": "१ टोकन कटौती गरियो। बाँकी: {remaining}",
+    "no_response": "AI बाट कुनै प्रतिक्रिया छैन",
     "fallback_description": "{difficulty} तहमा {skill} मा ३० मिनेट काम गर्नुहोस्।",
-    "health": "AI कन्फिगर गरिएको छ र ठीक छ",
-    "config": "AI कन्फिग सफलतापूर्वक प्राप्त भयो"
+    "health_check_passed": "AI सेवा स्वस्थ र सञ्चालनमा छ",
+    "health_check_database_connected": "डाटाबेस जडान प्रमाणित गरियो",
+    "config_fetched": "AI कन्फिगरेसन सफलतापूर्वक प्राप्त भयो",
+    "daily_quests_forced": "दैनिक क्वेस्टहरू सफलतापूर्वक पुन: सिर्जना भए",
+    "weekly_quests_forced": "साप्ताहिक क्वेस्टहरू सफलतापूर्वक पुन: सिर्जना भए",
+    "quest_rotation_success": "क्वेस्ट रोटेशन सफलतापूर्वक पूरा भयो",
+    "quest_period_updated": "क्वेस्ट अवधि स्थिति अपडेट भयो"
   }
 }

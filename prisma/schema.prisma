@@ -22,6 +22,8 @@ model User {
   profilePicture String? // path to profile picture
   xp             Int      @default(0)
   level          Int      @default(1)
+  tokens         Int      @default(50)
+  timezone       String   @default("UTC")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   categoryId     String?
@@ -43,6 +45,7 @@ model User {
   sessions Session[]
   keys     Key[]
   Ticket   Ticket[]
+  AIChatHistory   AIChatHistory[]
 }
 
 model Session {
@@ -97,8 +100,8 @@ model Community {
   owner       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   members     CommunityMember[]
   clanMembers ClanMember[]
-
-  messages Message[]
+  messages    Message[]
+  quests      Quest[]
 }
 
 model Clan {
@@ -145,7 +148,7 @@ model ClanMember {
   id          String   @id @default(cuid())
   userId      String
   clanId      String
-  communityId String // must match clan.communityId
+  communityId String   // must match clan.communityId
   joinedAt    DateTime @default(now())
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -154,11 +157,13 @@ model ClanMember {
 
   @@unique([userId, clanId]) // user cannot rejoin the same clan twice
   @@index([userId, communityId]) // check clans inside a community
+  @@map("clanMember") // Map to camelCase table name for Prisma client
 }
 
 model Quest {
   id                String      @id @default(cuid())
   userId            String
+  communityId       String?
   xpValue           Int
   isCompleted       Boolean     @default(false)
   date              DateTime
@@ -167,9 +172,19 @@ model Quest {
   communityMemberId String?
   description       String
   source            QuestSource @default(AI)
+  periodStatus      PeriodStatus @default(NONE)
+  periodKey         String?
+  periodSeq         Int          @default(0) // 1..5 for daily/weekly sets
+  viewedAt          DateTime?    // When user first viewed/opened the quest
+  startedAt         DateTime?    // When user clicked "Start Quest"
+  completedAt       DateTime?    // When user marked it complete
+  estimatedMinutes  Int          @default(30) // AI-generated estimated completion time in minutes
 
   CommunityMember CommunityMember? @relation(fields: [communityMemberId], references: [id])
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community       Community?       @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@index([userId, communityId, type, date])
 }
 
 enum MemberStatus {
@@ -189,6 +204,17 @@ enum QuestSource {
   AI
   TEMPLATE
   MANUAL
+}
+
+// Tracks position of a quest in recent daily/weekly rolls
+enum PeriodStatus {
+  TODAY
+  YESTERDAY
+  DAY_BEFORE_YESTERDAY
+  THIS_WEEK
+  LAST_WEEK
+  TWO_WEEKS_AGO
+  NONE
 }
 
 enum TicketStatus {
@@ -235,15 +261,31 @@ updatedAt                DateTime       @updatedAt
 
 // Chat messages per community
 model Message {
-  id          String     @id @default(uuid())
-  community   Community? @relation(fields: [communityId], references: [id])
-  communityId String?
-  clan        Clan?      @relation(fields: [clanId], references: [id])
-  clanId      String?
-  sender      User       @relation("senderMessages", fields: [senderId], references: [id])
-  senderId    String
+  id          String   @id @default(uuid())
   content     String
-  createdAt   DateTime   @default(now())
- 
-  
+  communityId String?
+  senderId    String
+  clanId      String?
+  createdAt   DateTime @default(now())
+
+  community Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  clan      Clan?      @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  sender    User       @relation("senderMessages", fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+// AI Chat History
+model AIChatHistory {
+  id           String   @id @default(cuid())
+  userId       String
+  sessionId    String? // Optional session grouping
+  prompt       String   @db.Text
+  response     String   @db.Text
+  tokensUsed   Int      @default(1)
+  responseTime Int? // Response time in milliseconds
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([sessionId])
 }

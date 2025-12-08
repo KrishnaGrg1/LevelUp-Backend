@@ -46,11 +46,32 @@
     "community_photo_uploaded": "Community photo uploaded successfully"
   },
   "ai": {
-    "chat": "AI chat response generated",
+    "chat": "AI chat response generated successfully",
+    "chat_started": "AI chat session started",
+    "chat_completed": "AI chat completed successfully",
+    "chat_cancelled": "AI chat cancelled",
     "quests_generated": "Quests generated successfully",
-    "no_response": "No response",
+    "quest_completed": "Quest marked as complete successfully",
+    "quest_fetched": "Quest retrieved successfully",
+    "quests_fetched": "Quests retrieved successfully",
+    "daily_quests_fetched": "Daily quests retrieved successfully",
+    "weekly_quests_fetched": "Weekly quests retrieved successfully",
+    "completed_quests_fetched": "Completed quests retrieved successfully",
+    "quest_deleted": "Quest deleted successfully",
+    "chat_history_fetched": "Chat history retrieved successfully",
+    "chat_history_deleted": "Chat history deleted successfully",
+    "all_chat_history_deleted": "All chat history deleted successfully",
+    "token_balance_fetched": "Token balance retrieved successfully",
+    "tokens_available": "You have {count} tokens available",
+    "tokens_deducted": "1 token deducted. Remaining: {remaining}",
+    "no_response": "No response from AI",
     "fallback_description": "Work on {skill} at {difficulty} level for 30 minutes.",
-    "health": "AI is configured and healthy",
-    "config": "AI config fetched successfully"
+    "health_check_passed": "AI service is healthy and operational",
+    "health_check_database_connected": "Database connection verified",
+    "config_fetched": "AI configuration retrieved successfully",
+    "daily_quests_forced": "Daily quests regenerated successfully",
+    "weekly_quests_forced": "Weekly quests regenerated successfully",
+    "quest_rotation_success": "Quest rotation completed successfully",
+    "quest_period_updated": "Quest period status updated"
   }
 }

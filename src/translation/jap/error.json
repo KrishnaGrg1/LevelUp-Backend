@@ -70,6 +70,26 @@
     "not_configured": "AI が設定されていません",
     "chat_failed": "AI チャットに失敗しました",
     "generate_failed": "クエストの生成に失敗しました",
-    "goals_required": "目標が必要です"
+    "goals_required": "目標が必要です",
+    "quest_not_found": "クエストが見つかりません",
+    "quest_already_completed": "クエストはすでに完了しています",
+    "quest_not_active": "クエストは今日アクティブではありません",
+    "unauthorized_quest": "このクエストにアクセスする権限がありません",
+    "insufficient_tokens": "トークンが不足しています。トークンを購入してください。",
+    "chat_history_not_found": "チャット履歴が見つかりません",
+    "unauthorized_chat": "このチャット履歴にアクセスする権限がありません",
+    "invalid_prompt": "無効または空のプロンプト",
+    "prompt_too_long": "プロンプトが最大文字数4000文字を超えています",
+    "token_check_failed": "トークン残高の確認に失敗しました",
+    "token_fetch_failed": "トークン残高の取得に失敗しました",
+    "quest_completion_failed": "クエストを完了としてマークできませんでした",
+    "quest_fetch_failed": "クエストの取得に失敗しました",
+    "quest_delete_failed": "クエストの削除に失敗しました",
+    "chat_history_delete_failed": "チャット履歴の削除に失敗しました",
+    "quest_generation_timeout": "クエスト生成がタイムアウトしました。もう一度試してください。",
+    "no_community_memberships": "クエストを取得するにはコミュニティに参加する必要があります",
+    "force_generation_failed": "クエストの強制生成に失敗しました",
+    "health_check_failed": "ヘルスチェックに失敗しました",
+    "config_fetch_failed": "設定の取得に失敗しました"
   }
 }

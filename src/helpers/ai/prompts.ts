@@ -20,7 +20,8 @@ Generate **ONE daily quest** for the skill **"${skillName}"**.
 - Current XP: ${xp}
 
 ### Quest Requirements
-- Must be doable in **15–60 minutes**
+- Must be doable in **5–20 minutes MAXIMUM**
+- Keep it SHORT and achievable
 - Difficulty must match the user's level & status
 - Must be **specific, measurable, and actionable**
 - Must include **clear success criteria**
@@ -30,10 +31,55 @@ Generate **ONE daily quest** for the skill **"${skillName}"**.
 ### Output Format (JSON only)
 {
   "description": "Detailed steps + success criteria (max 500 chars)",
-  "xpReward": ${Math.max(10, level * 10)}
+  "xpReward": ${Math.max(10, level * 10)},
+  "estimatedMinutes": 15
 }
 
+CRITICAL: "estimatedMinutes" MUST be 5-20 minutes max. Calculate based on XP reward, user level, and status. Higher XP = longer (max 20), lower XP = shorter (5-10). Use MINIMUM realistic time for buffer.
 Return **ONLY valid JSON** with no surrounding text.`;
+}
+
+/**
+ * Get structured prompt for generating a SET of 5 daily quests (single call)
+ */
+export function getDailyQuestSetPrompt(
+  skillName: string,
+  level: number,
+  status: MemberStatus,
+  xp: number
+): string {
+  return `
+You are an AI Quest Designer for the LevelUp platform.
+
+Generate exactly FIVE daily quests for the skill "${skillName}".
+
+Constraints:
+- Each quest should take 5–20 minutes MAXIMUM
+- Keep quests SHORT and achievable
+- Difficulty should match user's level & status
+- Specific, measurable, actionable; clear success criteria
+- Description max 500 chars
+- CRITICAL: Avoid using single quotes, apostrophes, or backslashes in descriptions
+- Use double quotes sparingly and escape them properly in JSON
+
+Output JSON only:
+{
+  "quests": [
+    { "description": "...", "xpReward": ${Math.max(10, level * 10)}, "estimatedMinutes": 10 },
+    { "description": "...", "xpReward": ${Math.max(10, level * 10)}, "estimatedMinutes": 15 },
+    { "description": "...", "xpReward": ${Math.max(10, level * 10)}, "estimatedMinutes": 8 },
+    { "description": "...", "xpReward": ${Math.max(10, level * 10)}, "estimatedMinutes": 20 },
+    { "description": "...", "xpReward": ${Math.max(10, level * 10)}, "estimatedMinutes": 12 }
+  ]
+}
+
+CRITICAL: "estimatedMinutes" MUST be 5-20 minutes max. Calculate based on:
+- Higher XP rewards = longer time (max 20 min)
+- Lower XP rewards = shorter time (5-10 min)
+- Beginner status = shorter times
+- Advanced status = can use full 20 min range
+Use MINIMUM realistic time. If task takes 15 min, set to 10-12 min for buffer.
+Return ONLY valid JSON with properly escaped strings.`;
 }
 
 /**
@@ -58,8 +104,8 @@ Generate **ONE advanced quest** for the skill **"${skillName}"**.
 
 ### Quest Requirements
 - Must be significantly **more challenging** than daily quests
-- Estimated duration: **30–120 minutes**
-- Should push the user beyond comfort zone
+- Estimated duration: **10–20 minutes MAXIMUM**
+- Should push the user beyond comfort zone while staying SHORT
 - Must include **bonus objectives or stretch goals**
 - Must be unique, skill-expanding, and motivating
 - Description limit: **800 characters**
@@ -67,9 +113,11 @@ Generate **ONE advanced quest** for the skill **"${skillName}"**.
 ### Output Format (JSON only)
 {
   "description": "Steps + challenge + bonus objectives (max 800 chars)",
-  "xpReward": ${Math.max(20, level * 15)}
+  "xpReward": ${Math.max(20, level * 15)},
+  "estimatedMinutes": 18
 }
 
+CRITICAL: "estimatedMinutes" MUST be 10-20 minutes max. Even though this is a premium quest, keep it achievable and SHORT. Calculate based on XP reward and user level. Use MINIMUM realistic time for buffer.
 Return **ONLY valid JSON** with no additional text.`;
 }
 

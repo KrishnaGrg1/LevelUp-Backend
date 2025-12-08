@@ -67,9 +67,29 @@
   },
   "ai": {
     "prompt_required": "المطالبة مطلوبة",
-    "not_configured": "الذكاء الاصطناعي غير مُكوَّن",
+    "not_configured": "الذكاء الاصطناعي غير مُكوَّن",
     "chat_failed": "فشل دردشة الذكاء الاصطناعي",
     "generate_failed": "فشل إنشاء المهام",
-    "goals_required": "الأهداف مطلوبة"
+    "goals_required": "الأهداف مطلوبة",
+    "quest_not_found": "المهمة غير موجودة",
+    "quest_already_completed": "المهمة مُنجزة بالفعل",
+    "quest_not_active": "المهمة غير نشطة اليوم",
+    "unauthorized_quest": "ليس لديك الإذن للوصول إلى هذه المهمة",
+    "insufficient_tokens": "رموز غير كافية. يرجى شراء المزيد من الرموز.",
+    "chat_history_not_found": "سجل الدردشة غير موجود",
+    "unauthorized_chat": "ليس لديك الإذن للوصول إلى سجل الدردشة هذا",
+    "invalid_prompt": "مطالبة غير صالحة أو فارغة",
+    "prompt_too_long": "المطالبة تتجاوز الحد الأقصى للطول وهو 4000 حرف",
+    "token_check_failed": "فشل التحقق من رصيد الرموز",
+    "token_fetch_failed": "فشل في جلب رصيد الرموز",
+    "quest_completion_failed": "فشل في وضع علامة المهمة كمكتملة",
+    "quest_fetch_failed": "فشل في جلب المهام",
+    "quest_delete_failed": "فشل في حذف المهمة",
+    "chat_history_delete_failed": "فشل في حذف سجل الدردشة",
+    "quest_generation_timeout": "انتهت مهلة إنشاء المهمة. حاول مرة أخرى.",
+    "no_community_memberships": "يجب أن تنضم إلى مجتمع للحصول على المهام",
+    "force_generation_failed": "فشل في فرض إنشاء المهام",
+    "health_check_failed": "فشل الفحص الصحي",
+    "config_fetch_failed": "فشل في جلب الإعدادات"
   }
 }

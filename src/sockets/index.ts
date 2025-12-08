@@ -4,19 +4,21 @@ import {
   socketAuthMiddleware,
 } from '../middlewares/socketAuthMiddleware';
 import chatSocketHandler from './chatSocket';
+import aiChatSocketHandler from './aiChatSocket';
 
 export default function initializeSocket(io: Server) {
-  console.log('Socket initialized');
+  console.log('🔌 Socket.IO initializing...');
 
   //apply global authentication middleware
   io.use(socketAuthMiddleware);
 
   //global connection handler -- WHEN CLIENT CONNECTS
   io.on('connection', (socket: AuthenticatedSocket) => {
-    console.log(`Client Connected: ${socket.id}`);
+    console.log(`✅ Client Connected: ${socket.id} | User: ${socket.user?.UserName} (${socket.user?.id})`);
 
-    // 3️⃣ INITIALIZE CHAT HANDLER - Set up chat events
-    chatSocketHandler(io, socket); // ← Chat functionality attached here
+    // Initialize chat handlers
+    chatSocketHandler(io, socket); // Community chat functionality
+    aiChatSocketHandler(io, socket); // AI chat functionality
 
     //global disconnect handler
     socket.on('disconnect', (reason) => {
