@@ -42,7 +42,8 @@ const corsOptions = {
     // Allow requests from these origins
     const allowedOrigins = [
       'http://localhost:3000',
-      'https://www.melevelup.me', // ✅ Added www subdomain
+      'https://www.melevelup.me',
+      'https://level-up-olive-gamma.vercel.app', 
       process.env.NEXT_PUBLIC_APP_URL,
       process.env.FRONTEND_URL,
     ].filter(Boolean);
