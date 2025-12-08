@@ -43,11 +43,32 @@
     "community_photo_uploaded": "تم تحميل صورة المجتمع بنجاح"
   },
   "ai": {
-    "chat": "تم إنشاء رد الدردشة بواسطة الذكاء الاصطناعي",
+    "chat": "تم إنشاء رد الدردشة بواسطة الذكاء الاصطناعي بنجاح",
+    "chat_started": "بدأت جلسة الدردشة بالذكاء الاصطناعي",
+    "chat_completed": "تمت الدردشة بالذكاء الاصطناعي بنجاح",
+    "chat_cancelled": "تم إلغاء الدردشة بالذكاء الاصطناعي",
     "quests_generated": "تم إنشاء المهام بنجاح",
-    "no_response": "لا توجد استجابة",
+    "quest_completed": "تم وضع علامة المهمة كمكتملة بنجاح",
+    "quest_fetched": "تم جلب المهمة بنجاح",
+    "quests_fetched": "تم جلب المهام بنجاح",
+    "daily_quests_fetched": "تم جلب المهام اليومية بنجاح",
+    "weekly_quests_fetched": "تم جلب المهام الأسبوعية بنجاح",
+    "completed_quests_fetched": "تم جلب المهام المكتملة بنجاح",
+    "quest_deleted": "تم حذف المهمة بنجاح",
+    "chat_history_fetched": "تم جلب سجل الدردشة بنجاح",
+    "chat_history_deleted": "تم حذف سجل الدردشة بنجاح",
+    "all_chat_history_deleted": "تم حذف جميع سجل الدردشة بنجاح",
+    "token_balance_fetched": "تم جلب رصيد الرموز بنجاح",
+    "tokens_available": "لديك {count} رموز متاحة",
+    "tokens_deducted": "تم خصم 1 رمز. المتبقي: {remaining}",
+    "no_response": "لا يوجد رد من الذكاء الاصطناعي",
     "fallback_description": "اعمل على {skill} بمستوى {difficulty} لمدة 30 دقيقة.",
-    "health": "الذكاء الاصطناعي مُعد ويعمل بشكل جيد",
-    "config": "تم جلب إعدادات الذكاء الاصطناعي بنجاح"
+    "health_check_passed": "خدمة الذكاء الاصطناعي تعمل بشكل صحي",
+    "health_check_database_connected": "تم التحقق من اتصال قاعدة البيانات",
+    "config_fetched": "تم جلب إعدادات الذكاء الاصطناعي بنجاح",
+    "daily_quests_forced": "تم إعادة إنشاء المهام اليومية بنجاح",
+    "weekly_quests_forced": "تم إعادة إنشاء المهام الأسبوعية بنجاح",
+    "quest_rotation_success": "تم إكمال تدوير المهام بنجاح",
+    "quest_period_updated": "تم تحديث حالة فترة المهمة"
   }
 }

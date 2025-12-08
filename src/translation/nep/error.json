@@ -70,6 +70,26 @@
     "not_configured": "AI कन्फिगर गरिएको छैन",
     "chat_failed": "AI च्याट असफल भयो",
     "generate_failed": "क्वेस्ट सिर्जना गर्न असफल",
-    "goals_required": "लक्ष्यहरू आवश्यक छन्"
+    "goals_required": "लक्ष्यहरू आवश्यक छन्",
+    "quest_not_found": "क्वेस्ट फेला परेन",
+    "quest_already_completed": "क्वेस्ट पहिले नै पूरा भइसकेको छ",
+    "quest_not_active": "क्वेस्ट आज सक्रिय छैन",
+    "unauthorized_quest": "तपाईंलाई यो क्वेस्ट पहुँच गर्न अनुमति छैन",
+    "insufficient_tokens": "अपर्याप्त टोकनहरू। कृपया थप टोकनहरू किन्नुहोस्।",
+    "chat_history_not_found": "च्याट इतिहास फेला परेन",
+    "unauthorized_chat": "तपाईंलाई यो च्याट इतिहास पहुँच गर्न अनुमति छैन",
+    "invalid_prompt": "अमान्य वा खाली प्रोम्प्ट",
+    "prompt_too_long": "प्रोम्प्टले अधिकतम लम्बाइ ४००० वर्णहरू नाघ्यो",
+    "token_check_failed": "टोकन ब्यालेन्स जाँच गर्न असफल",
+    "token_fetch_failed": "टोकन ब्यालेन्स प्राप्त गर्न असफल",
+    "quest_completion_failed": "क्वेस्ट पूरा भएको रूपमा चिन्ह लगाउन असफल",
+    "quest_fetch_failed": "क्वेस्टहरू प्राप्त गर्न असफल",
+    "quest_delete_failed": "क्वेस्ट मेटाउन असफल",
+    "chat_history_delete_failed": "च्याट इतिहास मेटाउन असफल",
+    "quest_generation_timeout": "क्वेस्ट सिर्जना समय समाप्त भयो। कृपया पुनः प्रयास गर्नुहोस्।",
+    "no_community_memberships": "क्वेस्टहरू प्राप्त गर्न तपाईंले समुदायमा सामेल हुनुपर्छ",
+    "force_generation_failed": "जबरजस्ती क्वेस्ट सिर्जना असफल भयो",
+    "health_check_failed": "स्वास्थ्य जाँच असफल भयो",
+    "config_fetch_failed": "कन्फिगरेसन प्राप्त गर्न असफल"
   }
 }

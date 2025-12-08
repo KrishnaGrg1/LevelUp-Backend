@@ -43,11 +43,32 @@
     "community_photo_uploaded": "Foto de la comunidad subida exitosamente"
   },
   "ai": {
-    "chat": "Respuesta de IA generada",
+    "chat": "Respuesta de chat de IA generada exitosamente",
+    "chat_started": "Sesión de chat de IA iniciada",
+    "chat_completed": "Chat de IA completado exitosamente",
+    "chat_cancelled": "Chat de IA cancelado",
     "quests_generated": "Misiones generadas exitosamente",
-    "no_response": "Sin respuesta",
+    "quest_completed": "Misión marcada como completada exitosamente",
+    "quest_fetched": "Misión obtenida exitosamente",
+    "quests_fetched": "Misiones obtenidas exitosamente",
+    "daily_quests_fetched": "Misiones diarias obtenidas exitosamente",
+    "weekly_quests_fetched": "Misiones semanales obtenidas exitosamente",
+    "completed_quests_fetched": "Misiones completadas obtenidas exitosamente",
+    "quest_deleted": "Misión eliminada exitosamente",
+    "chat_history_fetched": "Historial de chat obtenido exitosamente",
+    "chat_history_deleted": "Historial de chat eliminado exitosamente",
+    "all_chat_history_deleted": "Todo el historial de chat eliminado exitosamente",
+    "token_balance_fetched": "Saldo de tokens obtenido exitosamente",
+    "tokens_available": "Tienes {count} tokens disponibles",
+    "tokens_deducted": "1 token deducido. Restante: {remaining}",
+    "no_response": "Sin respuesta de la IA",
     "fallback_description": "Trabaja en {skill} a nivel {difficulty} durante 30 minutos.",
-    "health": "La IA está configurada y saludable",
-    "config": "Configuración de IA obtenida correctamente"
+    "health_check_passed": "El servicio de IA está saludable y operativo",
+    "health_check_database_connected": "Conexión a la base de datos verificada",
+    "config_fetched": "Configuración de IA obtenida exitosamente",
+    "daily_quests_forced": "Misiones diarias regeneradas exitosamente",
+    "weekly_quests_forced": "Misiones semanales regeneradas exitosamente",
+    "quest_rotation_success": "Rotación de misiones completada exitosamente",
+    "quest_period_updated": "Estado del período de misión actualizado"
   }
 }

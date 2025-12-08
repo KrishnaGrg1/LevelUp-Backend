@@ -6,15 +6,46 @@ const aiValidation = {
 			prompt: Joi.string().min(1).max(4000).required(),
 		}),
 	},
-	generate: {
+	generateTrigger: {
+		body: Joi.object({}).unknown(false),
+	},
+	startQuest: {
 		body: Joi.object({
-			goals: Joi.array().items(Joi.string().min(2).max(200)).min(1).required(),
-			difficulty: Joi.string().valid('Beginner', 'Intermediate', 'Advanced').required(),
-			count: Joi.number().integer().min(1).max(20).default(3),
-			level: Joi.number().integer().min(1).max(100).optional(),
-			status: Joi.string().valid('Beginner', 'Intermediate', 'Advanced').optional(),
-			xp: Joi.number().integer().min(0).max(100000).optional(),
-			type: Joi.string().valid('daily', 'extra').optional(),
+			questId: Joi.string().required(),
+		}),
+	},
+	completeQuest: {
+		body: Joi.object({
+			questId: Joi.string().required(),
+		}),
+	},
+	questId: {
+		params: Joi.object({
+			questId: Joi.string().required(),
+		}),
+	},
+	completedQuests: {
+		query: Joi.object({
+			page: Joi.number().integer().min(1).optional(),
+			limit: Joi.number().integer().min(1).max(100).optional(),
+			type: Joi.string().valid('Daily', 'Weekly').optional(),
+		}),
+	},
+	chatHistory: {
+		query: Joi.object({
+			page: Joi.number().integer().min(1).optional(),
+			limit: Joi.number().integer().min(1).max(100).optional(),
+			sessionId: Joi.string().optional(),
+		}),
+	},
+	chatId: {
+		params: Joi.object({
+			chatId: Joi.string().required(),
+		}),
+	},
+	deleteChatHistory: {
+		query: Joi.object({
+			all: Joi.string().valid('true', 'false').optional(),
 		}),
 	},
 };

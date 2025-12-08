@@ -7,6 +7,8 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import initializeSocket from './sockets';
+import { startDailyAiQuestJob } from './jobs/aiDailyQuests';
+import { startWeeklyAiQuestJob } from './jobs/aiWeeklyQuests';
 const app = express();
 const port = env.PORT;
 
@@ -89,7 +91,24 @@ app.use('/api/v1/', translationMiddeware, mainRoutes);
 initializeSocket(io);
 
 httpServer.listen(port, () => {
-  console.log('Server running on port', port);
-  console.log(`💬 Socket.IO initialized for real-time chat`);
+  console.log('\n🚀 =====================================');
+  console.log('   LevelUp Backend Server Started');
+  console.log('=====================================');
+  console.log(`📍 HTTP Server: http://localhost:${port}`);
+  console.log(`🔌 Socket.IO: ws://localhost:${port}/socket.io/`);
+  console.log(`💬 Real-time chat enabled`);
+  console.log(`🤖 AI Chat enabled`);
   console.log(`🌍 Environment: ${env.NODE_ENV}`);
+  console.log(`🔐 CORS allowed origins:`);
+  console.log(`   - http://localhost:3000`);
+  console.log(`   - https://www.melevelup.me`);
+  if (env.NEXT_PUBLIC_APP_URL) {
+    console.log(`   - ${env.NEXT_PUBLIC_APP_URL}`);
+  }
+  console.log(`=====================================\n`);
+  
+  // Start AI quest cron jobs
+  startDailyAiQuestJob();
+  startWeeklyAiQuestJob();
+  console.log('✅ AI Quest cron jobs scheduled\n');
 });

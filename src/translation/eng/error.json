@@ -70,6 +70,26 @@
     "not_configured": "AI is not configured",
     "chat_failed": "AI chat failed",
     "generate_failed": "Failed to generate quests",
-    "goals_required": "Goals are required"
+    "goals_required": "Goals are required",
+    "quest_not_found": "Quest not found",
+    "quest_already_completed": "Quest is already completed",
+    "quest_not_active": "Quest is not active today",
+    "unauthorized_quest": "You are not authorized to access this quest",
+    "insufficient_tokens": "Insufficient tokens. Please purchase more tokens.",
+    "chat_history_not_found": "Chat history not found",
+    "unauthorized_chat": "You are not authorized to access this chat history",
+    "invalid_prompt": "Invalid or empty prompt",
+    "prompt_too_long": "Prompt exceeds maximum length of 4000 characters",
+    "token_check_failed": "Failed to check token balance",
+    "token_fetch_failed": "Failed to fetch token balance",
+    "quest_completion_failed": "Failed to mark quest as complete",
+    "quest_fetch_failed": "Failed to fetch quests",
+    "quest_delete_failed": "Failed to delete quest",
+    "chat_history_delete_failed": "Failed to delete chat history",
+    "quest_generation_timeout": "Quest generation timed out. Please try again.",
+    "no_community_memberships": "You must join a community to get quests",
+    "force_generation_failed": "Failed to force quest generation",
+    "health_check_failed": "Health check failed",
+    "config_fetch_failed": "Failed to fetch configuration"
   }
 }
