@@ -100,9 +100,8 @@ model Community {
   owner       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   members     CommunityMember[]
   clanMembers ClanMember[]
-
-  messages Message[]
-  quests   Quest[]
+  messages    Message[]
+  quests      Quest[]
 }
 
 model Clan {
@@ -149,7 +148,7 @@ model ClanMember {
   id          String   @id @default(cuid())
   userId      String
   clanId      String
-  communityId String // must match clan.communityId
+  communityId String   // must match clan.communityId
   joinedAt    DateTime @default(now())
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -158,6 +157,7 @@ model ClanMember {
 
   @@unique([userId, clanId]) // user cannot rejoin the same clan twice
   @@index([userId, communityId]) // check clans inside a community
+  @@map("clanMember") // Map to camelCase table name for Prisma client
 }
 
 model Quest {
@@ -261,20 +261,16 @@ updatedAt                DateTime       @updatedAt
 
 // Chat messages per community
 model Message {
-  id          String     @id @default(uuid())
-  community   Community? @relation(fields: [communityId], references: [id])
-  communityId String?
-  clan        Clan?      @relation(fields: [clanId], references: [id])
-  clanId      String?
-  sender      User       @relation("senderMessages", fields: [senderId], references: [id])
-  senderId    String
+  id          String   @id @default(uuid())
   content     String
-  communityId String
+  communityId String?
   senderId    String
+  clanId      String?
   createdAt   DateTime @default(now())
 
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  sender    User      @relation("senderMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  community Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  clan      Clan?      @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  sender    User       @relation("senderMessages", fields: [senderId], references: [id], onDelete: Cascade)
 }
 
 // AI Chat History
