@@ -86,10 +86,13 @@ const createClan = async (req: AuthRequest, res: Response) => {
         },
       });
 
-      // Assign clan to owner (keep existing community role, just add clan)
-      await tx.communityMember.update({
-        where: { id: member!.id },
-        data: { clanId: newClan.id },
+      // Create ClanMember record for owner
+      await tx.clanMember.create({
+        data: {
+          userId: user.id,
+          clanId: newClan.id,
+          communityId,
+        },
       });
 
       return newClan;
@@ -164,7 +167,7 @@ const joinClan = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Find user in community
+    // Check if user is in community
     const member = await client.communityMember.findFirst({
       where: { userId, communityId: clan.communityId },
     });
@@ -182,7 +185,12 @@ const joinClan = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    if (member.clanId) {
+    // Check if user is already in a clan in this community
+    const existingClanMember = await client.clanMember.findFirst({
+      where: { userId, communityId: clan.communityId },
+    });
+
+    if (existingClanMember) {
       return res
         .status(400)
         .json(
@@ -195,15 +203,18 @@ const joinClan = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Assign the clan to user's CommunityMember record
-    const updated = await client.communityMember.update({
-      where: { id: member.id },
-      data: { clanId },
+    // Create ClanMember record
+    const clanMember = await client.clanMember.create({
+      data: {
+        userId,
+        clanId,
+        communityId: clan.communityId,
+      },
     });
 
     return res
       .status(200)
-      .json(makeSuccessResponse(updated, 'success.clan.joined', lang, 200));
+      .json(makeSuccessResponse(clanMember, 'success.clan.joined', lang, 200));
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
     return res
@@ -261,11 +272,11 @@ const leaveClan = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    const member = await client.communityMember.findFirst({
-      where: { userId, clanId },
+    const clanMember = await client.clanMember.findUnique({
+      where: { userId_clanId: { userId, clanId } },
     });
 
-    if (!member) {
+    if (!clanMember) {
       return res
         .status(404)
         .json(
@@ -278,10 +289,9 @@ const leaveClan = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Remove clan association (reset to MEMBER role)
-    await client.communityMember.update({
-      where: { id: member.id },
-      data: { clanId: null, role: 'MEMBER' },
+    // Delete ClanMember record
+    await client.clanMember.delete({
+      where: { id: clanMember.id },
     });
 
     return res
@@ -338,10 +348,9 @@ const deleteClan = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Detach members first and reset their roles to MEMBER
-    await client.communityMember.updateMany({
+    // Delete all ClanMember records first (cascade should handle this, but being explicit)
+    await client.clanMember.deleteMany({
       where: { clanId: clan.id },
-      data: { clanId: null, role: 'MEMBER' },
     });
 
     await client.clan.delete({ where: { id: clan.id } });
@@ -374,9 +383,9 @@ const getClansByCommunity = async (req: AuthRequest, res: Response) => {
 
     const clans = await client.clan.findMany({
       where: { communityId },
-      include: { 
+      include: {
         owner: { select: { id: true, UserName: true, profilePicture: true } },
-        _count: { select: { members: true } }
+        _count: { select: { members: true } },
       },
     });
 
@@ -422,9 +431,18 @@ const getClanMembers = async (req: AuthRequest, res: Response) => {
     }
 
     // Fetch members of the clan
-    const members = await client.communityMember.findMany({
+    const members = await client.clanMember.findMany({
       where: { clanId },
-      include: { user: true },
+      include: {
+        user: {
+          select: {
+            id: true,
+            UserName: true,
+            profilePicture: true,
+            level: true,
+          },
+        },
+      },
     });
 
     return res
@@ -484,7 +502,9 @@ const getClanInfo = async (req: AuthRequest, res: Response) => {
 
     return res
       .status(200)
-      .json(makeSuccessResponse(clan, 'success.clan.info_retrieved', lang, 200));
+      .json(
+        makeSuccessResponse(clan, 'success.clan.info_retrieved', lang, 200)
+      );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
     return res
@@ -540,10 +560,10 @@ const updateClan = async (req: AuthRequest, res: Response) => {
     if (name && name !== clan.name) {
       // Check for duplicate name in the same community
       const duplicateName = await client.clan.findFirst({
-        where: { 
-          name, 
+        where: {
+          name,
           communityId: clan.communityId,
-          NOT: { id: clanId } 
+          NOT: { id: clanId },
         },
       });
 
@@ -617,16 +637,16 @@ const getUserClans = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Fetch all community memberships where user is in a clan
-    const clans = await client.communityMember.findMany({
-      where: { userId, NOT: { clanId: null } },
-      include: { 
+    // Fetch all clans user is a member of
+    const clanMemberships = await client.clanMember.findMany({
+      where: { userId },
+      include: {
         clan: {
           include: {
             community: { select: { id: true, name: true } },
-            _count: { select: { members: true } }
-          }
-        } 
+            _count: { select: { members: true } },
+          },
+        },
       },
     });
 
@@ -635,7 +655,62 @@ const getUserClans = async (req: AuthRequest, res: Response) => {
       .status(200)
       .json(
         makeSuccessResponse(
-          clans,
+          clanMemberships,
+          'success.clan.user_clans_retrieved',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    console.error('Failed to fetch user clans:', e);
+    return res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to fetch user clans'),
+          'error.clan.failed_to_get_user_clans',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+/**
+ * Check clan membership
+ */
+const checkClanMembership = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const clanId = req.params.clanId;
+    const userId = req.user?.id as string;
+
+    // Check if user exists
+    const user = await client.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('User not found'),
+            'error.clan.user_not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    const clanMember = await client.clanMember.findUnique({
+      where: { userId_clanId: { userId, clanId } },
+    });
+
+    // Return empty array if no clans (not an error)
+    return res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { isMember: !!clanMember },
           'success.clan.user_clans_retrieved',
           lang,
           200
@@ -667,6 +742,7 @@ const clanController = {
   getClanInfo,
   updateClan,
   getUserClans,
+  checkClanMembership,
 };
 
 export default clanController;
