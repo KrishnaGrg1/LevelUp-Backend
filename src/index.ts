@@ -21,6 +21,7 @@ export const io = new Server(httpServer, {
     origin: [
       'http://localhost:3000',
       'https://www.melevelup.me',
+      'https://level-up-olive-gamma.vercel.app',
       env.NEXT_PUBLIC_APP_URL,
     ].filter(Boolean) as string[],
     credentials: true,
