@@ -7,8 +7,8 @@ import { getChatModerationPrompt } from '../helpers/ai/prompts';
 import env from '../helpers/config';
 import { MemberStatus } from '@prisma/client';
 import client from '../helpers/prisma';
-import { runDailyAiQuestForUser } from '../jobs/aiDailyQuests';
-import { runWeeklyAiQuestForUser } from '../jobs/aiWeeklyQuests';
+import { runDailyAiQuestForUser, runDailyAiQuestNow } from '../jobs/aiDailyQuests';
+import { runWeeklyAiQuestForUser, runWeeklyAiQuestNow } from '../jobs/aiWeeklyQuests';
 
 const ensureAIConfigured = () => {
   const apiKey = env.OPENAI_API_KEY as string | undefined;
@@ -985,6 +985,381 @@ const deleteChatHistory = async (req: AuthRequest, res: Response) => {
   }
 };
 
+/**
+ * ADMIN: Generate daily quests for all users
+ */
+const adminGenerateDailyAll = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    
+    console.log('[Admin] Generating daily quests for all users');
+    const startTime = Date.now();
+    
+    // Force generate for all non-banned users
+    await runDailyAiQuestNow();
+    
+    const elapsed = Date.now() - startTime;
+    
+    // Count generated quests
+    const todayCount = await client.quest.count({
+      where: { type: 'Daily', periodStatus: 'TODAY' },
+    });
+    
+    return res.status(200).json(
+      makeSuccessResponse(
+        {
+          message: 'Daily quests generated for all users',
+          totalTodayQuests: todayCount,
+          timeElapsed: `${elapsed}ms`,
+        },
+        'success.ai.admin_quests_generated',
+        lang,
+        200
+      )
+    );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    console.error('[Admin] Generate daily all error:', e);
+    return res.status(500).json(
+      makeErrorResponse(new Error('Failed to generate daily quests for all users'), 'error.ai.admin_generate_failed', lang, 500)
+    );
+  }
+};
+
+/**
+ * ADMIN: Generate daily quests for a specific user
+ */
+const adminGenerateDailyUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json(
+        makeErrorResponse(new Error('User ID is required'), 'error.ai.user_id_required', lang, 400)
+      );
+    }
+    
+    // Check if user exists
+    const user = await client.user.findUnique({
+      where: { id: userId },
+      select: { id: true, UserName: true, isBanned: true },
+    });
+    
+    if (!user) {
+      return res.status(404).json(
+        makeErrorResponse(new Error('User not found'), 'error.user.not_found', lang, 404)
+      );
+    }
+    
+    if (user.isBanned) {
+      return res.status(400).json(
+        makeErrorResponse(new Error('Cannot generate quests for banned user'), 'error.ai.user_banned', lang, 400)
+      );
+    }
+    
+    console.log(`[Admin] Generating daily quests for user ${userId} (${user.UserName})`);
+    const startTime = Date.now();
+    
+    await runDailyAiQuestForUser(userId, true);
+    
+    const elapsed = Date.now() - startTime;
+    
+    // Fetch generated quests
+    const todayQuests = await client.quest.findMany({
+      where: { userId, type: 'Daily', periodStatus: 'TODAY' },
+      orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }],
+      include: {
+        community: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+    
+    return res.status(200).json(
+      makeSuccessResponse(
+        {
+          message: `Daily quests generated for user ${user.UserName}`,
+          userId: user.id,
+          username: user.UserName,
+          quests: todayQuests,
+          questCount: todayQuests.length,
+          timeElapsed: `${elapsed}ms`,
+        },
+        'success.ai.admin_quests_generated',
+        lang,
+        200
+      )
+    );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    console.error('[Admin] Generate daily user error:', e);
+    return res.status(500).json(
+      makeErrorResponse(new Error('Failed to generate daily quests for user'), 'error.ai.admin_generate_failed', lang, 500)
+    );
+  }
+};
+
+/**
+ * ADMIN: Generate weekly quests for all users
+ */
+const adminGenerateWeeklyAll = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    
+    console.log('[Admin] Generating weekly quests for all users');
+    const startTime = Date.now();
+    
+    // Force generate for all non-banned users
+    await runWeeklyAiQuestNow();
+    
+    const elapsed = Date.now() - startTime;
+    
+    // Count generated quests
+    const thisWeekCount = await client.quest.count({
+      where: { type: 'Weekly', periodStatus: 'THIS_WEEK' },
+    });
+    
+    return res.status(200).json(
+      makeSuccessResponse(
+        {
+          message: 'Weekly quests generated for all users',
+          totalThisWeekQuests: thisWeekCount,
+          timeElapsed: `${elapsed}ms`,
+        },
+        'success.ai.admin_quests_generated',
+        lang,
+        200
+      )
+    );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    console.error('[Admin] Generate weekly all error:', e);
+    return res.status(500).json(
+      makeErrorResponse(new Error('Failed to generate weekly quests for all users'), 'error.ai.admin_generate_failed', lang, 500)
+    );
+  }
+};
+
+/**
+ * ADMIN: Generate weekly quests for a specific user
+ */
+const adminGenerateWeeklyUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json(
+        makeErrorResponse(new Error('User ID is required'), 'error.ai.user_id_required', lang, 400)
+      );
+    }
+    
+    // Check if user exists
+    const user = await client.user.findUnique({
+      where: { id: userId },
+      select: { id: true, UserName: true, isBanned: true },
+    });
+    
+    if (!user) {
+      return res.status(404).json(
+        makeErrorResponse(new Error('User not found'), 'error.user.not_found', lang, 404)
+      );
+    }
+    
+    if (user.isBanned) {
+      return res.status(400).json(
+        makeErrorResponse(new Error('Cannot generate quests for banned user'), 'error.ai.user_banned', lang, 400)
+      );
+    }
+    
+    console.log(`[Admin] Generating weekly quests for user ${userId} (${user.UserName})`);
+    const startTime = Date.now();
+    
+    await runWeeklyAiQuestForUser(userId, true);
+    
+    const elapsed = Date.now() - startTime;
+    
+    // Fetch generated quests
+    const thisWeekQuests = await client.quest.findMany({
+      where: { userId, type: 'Weekly', periodStatus: 'THIS_WEEK' },
+      orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }],
+      include: {
+        community: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+    
+    return res.status(200).json(
+      makeSuccessResponse(
+        {
+          message: `Weekly quests generated for user ${user.UserName}`,
+          userId: user.id,
+          username: user.UserName,
+          quests: thisWeekQuests,
+          questCount: thisWeekQuests.length,
+          timeElapsed: `${elapsed}ms`,
+        },
+        'success.ai.admin_quests_generated',
+        lang,
+        200
+      )
+    );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    console.error('[Admin] Generate weekly user error:', e);
+    return res.status(500).json(
+      makeErrorResponse(new Error('Failed to generate weekly quests for user'), 'error.ai.admin_generate_failed', lang, 500)
+    );
+  }
+};
+
+/**
+ * ADMIN: Get quest statistics
+ */
+const adminGetQuestStats = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    
+    const [
+      totalQuests,
+      completedQuests,
+      todayQuests,
+      thisWeekQuests,
+      userCount,
+      questsByType,
+      questsByCommunity,
+      recentCompletions,
+    ] = await Promise.all([
+      client.quest.count(),
+      client.quest.count({ where: { isCompleted: true } }),
+      client.quest.count({ where: { type: 'Daily', periodStatus: 'TODAY' } }),
+      client.quest.count({ where: { type: 'Weekly', periodStatus: 'THIS_WEEK' } }),
+      client.user.count({ where: { isBanned: false } }),
+      client.quest.groupBy({
+        by: ['type'],
+        _count: { id: true },
+      }),
+      client.quest.groupBy({
+        by: ['communityId'],
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: 10,
+      }),
+      client.quest.findMany({
+        where: { isCompleted: true },
+        orderBy: { completedAt: 'desc' },
+        take: 10,
+        include: {
+          user: {
+            select: { id: true, UserName: true },
+          },
+          community: {
+            select: { id: true, name: true },
+          },
+        },
+      }),
+    ]);
+    
+    const completionRate = totalQuests > 0 ? Math.round((completedQuests / totalQuests) * 100) : 0;
+    
+    return res.status(200).json(
+      makeSuccessResponse(
+        {
+          overview: {
+            totalQuests,
+            completedQuests,
+            pendingQuests: totalQuests - completedQuests,
+            completionRate: `${completionRate}%`,
+            todayActive: todayQuests,
+            thisWeekActive: thisWeekQuests,
+            activeUsers: userCount,
+          },
+          byType: questsByType,
+          byCommunity: questsByCommunity,
+          recentCompletions,
+        },
+        'success.ai.admin_stats_fetched',
+        lang,
+        200
+      )
+    );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    console.error('[Admin] Get quest stats error:', e);
+    return res.status(500).json(
+      makeErrorResponse(new Error('Failed to fetch quest statistics'), 'error.ai.admin_stats_failed', lang, 500)
+    );
+  }
+};
+
+/**
+ * ADMIN: Bulk delete quests
+ */
+const adminBulkDeleteQuests = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    const { userId, communityId, type, periodStatus, startDate, endDate } = req.body as {
+      userId?: string;
+      communityId?: string;
+      type?: 'Daily' | 'Weekly';
+      periodStatus?: string;
+      startDate?: string;
+      endDate?: string;
+    };
+    
+    // Build where clause
+    const where: any = {};
+    
+    if (userId) where.userId = userId;
+    if (communityId) where.communityId = communityId;
+    if (type) where.type = type;
+    if (periodStatus) where.periodStatus = periodStatus;
+    
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) where.createdAt.lte = new Date(endDate);
+    }
+    
+    // Validate that at least one filter is provided
+    if (Object.keys(where).length === 0) {
+      return res.status(400).json(
+        makeErrorResponse(
+          new Error('At least one filter is required (userId, communityId, type, periodStatus, or date range)'),
+          'error.ai.filter_required',
+          lang,
+          400
+        )
+      );
+    }
+    
+    console.log('[Admin] Bulk deleting quests with filters:', where);
+    
+    const result = await client.quest.deleteMany({ where });
+    
+    return res.status(200).json(
+      makeSuccessResponse(
+        {
+          message: 'Quests deleted successfully',
+          deletedCount: result.count,
+          filters: where,
+        },
+        'success.ai.admin_quests_deleted',
+        lang,
+        200
+      )
+    );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    console.error('[Admin] Bulk delete quests error:', e);
+    return res.status(500).json(
+      makeErrorResponse(new Error('Failed to delete quests'), 'error.ai.admin_delete_failed', lang, 500)
+    );
+  }
+};
+
 const aiController = {
   chat,
   generateDailyQuests,
@@ -1004,6 +1379,13 @@ const aiController = {
   health,
   config,
   getCommunityMemberships,
+  // Admin functions
+  adminGenerateDailyAll,
+  adminGenerateDailyUser,
+  adminGenerateWeeklyAll,
+  adminGenerateWeeklyUser,
+  adminGetQuestStats,
+  adminBulkDeleteQuests,
 };
 
 export default aiController;

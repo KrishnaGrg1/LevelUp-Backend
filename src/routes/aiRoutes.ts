@@ -36,4 +36,12 @@ aiRoutes.get('/config', aiController.config);
 // Community memberships (XP per community)
 aiRoutes.get('/community/memberships', aiController.getCommunityMemberships);
 
+// ADMIN endpoints (require admin role)
+aiRoutes.post('/admin/generate/daily/all', adminMiddleware, aiController.adminGenerateDailyAll);
+aiRoutes.post('/admin/generate/daily/:userId', adminMiddleware, aiController.adminGenerateDailyUser);
+aiRoutes.post('/admin/generate/weekly/all', adminMiddleware, aiController.adminGenerateWeeklyAll);
+aiRoutes.post('/admin/generate/weekly/:userId', adminMiddleware, aiController.adminGenerateWeeklyUser);
+aiRoutes.get('/admin/quests/stats', adminMiddleware, aiController.adminGetQuestStats);
+aiRoutes.delete('/admin/quests', adminMiddleware, aiController.adminBulkDeleteQuests);
+
 export default aiRoutes;
