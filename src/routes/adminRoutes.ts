@@ -10,9 +10,12 @@ adminRoutes.get('/user-growth', adminController.getUserGrowth);
 adminRoutes.get('/overview', adminController.getOverview);
 adminRoutes.get('/users/all', adminController.getAllUsers);
 adminRoutes.get('/communities/all', adminController.getAllCommunities);
+//Fetch Caetegories
+adminRoutes.get('/categories', adminController.fetchCategories);
 
 //Add Category for Community
 adminRoutes.post('/addCategory', adminController.addCategoryForCommunity);
+
 // ✅ 2. SPECIFIC PARAMETERIZED ROUTES
 adminRoutes.patch(
   '/users/:id',
