@@ -395,7 +395,10 @@ const getAllCommunities = async (
   }
 };
 
-const getUserGrowth = async (req: AuthRequest, res: Response) => {
+const getUserGrowth = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
   try {
     const lang = (req.language as Language) || 'eng';
     const range = (req.query.range as string) || 'day';
@@ -519,6 +522,99 @@ const updateTicket = async (req: AuthRequest, res: Response): Promise<void> => {
       );
   }
 };
+
+const addCategoryForCommunity = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const lang = req.language as Language;
+
+    // Handle both string and array inputs
+    let categoryNamesToCreate: string[] = [];
+    if (Array.isArray(req.body.newCategoriesNames)) {
+      categoryNamesToCreate = req.body.newCategoriesNames
+        .map((name: string) => name.trim())
+        .filter(Boolean);
+    } else if (typeof req.body.newCategoriesNames === 'string') {
+      const trimmed = req.body.newCategoriesNames.trim();
+      if (trimmed) {
+        categoryNamesToCreate = [trimmed];
+      }
+    }
+
+    // Validate input
+    if (categoryNamesToCreate.length === 0) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('No category names provided'),
+            'error.admin.no_category_names',
+            lang,
+            400
+          )
+        );
+      return;
+    }
+
+    // Check which categories already exist
+    const existingCategories = await client.category.findMany({
+      where: {
+        name: {
+          in: categoryNamesToCreate,
+        },
+      },
+    });
+
+    // If any exist, return error
+    if (existingCategories.length > 0) {
+      const existingNames = existingCategories.map((c) => c.name);
+      res
+        .status(409)
+        .json(
+          makeErrorResponse(
+            new Error(`Category already exists: ${existingNames.join(', ')}`),
+            'error.admin.category_exists',
+            lang,
+            409
+          )
+        );
+      return;
+    }
+
+    // Create new categories
+    const createCategory = await client.category.createMany({
+      data: categoryNamesToCreate.map((name) => ({ name })),
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { count: createCategory.count, names: categoryNamesToCreate },
+          'success.admin.added_category',
+          lang,
+          200
+        )
+      );
+    return;
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    console.error('Error adding categories:', e);
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Add category failed'),
+          'error.admin.added_category_failed',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const adminController = {
   updateUserDetails,
   viewUserDetail,
@@ -529,6 +625,8 @@ const adminController = {
   getOverview,
   getUserGrowth,
   updateTicket,
+  addCategoryForCommunity,
+
   // banUser,
   // unbanUser,
   // deletePost,

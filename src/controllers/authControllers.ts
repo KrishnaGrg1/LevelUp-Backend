@@ -13,6 +13,7 @@ import { EmailTopic } from '../helpers/emailMessage';
 import { lucia } from '../middlewares/lucia';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { deleteFile, extractPublicId } from '../helpers/files/multer';
+import { findUser } from '../helpers/auth/userHelper';
 
 const register = async (
   req: TranslationRequest,
@@ -389,6 +390,7 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
         {
           isadmin: existingUser.isAdmin,
           expiredAt: session.expiresAt,
+          hasOnboarded: existingUser.hasOnboarded,
         },
         'success.auth.login',
         lang,
@@ -979,6 +981,150 @@ const changePassword = async (
   }
 };
 
+const onBoarding = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const lang = req.language as Language;
+    const userId = req.user?.id;
+    const { goal, heardAboutUs, experience } = req.body;
+
+    if (!userId) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('User ID is required'),
+            'error.auth.user_id_required',
+            lang,
+            400
+          )
+        );
+      return;
+    }
+
+    const user = await findUser(userId, res, lang);
+    if (!user) return;
+
+    const categoryNames: string[] = Array.isArray(req.body.categoriesNames)
+      ? req.body.categoriesNames
+      : [];
+
+    console.log('Category names received:', categoryNames);
+    console.log('Request body:', req.body);
+
+    const onboarding = await client.userOnboarding.create({
+      data: {
+        userId,
+        goal: goal,
+        heardAboutUs: heardAboutUs,
+        experience: experience,
+        categories:
+          categoryNames.length > 0
+            ? {
+                connectOrCreate: categoryNames.map((name) => ({
+                  where: { name },
+                  create: { name },
+                })),
+              }
+            : undefined,
+      },
+      include: { categories: true },
+    });
+
+    console.log('Created onboarding with categories:', onboarding);
+
+    await client.user.update({
+      where: { id: userId },
+      data: { hasOnboarded: true },
+    });
+
+    res.status(200).json(
+      makeSuccessResponse(
+        {
+          onboarding,
+        },
+        'success.auth.onboarding_complete',
+        lang,
+        200
+      )
+    );
+    return;
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+
+    if (e instanceof Error) {
+      res
+        .status(500)
+        .json(makeErrorResponse(e, 'error.auth.unexpected', lang, 500));
+      return;
+    } else {
+      res
+        .status(500)
+        .json(
+          makeErrorResponse(
+            new Error('Unexpected error'),
+            'error.auth.unexpected',
+            lang,
+            500
+          )
+        );
+      return;
+    }
+  }
+};
+
+const fetchCategories = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const lang = req.language as Language;
+
+    // Check which categories already exist
+    const existingCategories = await client.category.findMany();
+
+    // Validate input
+    if (existingCategories.length === 0) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('No category found'),
+            'error.admin.no_category_found',
+            lang,
+            400
+          )
+        );
+      return;
+    }
+
+    res.status(200).json(
+      makeSuccessResponse(
+        {
+          count: existingCategories.length,
+          categories: existingCategories.map((c) => c.name),
+        },
+        'success.admin.fetched_category',
+        lang,
+        200
+      )
+    );
+    return;
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    console.error('Error fetching categories:', e);
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Fetch category failed'),
+          'error.admin.fetch_category_failed',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const authController = {
   register,
   login,
@@ -990,6 +1136,8 @@ const authController = {
   deleteAccount,
   uploadProfilePicture,
   changePassword,
+  onBoarding,
+  fetchCategories,
 };
 
 export default authController;

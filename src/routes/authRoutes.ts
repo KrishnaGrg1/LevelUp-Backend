@@ -8,6 +8,8 @@ import { uploadProfilePicture } from '../helpers/files/multer';
 
 const authRoutes = Router();
 
+//Fetch Caetegories
+authRoutes.get('/categories', authController.fetchCategories);
 authRoutes.post(
   '/register',
   validate(authValidation.register),
@@ -50,5 +52,12 @@ authRoutes.post(
   validate(authValidation.change_password),
   authMiddleware,
   authController.changePassword
+);
+
+authRoutes.post(
+  '/onBoarding',
+
+  authMiddleware,
+  authController.onBoarding
 );
 export default authRoutes;
