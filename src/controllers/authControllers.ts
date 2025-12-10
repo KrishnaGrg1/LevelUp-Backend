@@ -1032,6 +1032,11 @@ const onBoarding = async (req: AuthRequest, res: Response): Promise<void> => {
 
     console.log('Created onboarding with categories:', onboarding);
 
+    await client.user.update({
+      where: { id: userId },
+      data: { hasOnboarded: true },
+    });
+
     res.status(200).json(
       makeSuccessResponse(
         {
@@ -1067,6 +1072,59 @@ const onBoarding = async (req: AuthRequest, res: Response): Promise<void> => {
   }
 };
 
+const fetchCategories = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const lang = req.language as Language;
+
+    // Check which categories already exist
+    const existingCategories = await client.category.findMany();
+
+    // Validate input
+    if (existingCategories.length === 0) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('No category found'),
+            'error.admin.no_category_found',
+            lang,
+            400
+          )
+        );
+      return;
+    }
+
+    res.status(200).json(
+      makeSuccessResponse(
+        {
+          count: existingCategories.length,
+          categories: existingCategories.map((c) => c.name),
+        },
+        'success.admin.fetched_category',
+        lang,
+        200
+      )
+    );
+    return;
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    console.error('Error fetching categories:', e);
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Fetch category failed'),
+          'error.admin.fetch_category_failed',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const authController = {
   register,
   login,
@@ -1079,6 +1137,7 @@ const authController = {
   uploadProfilePicture,
   changePassword,
   onBoarding,
+  fetchCategories,
 };
 
 export default authController;

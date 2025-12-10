@@ -8,6 +8,8 @@ import { uploadProfilePicture } from '../helpers/files/multer';
 
 const authRoutes = Router();
 
+//Fetch Caetegories
+authRoutes.get('/categories', authController.fetchCategories);
 authRoutes.post(
   '/register',
   validate(authValidation.register),
