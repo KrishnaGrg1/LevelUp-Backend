@@ -51,4 +51,11 @@ authRoutes.post(
   authMiddleware,
   authController.changePassword
 );
+
+authRoutes.post(
+  '/onBoarding',
+
+  authMiddleware,
+  authController.onBoarding
+);
 export default authRoutes;

@@ -395,7 +395,10 @@ const getAllCommunities = async (
   }
 };
 
-const getUserGrowth = async (req: AuthRequest, res: Response) => {
+const getUserGrowth = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
   try {
     const lang = (req.language as Language) || 'eng';
     const range = (req.query.range as string) || 'day';
@@ -519,6 +522,40 @@ const updateTicket = async (req: AuthRequest, res: Response): Promise<void> => {
       );
   }
 };
+
+const addCategoryForCommunity = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const lang = req.language as Language;
+
+    const categoryNamesToCreate: string[] = Array.isArray(
+      req.body.newCategoriesNames
+    )
+      ? req.body.newCategoriesNames
+      : [];
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(lang, 'success.admin.updated_ticket', lang, 200)
+      );
+    return;
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Update ticket failed'),
+          'error.admin.update_ticket_failed',
+          lang,
+          500
+        )
+      );
+  }
+};
 const adminController = {
   updateUserDetails,
   viewUserDetail,
@@ -529,6 +566,7 @@ const adminController = {
   getOverview,
   getUserGrowth,
   updateTicket,
+  addCategoryForCommunity,
   // banUser,
   // unbanUser,
   // deletePost,
