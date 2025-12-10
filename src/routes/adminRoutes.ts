@@ -11,6 +11,8 @@ adminRoutes.get('/overview', adminController.getOverview);
 adminRoutes.get('/users/all', adminController.getAllUsers);
 adminRoutes.get('/communities/all', adminController.getAllCommunities);
 
+//Add Category for Community
+adminRoutes.post('/addCategory', adminController.addCategoryForCommunity);
 // ✅ 2. SPECIFIC PARAMETERIZED ROUTES
 adminRoutes.patch(
   '/users/:id',
