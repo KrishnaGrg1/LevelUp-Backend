@@ -347,54 +347,6 @@ const updateCommunityDetails = async (req: AuthRequest, res: Response) => {
   }
 };
 
-const getAllCommunities = async (
-  req: AuthRequest,
-  res: Response
-): Promise<void> => {
-  try {
-    const lang = (req.language as Language) || 'eng';
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.pageSize as string) || 10;
-    const skip = (page - 1) * pageSize;
-    const [communities, total] = await Promise.all([
-      client.community.findMany({
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: pageSize,
-      }),
-      client.community.count(),
-    ]);
-    res.status(200).json(
-      makeSuccessResponse(
-        {
-          communities,
-          pagination: {
-            total,
-            page,
-            pageSize,
-            totalPages: Math.ceil(total / pageSize),
-          },
-        },
-        'success.admin.get_all_communities',
-        lang,
-        200
-      )
-    );
-  } catch (e: unknown) {
-    const lang = (req.language as Language) || 'eng';
-    res
-      .status(500)
-      .json(
-        makeErrorResponse(
-          e instanceof Error ? e : new Error('Get all communities failed'),
-          'error.admin.get_all_communities_failed',
-          lang,
-          500
-        )
-      );
-  }
-};
-
 const getUserGrowth = async (
   req: AuthRequest,
   res: Response
@@ -530,27 +482,22 @@ const addCategoryForCommunity = async (
   try {
     const lang = req.language as Language;
 
-    // Handle both string and array inputs
-    let categoryNamesToCreate: string[] = [];
-    if (Array.isArray(req.body.newCategoriesNames)) {
-      categoryNamesToCreate = req.body.newCategoriesNames
-        .map((name: string) => name.trim())
-        .filter(Boolean);
-    } else if (typeof req.body.newCategoriesNames === 'string') {
-      const trimmed = req.body.newCategoriesNames.trim();
-      if (trimmed) {
-        categoryNamesToCreate = [trimmed];
-      }
-    }
+    const { name } = req.body;
+    // Check which categories already exist
+    const existingCategory = await client.category.findFirst({
+      where: {
+        name: name,
+      },
+    });
 
-    // Validate input
-    if (categoryNamesToCreate.length === 0) {
+    // If any exist, return error
+    if (existingCategory) {
       res
         .status(400)
         .json(
           makeErrorResponse(
-            new Error('No category names provided'),
-            'error.admin.no_category_names',
+            new Error(`Category already exists: ${name}`),
+            'error.admin.category_exists',
             lang,
             400
           )
@@ -558,41 +505,16 @@ const addCategoryForCommunity = async (
       return;
     }
 
-    // Check which categories already exist
-    const existingCategories = await client.category.findMany({
-      where: {
-        name: {
-          in: categoryNamesToCreate,
-        },
-      },
-    });
-
-    // If any exist, return error
-    if (existingCategories.length > 0) {
-      const existingNames = existingCategories.map((c) => c.name);
-      res
-        .status(409)
-        .json(
-          makeErrorResponse(
-            new Error(`Category already exists: ${existingNames.join(', ')}`),
-            'error.admin.category_exists',
-            lang,
-            409
-          )
-        );
-      return;
-    }
-
     // Create new categories
-    const createCategory = await client.category.createMany({
-      data: categoryNamesToCreate.map((name) => ({ name })),
+    const createCategory = await client.category.create({
+      data: { name: name },
     });
 
     res
       .status(200)
       .json(
         makeSuccessResponse(
-          { count: createCategory.count, names: categoryNamesToCreate },
+          { category: createCategory },
           'success.admin.added_category',
           lang,
           200
@@ -615,18 +537,357 @@ const addCategoryForCommunity = async (
   }
 };
 
+const communityStats = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+
+    const [totalCommunities, privateCommunities, publicCommunities] =
+      await Promise.all([
+        client.community.count(),
+        client.community.count({ where: { isPrivate: true } }),
+        client.community.count({ where: { isPrivate: false } }),
+      ]);
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { totalCommunities, privateCommunities, publicCommunities },
+          'success.admin.get_overview',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to get overview'),
+          'error.admin.failed_to_get_overview',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const getAllCommunities = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const user = req.user;
+
+    const lang = (req.language as Language) || 'eng';
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 10;
+    const skip = (page - 1) * pageSize;
+
+    const [communitiesRaw, totalCommunities] = await Promise.all([
+      client.community.findMany({
+        skip,
+        take: pageSize,
+        include: {
+          _count: {
+            select: { members: true },
+          },
+          category: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      }),
+      client.community.count(),
+    ]);
+
+    const communities = communitiesRaw.map((c) => ({
+      ...c,
+      membersCount: c._count.members,
+      category: c.category?.name || 'No Category',
+    }));
+    res.status(200).json(
+      makeSuccessResponse(
+        {
+          communities,
+          pagination: {
+            total: totalCommunities,
+            page,
+            pageSize,
+            totalPages: Math.ceil(totalCommunities / pageSize),
+          },
+        },
+        'success.admin.retrieved_all_communities',
+        lang,
+        200
+      )
+    );
+    return;
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Failed to fetch all communities'),
+          'error.admin.failed_to_fetch_all_communities',
+          lang,
+          500
+        )
+      );
+    return;
+  }
+};
+
+const getAllCommunityMembers = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const lang = (req.language as Language) || 'eng';
+    const communityId = req.params.communityId;
+
+    const members = await client.communityMember.findMany({
+      where: { communityId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            UserName: true,
+            email: true,
+            isAdmin: true,
+          },
+        },
+      },
+    });
+
+    const usersOnly = members.map((member) => member.user);
+    res.status(200).json(
+      makeSuccessResponse(
+        {
+          members: usersOnly,
+        },
+        'success.admin.retrieved_all_community_members',
+        lang,
+        200
+      )
+    );
+    return;
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error
+            ? e
+            : new Error('Failed to fetch community members'),
+          'error.admin.failed_to_fetch_community_members',
+          lang,
+          500
+        )
+      );
+    return;
+  }
+};
+
+const deleteCommunity = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const communityId = req.params.communityId;
+
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+    });
+
+    if (!community) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.admin.community_not_found',
+            req.language as Language,
+            400
+          )
+        );
+      return;
+    }
+
+    await client.community.delete({
+      where: { id: communityId },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          community,
+          'success.admin.deleted_community',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to delete community'),
+          'error.admin.failed_to_delete_community',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const changeCommunityPrivacy = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const communityId = req.params.communityId;
+    const { isPrivate } = req.body;
+
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+    });
+
+    if (!community) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.admin.community_not_found',
+            req.language as Language,
+            400
+          )
+        );
+      return;
+    }
+
+    const updatedCommunity = await client.community.update({
+      where: { id: communityId },
+      data: {
+        isPrivate: isPrivate,
+      },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          updatedCommunity,
+          'success.admin.changed_community_privacy',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to change community privacy'),
+          'error.admin.failed_to_change_community_privacy',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const changeCommunityCategory = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const communityId = req.params.communityId;
+    const { category } = req.body;
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+    });
+
+    if (!community) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.admin.community_not_found',
+            req.language as Language,
+            400
+          )
+        );
+      return;
+    }
+
+    const isCategory = await client.category.findUnique({
+      where: { name: category },
+    });
+    if (!isCategory) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Category  not found'),
+            'error.admin.category_not_found',
+            req.language as Language,
+            400
+          )
+        );
+      return;
+    }
+    const updatedCategory = await client.community.update({
+      where: { id: communityId },
+      data: {
+        categoryId: isCategory.id,
+      },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          updatedCategory,
+          'success.admin.changed_community_category',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to change community category'),
+          'error.admin.failed_to_change_community_category',
+          lang,
+          500
+        )
+      );
+  }
+};
 const adminController = {
   updateUserDetails,
   viewUserDetail,
   getAllUsers,
   updateCommunityDetails,
-  getAllCommunities,
+
   deleteUser,
   getOverview,
   getUserGrowth,
   updateTicket,
   addCategoryForCommunity,
-
+  communityStats,
+  getAllCommunities,
+  getAllCommunityMembers,
+  deleteCommunity,
+  changeCommunityPrivacy,
+  changeCommunityCategory,
   // banUser,
   // unbanUser,
   // deletePost,

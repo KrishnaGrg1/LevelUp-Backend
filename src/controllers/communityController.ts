@@ -429,7 +429,7 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
   }
 };
 
-const joinCommunity = async (req: AuthRequest, res: Response) => {
+const joinPublicCommunity = async (req: AuthRequest, res: Response) => {
   const communityId = req.params.communityId;
   const lang = req.language as Language;
   const userId = req.user?.id; //from session -- logged in user
@@ -1227,7 +1227,7 @@ const toggleMultipleCommunityPin = async (req: AuthRequest, res: Response) => {
 
 const communityController = {
   createCommunity,
-  joinCommunity,
+  joinPublicCommunity,
   myCommunities,
   getAllCommunities,
   leaveCommunity,

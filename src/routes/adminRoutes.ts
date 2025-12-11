@@ -7,12 +7,46 @@ const adminRoutes = Router();
 
 // ✅ 1. MOST SPECIFIC ROUTES FIRST
 adminRoutes.get('/user-growth', adminController.getUserGrowth);
+
+//Admin Overview
 adminRoutes.get('/overview', adminController.getOverview);
+
+//Get all users (pagination)
 adminRoutes.get('/users/all', adminController.getAllUsers);
+
+// Community Stats
+adminRoutes.get('/communities/stats', adminController.communityStats);
+
+//Get all communities (pagination)
 adminRoutes.get('/communities/all', adminController.getAllCommunities);
 
+//Get Communities Members list
+adminRoutes.get(
+  '/communities/:communityId/members',
+  adminController.getAllCommunityMembers
+);
 //Add Category for Community
-adminRoutes.post('/addCategory', adminController.addCategoryForCommunity);
+adminRoutes.post(
+  '/communities/addCategory',
+  adminController.addCategoryForCommunity
+);
+//Delete Community
+adminRoutes.delete(
+  '/communities/:communityId',
+  adminController.deleteCommunity
+);
+
+// Change Community Privacy
+adminRoutes.patch(
+  '/communities/:communityId/privacy',
+  adminController.changeCommunityPrivacy
+);
+
+// Change Community Category
+adminRoutes.patch(
+  '/communities/:communityId/category',
+  adminController.changeCommunityCategory
+);
 
 // ✅ 2. SPECIFIC PARAMETERIZED ROUTES
 adminRoutes.patch(
