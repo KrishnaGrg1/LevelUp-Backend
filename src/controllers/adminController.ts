@@ -327,7 +327,7 @@ const updateCommunityDetails = async (req: AuthRequest, res: Response) => {
       .json(
         makeSuccessResponse(
           updatedCommunity,
-          'success.admin.community_updated',
+          'success.community.community_updated',
           lang,
           200
         )
@@ -454,7 +454,7 @@ const updateTicket = async (req: AuthRequest, res: Response): Promise<void> => {
       .json(
         makeSuccessResponse(
           updatedTicket,
-          'success.admin.updated_ticket',
+          'success.ticket.updated_ticket',
           lang,
           200
         )
@@ -515,7 +515,7 @@ const addCategoryForCommunity = async (
       .json(
         makeSuccessResponse(
           { category: createCategory },
-          'success.admin.added_category',
+          'success.category.added_category',
           lang,
           200
         )
@@ -671,7 +671,7 @@ const getAllCommunities = async (
             totalPages: Math.ceil(totalCommunities / pageSize),
           },
         },
-        'success.admin.retrieved_all_communities',
+        'success.community.retrieved_all_communities',
         lang,
         200
       )
@@ -721,7 +721,7 @@ const getAllCommunityMembers = async (
         {
           members: usersOnly,
         },
-        'success.admin.retrieved_all_community_members',
+        'success.community.retrieved_all_community_members',
         lang,
         200
       )
@@ -778,7 +778,7 @@ const deleteCommunity = async (req: AuthRequest, res: Response) => {
           communityId: communityId,
           deleted: true,
         },
-        'success.admin.deleted_community',
+        'success.community.deleted_community',
         lang,
         200
       )
@@ -853,7 +853,7 @@ const changeCommunityPrivacy = async (req: AuthRequest, res: Response) => {
       .json(
         makeSuccessResponse(
           { updated: true },
-          'success.admin.changed_community_privacy',
+          'success.community.changed_community_privacy',
           lang,
           200
         )
@@ -925,7 +925,7 @@ const changeCommunityCategory = async (req: AuthRequest, res: Response) => {
       .json(
         makeSuccessResponse(
           { updated: true },
-          'success.admin.changed_community_category',
+          'success.community.changed_community_category',
           lang,
           200
         )
@@ -1002,7 +1002,7 @@ const removeCommunityMember = async (req: AuthRequest, res: Response) => {
       .json(
         makeSuccessResponse(
           community,
-          'success.admin.removed_community_member',
+          'success.community.removed_community_member',
           lang,
           200
         )
@@ -1055,7 +1055,7 @@ const deleteCategory = async (req: AuthRequest, res: Response) => {
       .json(
         makeSuccessResponse(
           { updated: true },
-          'success.admin.deleted_category',
+          'success.category.deleted_category',
           lang,
           200
         )
@@ -1101,7 +1101,7 @@ const categoryStats = async (req: AuthRequest, res: Response) => {
         {
           categoryUsage,
         },
-        'success.admin.get_category_overview',
+        'success.category.get_category_overview',
         lang,
         200
       )
@@ -1157,7 +1157,7 @@ const editCategoryName = async (req: AuthRequest, res: Response) => {
       .json(
         makeSuccessResponse(
           { updated: true },
-          'success.admin.changed_category_name',
+          'success.category.changed_category_name',
           lang,
           200
         )
