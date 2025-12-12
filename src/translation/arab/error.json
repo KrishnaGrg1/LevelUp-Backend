@@ -18,8 +18,7 @@
     "forbidden": "ليس لديك الإذن لتنفيذ هذا الإجراء",
     "not_authenticated": "المشرف غير مُصادق",
     "update_user_details_failed": "فشل تحديث تفاصيل المستخدم. حاول مجدداً.",
-    "update_community_failed": "فشل في تحديث المجتمع. حاول مجدداً.",
-    "get_all_communities_failed": "فشل في استرجاع المجتمعات. حاول مجدداً."
+    "failed_to_update_community": "فشل في تحديث المجتمع. حاول مجدداً."
   },
   "community": {
     "community_not_found": "المجتمع غير موجود",

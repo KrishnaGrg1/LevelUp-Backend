@@ -339,7 +339,7 @@ const updateCommunityDetails = async (req: AuthRequest, res: Response) => {
       .json(
         makeErrorResponse(
           e instanceof Error ? e : new Error('Update community failed'),
-          'error.admin.update_community_failed',
+          'error.community.failed_to_update_community',
           lang,
           500
         )
@@ -467,7 +467,7 @@ const updateTicket = async (req: AuthRequest, res: Response): Promise<void> => {
       .json(
         makeErrorResponse(
           new Error('Update ticket failed'),
-          'error.admin.update_ticket_failed',
+          'error.ticket.update_ticket_failed',
           lang,
           500
         )
@@ -497,7 +497,7 @@ const addCategoryForCommunity = async (
         .json(
           makeErrorResponse(
             new Error(`Category already exists: ${name}`),
-            'error.admin.category_exists',
+            'error.category.category_exists',
             lang,
             400
           )
@@ -529,7 +529,7 @@ const addCategoryForCommunity = async (
       .json(
         makeErrorResponse(
           e instanceof Error ? e : new Error('Add category failed'),
-          'error.admin.added_category_failed',
+          'error.category.failed_to_add_category',
           lang,
           500
         )
@@ -684,7 +684,7 @@ const getAllCommunities = async (
       .json(
         makeErrorResponse(
           e instanceof Error ? e : new Error('Failed to fetch all communities'),
-          'error.admin.failed_to_fetch_all_communities',
+          'error.community.failed_to_fetch_all_communities',
           lang,
           500
         )
@@ -736,7 +736,7 @@ const getAllCommunityMembers = async (
           e instanceof Error
             ? e
             : new Error('Failed to fetch community members'),
-          'error.admin.failed_to_fetch_community_members',
+          'error.community.failed_to_fetch_community_members',
           lang,
           500
         )
@@ -760,7 +760,7 @@ const deleteCommunity = async (req: AuthRequest, res: Response) => {
         .json(
           makeErrorResponse(
             new Error('Community not found'),
-            'error.admin.community_not_found',
+            'error.community.community_not_found',
             req.language as Language,
             400
           )
@@ -790,7 +790,7 @@ const deleteCommunity = async (req: AuthRequest, res: Response) => {
       .json(
         makeErrorResponse(
           new Error('Failed to delete community'),
-          'error.admin.failed_to_delete_community',
+          'error.community.failed_to_delete_community',
           lang,
           500
         )
@@ -827,7 +827,7 @@ const changeCommunityPrivacy = async (req: AuthRequest, res: Response) => {
         .json(
           makeErrorResponse(
             new Error('Community not found'),
-            'error.admin.community_not_found',
+            'error.community.community_not_found',
             req.language as Language,
             404
           )
@@ -865,7 +865,7 @@ const changeCommunityPrivacy = async (req: AuthRequest, res: Response) => {
       .json(
         makeErrorResponse(
           new Error('Failed to change community privacy'),
-          'error.admin.failed_to_change_community_privacy',
+          'error.community.failed_to_change_community_privacy',
           lang,
           500
         )
@@ -889,7 +889,7 @@ const changeCommunityCategory = async (req: AuthRequest, res: Response) => {
         .json(
           makeErrorResponse(
             new Error('Community not found'),
-            'error.admin.community_not_found',
+            'error.community.community_not_found',
             req.language as Language,
             404
           )
@@ -906,7 +906,7 @@ const changeCommunityCategory = async (req: AuthRequest, res: Response) => {
         .json(
           makeErrorResponse(
             new Error('Category  not found'),
-            'error.admin.category_not_found',
+            'error.category.category_not_found',
             req.language as Language,
             404
           )
@@ -937,7 +937,7 @@ const changeCommunityCategory = async (req: AuthRequest, res: Response) => {
       .json(
         makeErrorResponse(
           new Error('Failed to change community category'),
-          'error.admin.failed_to_change_community_category',
+          'error.community.failed_to_change_community_category',
           lang,
           500
         )
@@ -961,7 +961,7 @@ const removeCommunityMember = async (req: AuthRequest, res: Response) => {
         .json(
           makeErrorResponse(
             new Error('Community not found'),
-            'error.admin.community_not_found',
+            'error.community.community_not_found',
             req.language as Language,
             404
           )
@@ -1014,7 +1014,7 @@ const removeCommunityMember = async (req: AuthRequest, res: Response) => {
       .json(
         makeErrorResponse(
           new Error('Failed to remove community member'),
-          'error.admin.failed_to_remove_community_member',
+          'error.community.failed_to_remove_community_member',
           lang,
           500
         )
@@ -1038,7 +1038,7 @@ const deleteCategory = async (req: AuthRequest, res: Response) => {
         .json(
           makeErrorResponse(
             new Error('Category not found'),
-            'error.admin.category_not_found',
+            'error.category.category_not_found',
             req.language as Language,
             400
           )
@@ -1067,7 +1067,7 @@ const deleteCategory = async (req: AuthRequest, res: Response) => {
       .json(
         makeErrorResponse(
           new Error('Failed to delete category'),
-          'error.admin.failed_to_delete_category',
+          'error.category.failed_to_delete_category',
           lang,
           500
         )
@@ -1113,7 +1113,7 @@ const categoryStats = async (req: AuthRequest, res: Response) => {
       .json(
         makeErrorResponse(
           new Error('Failed to get category overview'),
-          'error.admin.failed_to_get_category_overview',
+          'error.category.failed_to_get_category_overview',
           lang,
           500
         )
@@ -1136,7 +1136,7 @@ const editCategoryName = async (req: AuthRequest, res: Response) => {
         .json(
           makeErrorResponse(
             new Error('Category  not found'),
-            'error.admin.category_not_found',
+            'error.category.category_not_found',
             req.language as Language,
             404
           )
@@ -1169,7 +1169,7 @@ const editCategoryName = async (req: AuthRequest, res: Response) => {
       .json(
         makeErrorResponse(
           new Error('Failed to change category name'),
-          'error.admin.failed_to_change_category_name',
+          'error.category.failed_to_change_category_name',
           lang,
           500
         )

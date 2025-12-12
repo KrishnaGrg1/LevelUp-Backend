@@ -18,8 +18,7 @@
     "forbidden": "この操作を実行する権限がありません",
     "not_authenticated": "管理者は認証されていません",
     "update_user_details_failed": "ユーザーの詳細を更新できませんでした。もう一度試してください。",
-    "update_community_failed": "コミュニティの更新に失敗しました。再試行してください。",
-    "get_all_communities_failed": "コミュニティの取得に失敗しました。再試行してください。"
+    "failed_to_update_community": "コミュニティの更新に失敗しました。再試行してください。"
   },
   "community": {
     "community_not_found": "コミュニティが見つかりません",

@@ -18,8 +18,7 @@
     "forbidden": "您无权执行此操作",
     "not_authenticated": "管理员未认证",
     "update_user_details_failed": "更新用户详情失败。请再试一次。",
-    "update_community_failed": "更新社区失败。请再试一次。",
-    "get_all_communities_failed": "获取社区失败。请再试一次。"
+    "failed_to_update_community": "更新社区失败。请再试一次。"
   },
   "community": {
     "community_not_found": "社区不存在",
