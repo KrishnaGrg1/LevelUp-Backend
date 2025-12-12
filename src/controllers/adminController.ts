@@ -626,7 +626,7 @@ const getAllCommunities = async (
       }),
     };
 
-    const [communitiesRaw, totalCommunities] = await Promise.all([
+    const [communities, totalCommunities] = await Promise.all([
       client.community.findMany({
         skip,
         take: pageSize,
@@ -646,24 +646,24 @@ const getAllCommunities = async (
       client.community.count({ where: whereFilter }),
     ]);
 
-    const communities = communitiesRaw.map((c) => ({
-      id: c.id,
-      name: c.name,
-      description: c.description,
-      photo: c.photo,
-      isPrivate: c.isPrivate,
-      memberLimit: c.memberLimit,
-      createdAt: c.createdAt,
-      updatedAt: c.updatedAt,
-      ownerId: c.ownerId,
-      category: c.category?.name || 'No Category',
-      membersCount: c._count.members,
-    }));
+    // const communities = communitiesRaw.map((c) => ({
+    //   id: c.id,
+    //   name: c.name,
+    //   description: c.description,
+    //   photo: c.photo,
+    //   isPrivate: c.isPrivate,
+    //   memberLimit: c.memberLimit,
+    //   createdAt: c.createdAt,
+    //   updatedAt: c.updatedAt,
+    //   ownerId: c.ownerId,
+    //   category: c.category?.name || 'No Category',
+    //   membersCount: c._count.members,
+    // }));
 
     res.status(200).json(
       makeSuccessResponse(
         {
-          communities,
+          communities: communities,
           pagination: {
             total: totalCommunities,
             page,
