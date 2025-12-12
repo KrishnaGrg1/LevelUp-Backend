@@ -585,10 +585,53 @@ const getAllCommunities = async (
     const pageSize = parseInt(req.query.pageSize as string) || 10;
     const skip = (page - 1) * pageSize;
 
+    const ALLOWED_SORT_FIELDS = ['name', 'createdAt', 'membersCount'];
+
+    //  Sorting
+    const sortBy = (req.query.sortBy as string) || 'name';
+
+    let sortField = 'name';
+    let sortOrder: 'asc' | 'desc' = 'asc';
+
+    if (sortBy) {
+      const isDesc = sortBy.startsWith('-');
+      const cleanField = isDesc ? sortBy.substring(1) : sortBy;
+
+      if (ALLOWED_SORT_FIELDS.includes(cleanField)) {
+        sortField = cleanField;
+        sortOrder = isDesc ? 'desc' : 'asc';
+      }
+    }
+
+    //Order By
+    const orderBy: any = {};
+    orderBy[sortField] = sortOrder;
+
+    //Privacy Filter
+    const isPrivateQuery = req.query.isPrivate as string | undefined;
+    let isPrivateFilter: boolean | undefined = undefined;
+
+    if (isPrivateQuery === 'true') {
+      isPrivateFilter = true;
+    } else if (isPrivateQuery === 'false') {
+      isPrivateFilter = false;
+    }
+
+    // Search filter
+    const searchQuery = (req.query.search as string) || '';
+    const whereFilter: any = {
+      ...(isPrivateFilter !== undefined && { isPrivate: isPrivateFilter }),
+      ...(searchQuery && {
+        OR: [{ name: { contains: searchQuery, mode: 'insensitive' } }],
+      }),
+    };
+
     const [communitiesRaw, totalCommunities] = await Promise.all([
       client.community.findMany({
         skip,
         take: pageSize,
+        orderBy,
+        where: whereFilter,
         include: {
           _count: {
             select: { members: true },
@@ -600,14 +643,23 @@ const getAllCommunities = async (
           },
         },
       }),
-      client.community.count(),
+      client.community.count({ where: whereFilter }),
     ]);
 
     const communities = communitiesRaw.map((c) => ({
-      ...c,
-      membersCount: c._count.members,
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      photo: c.photo,
+      isPrivate: c.isPrivate,
+      memberLimit: c.memberLimit,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+      ownerId: c.ownerId,
       category: c.category?.name || 'No Category',
+      membersCount: c._count.members,
     }));
+
     res.status(200).json(
       makeSuccessResponse(
         {
@@ -720,16 +772,17 @@ const deleteCommunity = async (req: AuthRequest, res: Response) => {
       where: { id: communityId },
     });
 
-    res
-      .status(200)
-      .json(
-        makeSuccessResponse(
-          community,
-          'success.admin.deleted_community',
-          lang,
-          200
-        )
-      );
+    res.status(200).json(
+      makeSuccessResponse(
+        {
+          communityId: communityId,
+          deleted: true,
+        },
+        'success.admin.deleted_community',
+        lang,
+        200
+      )
+    );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
     res
@@ -751,19 +804,32 @@ const changeCommunityPrivacy = async (req: AuthRequest, res: Response) => {
     const communityId = req.params.communityId;
     const { isPrivate } = req.body;
 
+    if (typeof isPrivate !== 'boolean') {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Invalid value for isPrivate'),
+            'error.admin.invalid_privacy_value',
+            lang,
+            400
+          )
+        );
+    }
+
     const community = await client.community.findUnique({
       where: { id: communityId },
     });
 
     if (!community) {
       res
-        .status(400)
+        .status(404)
         .json(
           makeErrorResponse(
             new Error('Community not found'),
             'error.admin.community_not_found',
             req.language as Language,
-            400
+            404
           )
         );
       return;
@@ -774,13 +840,19 @@ const changeCommunityPrivacy = async (req: AuthRequest, res: Response) => {
       data: {
         isPrivate: isPrivate,
       },
+      select: {
+        id: true,
+        name: true,
+        isPrivate: true,
+        updatedAt: true,
+      },
     });
 
     res
       .status(200)
       .json(
         makeSuccessResponse(
-          updatedCommunity,
+          { updated: true },
           'success.admin.changed_community_privacy',
           lang,
           200
@@ -806,44 +878,45 @@ const changeCommunityCategory = async (req: AuthRequest, res: Response) => {
     const lang = req.language as Language;
     const communityId = req.params.communityId;
     const { category } = req.body;
+
     const community = await client.community.findUnique({
       where: { id: communityId },
     });
 
     if (!community) {
       res
-        .status(400)
+        .status(404)
         .json(
           makeErrorResponse(
             new Error('Community not found'),
             'error.admin.community_not_found',
             req.language as Language,
-            400
+            404
           )
         );
       return;
     }
 
-    const isCategory = await client.category.findUnique({
+    const categoryRecord = await client.category.findUnique({
       where: { name: category },
     });
-    if (!isCategory) {
+    if (!categoryRecord) {
       res
-        .status(400)
+        .status(404)
         .json(
           makeErrorResponse(
             new Error('Category  not found'),
             'error.admin.category_not_found',
             req.language as Language,
-            400
+            404
           )
         );
       return;
     }
-    const updatedCategory = await client.community.update({
+    await client.community.update({
       where: { id: communityId },
       data: {
-        categoryId: isCategory.id,
+        categoryId: categoryRecord.id,
       },
     });
 
@@ -851,7 +924,7 @@ const changeCommunityCategory = async (req: AuthRequest, res: Response) => {
       .status(200)
       .json(
         makeSuccessResponse(
-          updatedCategory,
+          { updated: true },
           'success.admin.changed_community_category',
           lang,
           200
@@ -871,6 +944,239 @@ const changeCommunityCategory = async (req: AuthRequest, res: Response) => {
       );
   }
 };
+
+const removeCommunityMember = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const communityId = req.params.communityId;
+    const memberId = req.params.memberId;
+
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+    });
+
+    if (!community) {
+      res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.admin.community_not_found',
+            req.language as Language,
+            404
+          )
+        );
+      return;
+    }
+
+    const isMember = await client.communityMember.findFirst({
+      where: { communityId, userId: memberId },
+    });
+
+    if (!isMember) {
+      res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Member not found'),
+            'error.admin.member_not_found',
+            req.language as Language,
+            404
+          )
+        );
+      return;
+    }
+
+    //remove member from community
+    await client.communityMember.delete({
+      where: {
+        userId_communityId: {
+          userId: memberId,
+          communityId: communityId,
+        },
+      },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          community,
+          'success.admin.removed_community_member',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to remove community member'),
+          'error.admin.failed_to_remove_community_member',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const deleteCategory = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const encodedName = req.params.categoryName;
+    const categoryName = decodeURIComponent(encodedName);
+
+    const category = await client.category.findUnique({
+      where: { name: categoryName },
+    });
+
+    if (!category) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Category not found'),
+            'error.admin.category_not_found',
+            req.language as Language,
+            400
+          )
+        );
+      return;
+    }
+
+    await client.category.delete({
+      where: { id: category.id },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { updated: true },
+          'success.admin.deleted_category',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to delete category'),
+          'error.admin.failed_to_delete_category',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const categoryStats = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+
+    // Get all categories with their community counts
+    const categories = await client.category.findMany({
+      include: {
+        _count: {
+          select: {
+            communities: true,
+          },
+        },
+      },
+    });
+
+    // Transform to { categoryName: count } format
+    const categoryUsage: Record<string, number> = {};
+    categories.forEach((category) => {
+      categoryUsage[category.name] = category._count.communities;
+    });
+
+    res.status(200).json(
+      makeSuccessResponse(
+        {
+          categoryUsage,
+        },
+        'success.admin.get_category_overview',
+        lang,
+        200
+      )
+    );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to get category overview'),
+          'error.admin.failed_to_get_category_overview',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const editCategoryName = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const oldName = req.params.oldName;
+    const { name } = req.body;
+
+    const categoryRecord = await client.category.findUnique({
+      where: { name: oldName },
+    });
+    if (!categoryRecord) {
+      res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Category  not found'),
+            'error.admin.category_not_found',
+            req.language as Language,
+            404
+          )
+        );
+      return;
+    }
+
+    //Update the category name
+    await client.category.update({
+      where: { id: categoryRecord.id },
+      data: {
+        name: name,
+      },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { updated: true },
+          'success.admin.changed_category_name',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to change category name'),
+          'error.admin.failed_to_change_category_name',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const adminController = {
   updateUserDetails,
   viewUserDetail,
@@ -888,6 +1194,10 @@ const adminController = {
   deleteCommunity,
   changeCommunityPrivacy,
   changeCommunityCategory,
+  removeCommunityMember,
+  deleteCategory,
+  categoryStats,
+  editCategoryName,
   // banUser,
   // unbanUser,
   // deletePost,
