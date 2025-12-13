@@ -1,6 +1,10 @@
 import Joi from 'joi';
 
 const adminValidation = {
+  /* =========================
+   * USER
+   * ========================= */
+
   updateDetails: {
     body: Joi.object().keys({
       UserName: Joi.string().min(2).max(150).optional().messages({
@@ -28,6 +32,15 @@ const adminValidation = {
     }),
   },
 
+  viewUserDetail: {
+    params: Joi.object().keys({
+      userId: Joi.string().min(2).max(150).required().messages({
+        'string.empty': 'User ID is required',
+        'string.min': 'User ID must contain at least 2 characters long',
+        'string.max': 'User ID must not exceed 150 characters long',
+      }),
+    }),
+  },
   deleteUser: {
     body: Joi.object().keys({
       id: Joi.string().min(2).max(150).required().messages({
@@ -37,6 +50,156 @@ const adminValidation = {
       }),
     }),
   },
+
+  /* =========================
+   * COMMUNITY
+   * ========================= */
+
+  getAllCommunities: {
+    query: Joi.object().keys({
+      page: Joi.number().integer().min(1).optional().messages({
+        'number.base': 'Page must be a number',
+        'number.integer': 'Page must be an integer',
+        'number.min': 'Page must be at least 1',
+      }),
+      pageSize: Joi.number().integer().min(1).max(100).optional().messages({
+        'number.base': 'Page size must be a number',
+        'number.integer': 'Page size must be an integer',
+        'number.min': 'Page size must be at least 1',
+        'number.max': 'Page size must not exceed 100',
+      }),
+      sortBy: Joi.string().optional().messages({
+        'string.base': 'Sort by must be a string',
+        'any.only': 'Sort by must be one of: name, createdAt, memberCount',
+      }),
+      isPrivate: Joi.boolean().optional().messages({
+        'boolean.base': 'isPrivate must be a boolean',
+      }),
+      search: Joi.string().optional().messages({
+        'string.base': 'Search must be a string',
+      }),
+    }),
+  },
+
+  changeCommunityPrivacy: {
+    params: Joi.object().keys({
+      communityId: Joi.string().required().messages({
+        'string.empty': 'Community ID is required to update',
+      }),
+    }),
+    body: Joi.object().keys({
+      isPrivate: Joi.boolean().required().messages({
+        'string.empty': 'Privacy setting is required',
+        'any.required': 'Privacy setting is required',
+      }),
+    }),
+  },
+
+  changeCommunityCategory: {
+    params: Joi.object().keys({
+      communityId: Joi.string().required().messages({
+        'string.empty': 'Community ID is required to update',
+      }),
+    }),
+    body: Joi.object().keys({
+      category: Joi.string().required().messages({
+        'string.empty': 'Category is required',
+        'any.required': 'Category is required',
+      }),
+    }),
+  },
+
+  updateCommunityDetails: {
+    params: Joi.object().keys({
+      communityId: Joi.string().required().messages({
+        'string.empty': 'Community ID is required to update',
+      }),
+    }),
+
+    body: Joi.object().keys({
+      name: Joi.string().min(3).max(100).optional().messages({
+        'string.empty': 'Community name is required',
+        'string.min': 'Community name must contain at least 3 characters long',
+        'string.max': 'Community name must not exceed 100 characters long',
+      }),
+      description: Joi.string().max(500).optional().messages({
+        'string.max': 'Description must not exceed 500 characters long',
+      }),
+      ownerId: Joi.string().min(2).max(150).optional().messages({
+        'string.empty': 'Owner ID is required',
+        'string.min': 'Owner ID must contain at least 2 characters long',
+        'string.max': 'Owner ID must not exceed 150 characters long',
+      }),
+    }),
+  },
+
+  removeCommunityMember: {
+    params: Joi.object().keys({
+      communityId: Joi.string().required().messages({
+        'string.empty': 'Community ID is required',
+      }),
+      memberId: Joi.string().required().messages({
+        'string.empty': 'Member ID is required',
+      }),
+    }),
+  },
+
+  getAllCommunityMembers: {
+    params: Joi.object().keys({
+      communityId: Joi.string().required().messages({
+        'string.empty': 'Community ID is required',
+      }),
+    }),
+  },
+
+  /* =========================
+   * CATEGORY
+   * ========================= */
+
+  addCategoryForCommunity: {
+    body: Joi.object().keys({
+      name: Joi.string().required().messages({
+        'string.empty': 'Category name is required',
+        'any.required': 'Category name is required',
+      }),
+    }),
+  },
+
+  editCategoryName: {
+    params: Joi.object().keys({
+      oldName: Joi.string().required().messages({
+        'string.empty': 'Old category name is required',
+        'any.required': 'Old category name is required',
+      }),
+    }),
+    body: Joi.object().keys({
+      name: Joi.string().required().messages({
+        'string.empty': 'New category name is required',
+        'any.required': 'New category name is required',
+      }),
+    }),
+  },
+
+  deleteCategory: {
+    params: Joi.object().keys({
+      categoryName: Joi.string().required().messages({
+        'string.empty': 'Category name is required to delete',
+      }),
+    }),
+  },
+
+  deleteCommunity: {
+    params: Joi.object().keys({
+      communityId: Joi.string().required().messages({
+        'string.empty': 'Community ID is required to delete',
+      }),
+    }),
+  },
+
+  /* =========================
+   * TICKET
+   * ========================= */
+
   updateTicket: {
     body: Joi.object().keys({
       status: Joi.string()
