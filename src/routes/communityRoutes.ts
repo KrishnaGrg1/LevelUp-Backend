@@ -43,11 +43,11 @@ communityRoutes.get(
   communityController.specificCommunity
 );
 
-//  Join a community
+//  Join public community
 communityRoutes.post(
   '/:communityId/join',
-  validate(communityValidation.joinCommunity),
-  communityController.joinCommunity
+  validate(communityValidation.joinPublicCommunity),
+  communityController.joinPublicCommunity
 );
 
 //  Leave a community

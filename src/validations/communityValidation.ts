@@ -16,8 +16,8 @@ const communityValidation = {
         .falsy('0')
         .falsy('no')
         .messages({
-        'boolean.base': 'isPrivate must be a boolean',
-      }),
+          'boolean.base': 'isPrivate must be a boolean',
+        }),
 
       memberLimit: Joi.number().integer().min(1).max(1000).optional().messages({
         'number.base': 'Member limit must be a number',
@@ -46,7 +46,7 @@ const communityValidation = {
     }),
   },
 
-  joinCommunity: {
+  joinPublicCommunity: {
     params: Joi.object().keys({
       // communityName: Joi.string().min(3).max(150).required().messages({
       //   'string.empty': 'Community Name is required',
