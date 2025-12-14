@@ -114,6 +114,21 @@ const updateUserDetails = async (req: AuthRequest, res: Response) => {
     if (level !== undefined) updateData.level = level;
     if (isVerified !== undefined) updateData.isVerified = isVerified;
 
+    // ADD THIS CHECK
+    if (Object.keys(updateData).length === 0) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('No fields to update'),
+            'error.admin.no_fields_to_update',
+            lang,
+            400
+          )
+        );
+      return;
+    }
+
     const updatedUser = await client.user.update({
       where: { id: userId },
       data: updateData,
@@ -166,8 +181,8 @@ const deleteUser = async (req: AuthRequest, res: Response) => {
       .status(500)
       .json(
         makeErrorResponse(
-          new Error('Update user details failed'),
-          'error.admin.update_user_details_failed',
+          new Error('Delete user details failed'),
+          'error.admin.delete_user_details_failed',
           lang,
           500
         )
@@ -507,7 +522,7 @@ const getAllCommunities = async (
 
     const lang = (req.language as Language) || 'eng';
     const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.pageSize as string) || 10;
+    const pageSize = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * pageSize;
 
     const ALLOWED_SORT_FIELDS = ['name', 'createdAt', 'membersCount'];

@@ -62,12 +62,12 @@ const adminValidation = {
         'number.integer': 'Page must be an integer',
         'number.min': 'Page must be at least 1',
       }),
-      pageSize: Joi.number().integer().min(1).max(100).optional().messages({
-        'number.base': 'Page size must be a number',
-        'number.integer': 'Page size must be an integer',
-        'number.min': 'Page size must be at least 1',
-        'number.max': 'Page size must not exceed 100',
+      limit: Joi.number().integer().min(1).optional().messages({
+        'number.base': 'limit must be a number',
+        'number.integer': 'limit must be an integer',
+        'number.min': 'limit must be at least 1',
       }),
+
       sortBy: Joi.string().optional().messages({
         'string.base': 'Sort by must be a string',
         'any.only': 'Sort by must be one of: name, createdAt, memberCount',
