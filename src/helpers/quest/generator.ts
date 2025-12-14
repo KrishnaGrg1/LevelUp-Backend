@@ -88,8 +88,11 @@ export async function generateQuestsForAllCommunities(
         const promptLevel = questType === 'Weekly' ? effLevel + 1 : effLevel;
         const promptXp = questType === 'Weekly' ? xp + 20 : xp;
 
+        console.log(`${logPrefix} Calling AI for ${skillName}, Level: ${promptLevel}, Status: ${status}`);
         const prompt = getDailyQuestSetPrompt(skillName, promptLevel, status, promptXp);
-        res = await OpenAIChatWithTimeout({ prompt }, 30000);
+        res = await OpenAIChatWithTimeout({ prompt }, 60000); // Increased to 60 seconds
+        
+        console.log(`${logPrefix} AI Response received, length: ${res?.content?.length || 0}`);
         
         // Clean the response content before parsing
         let content = res?.content ?? '{}';
@@ -98,6 +101,7 @@ export async function generateQuestsForAllCommunities(
         const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
         if (jsonMatch) {
           content = jsonMatch[1];
+          console.log(`${logPrefix} Extracted JSON from markdown code block`);
         }
         
         // Remove any potential BOM or whitespace
@@ -107,13 +111,17 @@ export async function generateQuestsForAllCommunities(
 
         if (validateQuestResponse(parsed)) {
           quests = parsed.quests;
+          console.log(`${logPrefix} ✅ AI generated ${quests.length} quests successfully`);
         } else {
-          console.warn(`${logPrefix} Invalid AI response for user ${userId}, using fallback`);
+          console.warn(`${logPrefix} ❌ Invalid AI response structure for user ${userId}, using fallback`);
+          console.warn(`${logPrefix} Response:`, JSON.stringify(parsed).substring(0, 300));
         }
       } catch (error) {
-        console.error(`${logPrefix} AI failed for user ${userId}, community ${membership.communityId}:`, error);
+        console.error(`${logPrefix} ❌ AI failed for user ${userId}, community ${membership.communityId}:`, error);
         if (error instanceof SyntaxError) {
-          console.error(`${logPrefix} JSON parse error. Response preview:`, res?.content?.substring(0, 500));
+          console.error(`${logPrefix} JSON parse error. Raw response:`, res?.content?.substring(0, 800));
+        } else if (error instanceof Error) {
+          console.error(`${logPrefix} Error message:`, error.message);
         }
       }
     }
@@ -135,6 +143,7 @@ export async function generateQuestsForAllCommunities(
       await createQuestsForCommunity(
         userId,
         membership.communityId,
+        membership.id,
         quests,
         questType,
         currentPeriodStatus,
