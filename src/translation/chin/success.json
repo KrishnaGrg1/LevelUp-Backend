@@ -2,55 +2,71 @@
   "auth": {
     "register": "用户注册成功",
     "login": "登录成功",
-    "otp_resent": "邮箱已存在。OTP已重新发送",
-    "logout": "注销成功",
-    "otp_sent": "OTP发送成功",
+    "otp_resent": "邮箱已存在。OTP 已重新发送",
+    "logout": "成功登出",
+    "otp_sent": "OTP 发送成功",
     "verify": "邮箱验证成功",
     "email_verified": "邮箱验证成功",
-    "user_retrieved": "用户信息获取成功",
-    "retrieved_all_users": "所有用户获取成功"
+    "user_retrieved": "用户获取成功",
+    "retrieved_all_users": "所有用户获取成功",
+    "change_password": "密码修改成功"
   },
   "admin": {
-    "updated_details": "用户详情更新成功",
-    "view_user_details": "用户详情获取成功",
-    "community_updated": "社区更新成功",
-    "get_all_communities": "所有社区获取成功"
+    "updated_details": "用户信息更新成功",
+    "view_user_details": "用户信息获取成功",
+    "deleted_user": "用户删除成功",
+    "get_overview": "管理员概要获取成功",
+    "user_growth_fetched": "用户增长分析获取成功"
   },
   "community": {
     "created": "社区创建成功",
-    "joined": "成功加入社区"
+    "joined": "成功加入社区",
+    "deleted_community": "社区删除成功",
+    "community_updated": "社区更新成功",
+    "changed_community_privacy": "社区隐私修改成功",
+    "changed_community_category": "社区分类修改成功",
+    "removed_community_member": "用户已成功移出社区",
+    "retrieved_all_communities": "所有社区获取成功",
+    "retrieved_all_community_members": "社区成员获取成功"
+  },
+  "category": {
+    "added_category": "分类添加成功",
+    "deleted_category": "分类删除成功",
+    "get_category_overview": "分类统计获取成功",
+    "changed_category_name": "分类名称更新成功"
   },
   "clan": {
-    "created": "氏族创建成功",
-    "joined": "成功加入氏族",
-    "left": "成功离开氏族",
-    "deleted": "氏族删除成功",
-    "updated": "氏族更新成功",
-    "retrieved": "氏族获取成功",
-    "info_retrieved": "氏族信息获取成功",
-    "members_retrieved": "氏族成员获取成功",
-    "user_clans_retrieved": "用户氏族获取成功"
+    "created": "战队创建成功",
+    "joined": "成功加入战队",
+    "left": "已成功退出战队",
+    "deleted": "战队删除成功",
+    "updated": "战队更新成功",
+    "retrieved": "战队获取成功",
+    "info_retrieved": "战队信息获取成功",
+    "members_retrieved": "战队成员获取成功",
+    "user_clans_retrieved": "用户的战队获取成功"
   },
   "ticket": {
     "create": "工单创建成功",
     "fetch": "工单获取成功",
-    "fetch_all": "工单列表获取成功",
+    "fetch_all": "所有工单获取成功",
     "update": "工单更新成功",
-    "delete": "工单删除成功"
+    "delete": "工单删除成功",
+    "updated_ticket": "工单更新成功"
   },
   "upload": {
-    "profile_picture_uploaded": "个人资料图片上传成功",
-    "community_photo_uploaded": "社区照片上传成功"
+    "profile_picture_uploaded": "头像上传成功",
+    "community_photo_uploaded": "社区图片上传成功"
   },
   "ai": {
-    "chat": "AI 聊天回复生成成功",
+    "chat": "AI 聊天响应生成成功",
     "chat_started": "AI 聊天会话已开始",
     "chat_completed": "AI 聊天成功完成",
     "chat_cancelled": "AI 聊天已取消",
     "quests_generated": "任务生成成功",
-    "quest_completed": "任务标记完成成功",
+    "quest_completed": "任务成功标记为已完成",
     "quest_fetched": "任务获取成功",
-    "quests_fetched": "任务列表获取成功",
+    "quests_fetched": "任务获取成功",
     "daily_quests_fetched": "每日任务获取成功",
     "weekly_quests_fetched": "每周任务获取成功",
     "completed_quests_fetched": "已完成任务获取成功",
@@ -59,16 +75,16 @@
     "chat_history_deleted": "聊天记录删除成功",
     "all_chat_history_deleted": "所有聊天记录删除成功",
     "token_balance_fetched": "代币余额获取成功",
-    "tokens_available": "您有 {count} 个可用代币",
-    "tokens_deducted": "扣除1个代币。剩余：{remaining}",
-    "no_response": "AI 无回复",
-    "fallback_description": "以{difficulty}水平练习 {skill} 30 分钟。",
-    "health_check_passed": "AI 服务健康且正常运行",
-    "health_check_database_connected": "数据库连接已验证",
+    "tokens_available": "你有 {count} 个代币",
+    "tokens_deducted": "扣除 1 个代币。剩余：{remaining}",
+    "no_response": "AI 无响应",
+    "fallback_description": "在 {difficulty} 难度下练习 {skill} 30 分钟。",
+    "health_check_passed": "AI 服务运行正常",
+    "health_check_database_connected": "数据库连接验证成功",
     "config_fetched": "AI 配置获取成功",
     "daily_quests_forced": "每日任务重新生成成功",
     "weekly_quests_forced": "每周任务重新生成成功",
     "quest_rotation_success": "任务轮换完成成功",
-    "quest_period_updated": "任务周期状态已更新"
+    "quest_period_updated": "任务周期状态更新成功"
   }
 }

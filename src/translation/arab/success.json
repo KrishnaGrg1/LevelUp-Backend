@@ -2,73 +2,89 @@
   "auth": {
     "register": "تم تسجيل المستخدم بنجاح",
     "login": "تم تسجيل الدخول بنجاح",
-    "otp_resent": "البريد الإلكتروني موجود بالفعل. تم إعادة إرسال OTP إلى بريدك.",
+    "otp_resent": "البريد الإلكتروني موجود. تم إعادة إرسال رمز OTP بنجاح",
     "logout": "تم تسجيل الخروج بنجاح",
-    "otp_sent": "تم إرسال OTP بنجاح",
+    "otp_sent": "تم إرسال رمز OTP بنجاح",
     "verify": "تم التحقق من البريد الإلكتروني بنجاح",
     "email_verified": "تم التحقق من البريد الإلكتروني بنجاح",
-    "user_retrieved": "تم جلب بيانات المستخدم بنجاح",
-    "retrieved_all_users": "تم جلب جميع المستخدمين بنجاح"
+    "user_retrieved": "تم جلب المستخدم بنجاح",
+    "retrieved_all_users": "تم جلب جميع المستخدمين بنجاح",
+    "change_password": "تم تغيير كلمة المرور بنجاح"
   },
   "admin": {
     "updated_details": "تم تحديث تفاصيل المستخدم بنجاح",
     "view_user_details": "تم جلب تفاصيل المستخدم بنجاح",
-    "community_updated": "تم تحديث المجتمع بنجاح",
-    "get_all_communities": "تم جلب جميع المجتمعات بنجاح"
+    "deleted_user": "تم حذف المستخدم بنجاح",
+    "get_overview": "تم جلب نظرة عامة للإدارة بنجاح",
+    "user_growth_fetched": "تم جلب تحليل نمو المستخدم بنجاح"
   },
   "community": {
     "created": "تم إنشاء المجتمع بنجاح",
-    "joined": "تم الانضمام إلى المجتمع بنجاح"
+    "joined": "تم الانضمام إلى المجتمع بنجاح",
+    "deleted_community": "تم حذف المجتمع بنجاح",
+    "community_updated": "تم تحديث المجتمع بنجاح",
+    "changed_community_privacy": "تم تغيير خصوصية المجتمع بنجاح",
+    "changed_community_category": "تم تغيير فئة المجتمع بنجاح",
+    "removed_community_member": "تمت إزالة العضو من المجتمع بنجاح",
+    "retrieved_all_communities": "تم جلب جميع المجتمعات بنجاح",
+    "retrieved_all_community_members": "تم جلب أعضاء المجتمع بنجاح"
+  },
+  "category": {
+    "added_category": "تمت إضافة الفئة بنجاح",
+    "deleted_category": "تم حذف الفئة بنجاح",
+    "get_category_overview": "تم جلب إحصائيات الفئة بنجاح",
+    "changed_category_name": "تم تحديث اسم الفئة بنجاح"
   },
   "clan": {
-    "created": "تم إنشاء العشيرة بنجاح",
-    "joined": "تم الانضمام إلى العشيرة بنجاح",
-    "left": "تم مغادرة العشيرة بنجاح",
-    "deleted": "تم حذف العشيرة بنجاح",
-    "updated": "تم تحديث العشيرة بنجاح",
-    "retrieved": "تم جلب العشائر بنجاح",
-    "info_retrieved": "تم جلب معلومات العشيرة بنجاح",
-    "members_retrieved": "تم جلب أعضاء العشيرة بنجاح",
-    "user_clans_retrieved": "تم جلب العشائر الخاصة بالمستخدم بنجاح"
+    "created": "تم إنشاء الفريق بنجاح",
+    "joined": "تم الانضمام إلى الفريق بنجاح",
+    "left": "تم مغادرة الفريق بنجاح",
+    "deleted": "تم حذف الفريق بنجاح",
+    "updated": "تم تحديث الفريق بنجاح",
+    "retrieved": "تم جلب الفرق بنجاح",
+    "info_retrieved": "تم جلب معلومات الفريق بنجاح",
+    "members_retrieved": "تم جلب أعضاء الفريق بنجاح",
+    "user_clans_retrieved": "تم جلب فرق المستخدم بنجاح"
   },
   "ticket": {
     "create": "تم إنشاء التذكرة بنجاح",
     "fetch": "تم جلب التذكرة بنجاح",
-    "fetch_all": "تم جلب التذاكر بنجاح",
+    "fetch_all": "تم جلب جميع التذاكر بنجاح",
     "update": "تم تحديث التذكرة بنجاح",
-    "delete": "تم حذف التذكرة بنجاح"
+    "delete": "تم حذف التذكرة بنجاح",
+    "updated_ticket": "تم تحديث التذكرة بنجاح"
   },
   "upload": {
-    "profile_picture_uploaded": "تم تحميل صورة الملف الشخصي بنجاح",
-    "community_photo_uploaded": "تم تحميل صورة المجتمع بنجاح"
+    "profile_picture_uploaded": "تم رفع صورة الملف الشخصي بنجاح",
+    "community_photo_uploaded": "تم رفع صورة المجتمع بنجاح"
   },
   "ai": {
-    "chat": "تم إنشاء رد الدردشة بواسطة الذكاء الاصطناعي بنجاح",
-    "chat_started": "بدأت جلسة الدردشة بالذكاء الاصطناعي",
-    "chat_completed": "تمت الدردشة بالذكاء الاصطناعي بنجاح",
-    "chat_cancelled": "تم إلغاء الدردشة بالذكاء الاصطناعي",
+    "chat": "تم إنشاء رد المحادثة من الذكاء الاصطناعي بنجاح",
+    "chat_started": "تم بدء جلسة المحادثة مع الذكاء الاصطناعي",
+    "chat_completed": "تم إكمال محادثة الذكاء اصطناعي بنجاح",
+    "chat_cancelled": "تم إلغاء محادثة الذكاء الاصطناعي",
     "quests_generated": "تم إنشاء المهام بنجاح",
-    "quest_completed": "تم وضع علامة المهمة كمكتملة بنجاح",
+    "quest_completed": "تم وضع علامة إكمال على المهمة بنجاح",
     "quest_fetched": "تم جلب المهمة بنجاح",
     "quests_fetched": "تم جلب المهام بنجاح",
     "daily_quests_fetched": "تم جلب المهام اليومية بنجاح",
     "weekly_quests_fetched": "تم جلب المهام الأسبوعية بنجاح",
     "completed_quests_fetched": "تم جلب المهام المكتملة بنجاح",
     "quest_deleted": "تم حذف المهمة بنجاح",
-    "chat_history_fetched": "تم جلب سجل الدردشة بنجاح",
-    "chat_history_deleted": "تم حذف سجل الدردشة بنجاح",
-    "all_chat_history_deleted": "تم حذف جميع سجل الدردشة بنجاح",
-    "token_balance_fetched": "تم جلب رصيد الرموز بنجاح",
-    "tokens_available": "لديك {count} رموز متاحة",
-    "tokens_deducted": "تم خصم 1 رمز. المتبقي: {remaining}",
+    "chat_history_fetched": "تم جلب سجل المحادثة بنجاح",
+    "chat_history_deleted": "تم حذف سجل المحادثة بنجاح",
+    "all_chat_history_deleted": "تم حذف جميع سجلات المحادثة بنجاح",
+    "token_balance_fetched": "تم جلب رصيد التوكن بنجاح",
+    "tokens_available": "لديك {count} من التوكنات المتاحة",
+    "tokens_deducted": "تم خصم 1 توكن. المتبقي: {remaining}",
     "no_response": "لا يوجد رد من الذكاء الاصطناعي",
-    "fallback_description": "اعمل على {skill} بمستوى {difficulty} لمدة 30 دقيقة.",
-    "health_check_passed": "خدمة الذكاء الاصطناعي تعمل بشكل صحي",
+    "fallback_description": "اعمل على مهارة {skill} بمستوى {difficulty} لمدة 30 دقيقة.",
+    "health_check_passed": "خدمة الذكاء الاصطناعي تعمل بشكل جيد",
     "health_check_database_connected": "تم التحقق من اتصال قاعدة البيانات",
     "config_fetched": "تم جلب إعدادات الذكاء الاصطناعي بنجاح",
     "daily_quests_forced": "تم إعادة إنشاء المهام اليومية بنجاح",
     "weekly_quests_forced": "تم إعادة إنشاء المهام الأسبوعية بنجاح",
     "quest_rotation_success": "تم إكمال تدوير المهام بنجاح",
-    "quest_period_updated": "تم تحديث حالة فترة المهمة"
+    "quest_period_updated": "تم تحديث حالة فترة المهمة بنجاح"
   }
 }

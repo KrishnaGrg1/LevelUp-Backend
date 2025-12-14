@@ -18,8 +18,7 @@
     "forbidden": "No tienes permiso para realizar esta acción",
     "not_authenticated": "Administrador no autenticado",
     "update_user_details_failed": "No se pudieron actualizar los detalles del usuario. Intenta de nuevo.",
-    "update_community_failed": "No se pudo actualizar la comunidad. Intenta de nuevo.",
-    "get_all_communities_failed": "No se pudieron obtener las comunidades. Intenta de nuevo."
+    "failed_to_update_community": "No se pudo actualizar la comunidad. Intenta de nuevo."
   },
   "community": {
     "community_not_found": "Comunidad no encontrada",

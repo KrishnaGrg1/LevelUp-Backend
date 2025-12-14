@@ -18,15 +18,32 @@
     "forbidden": "You do not have permission to perform this action",
     "not_authenticated": "Admin not authenticated",
     "update_user_details_failed": "Failed to update user details. Try again.",
-    "update_community_failed": "Failed to update community. Try again.",
-    "get_all_communities_failed": "Failed to retrieve communities. Try again."
+    "failed_to_get_overview": "Failed to retrieve overview. Try again.",
+    "user_growth_failed": "Failed to retrieve user growth analytics. Try again.",
+    "invalid_privacy_value": "Invalid value for privacy setting",
+    "member_not_found": "Member not found in community"
   },
   "community": {
     "community_not_found": "Community not found",
     "user_already_in_community": "User is already in the community",
     "community_name_exists": "Community name already exists",
+    "failed_to_add_category": "Failed to add category. Try again.",
+    "failed_to_update_community": "Failed to update community. Try again.",
+    "failed_to_delete_community": "Failed to delete community. Try again.",
     "failed_to_create_community": "Failed to create community. Try again.",
-    "failed_to_join_community": "Failed to join community. Try again."
+    "failed_to_join_community": "Failed to join community. Try again.",
+    "failed_to_fetch_all_communities": "Failed to fetch all communities. Try again.",
+    "failed_to_remove_community_member": "Failed to remove community member. Try again.",
+    "failed_to_change_community_privacy": "Failed to change community privacy. Try again.",
+    "failed_to_fetch_community_members": "Failed to fetch community members. Try again.",
+    "failed_to_change_community_category": "Failed to change community category. Try again."
+  },
+  "category": {
+    "category_not_found": "Category not found",
+    "category_exists": "Category already exists",
+    "failed_to_delete_category": "Failed to delete category. Try again.",
+    "failed_to_change_category_name": "Failed to change category name. Try again.",
+    "failed_to_get_category_overview": "Failed to get category statistics. Try again."
   },
   "clan": {
     "clan_not_found": "Clan not found",
@@ -57,7 +74,8 @@
     "failed_to_get_ticket": "Failed to retrieve ticket",
     "failed_to_get_all": "Failed to retrieve tickets",
     "not_found": "Ticket not found",
-    "forbidden": "You do not have permission to access this ticket"
+    "forbidden": "You do not have permission to access this ticket",
+    "update_ticket_failed": "Failed to update ticket. Try again."
   },
   "upload": {
     "no_file": "No file uploaded",
