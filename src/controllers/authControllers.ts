@@ -390,7 +390,6 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
         {
           isadmin: existingUser.isAdmin,
           expiredAt: session.expiresAt,
-          hasOnboarded: existingUser.hasOnboarded,
         },
         'success.auth.login',
         lang,

@@ -12,12 +12,47 @@ import messageRoutes from './messageRoutes';
 
 const mainRoutes = Router();
 
-mainRoutes.use('/auth', authRoutes);
-mainRoutes.use('/admin', authMiddleware, adminMiddleware, adminRoutes);
-mainRoutes.use('/community', authMiddleware, communityRoutes);
-mainRoutes.use('/clan', authMiddleware, clanRoutes);
-mainRoutes.use('/ai', authMiddleware, aiRoutes);
+mainRoutes.use(
+    '/auth', 
+    authRoutes
+);
+
+mainRoutes.use(
+    '/admin', 
+    authMiddleware, 
+    adminMiddleware, 
+    adminRoutes
+);
+
+mainRoutes.use(
+    '/community', 
+    authMiddleware, 
+    communityRoutes
+);
+
+mainRoutes.use(
+    '/clan', 
+    authMiddleware, 
+    clanRoutes
+);
+
+mainRoutes.use(
+    '/ai', 
+    authMiddleware, 
+    aiRoutes
+);
+
 // mainRoutes.use('/goal', authMiddleware, goalRoute);
-mainRoutes.use('/ticket', authMiddleware, ticketRoutes);
-mainRoutes.use('/community', authMiddleware, messageRoutes);
+mainRoutes.use(
+    '/ticket', 
+    authMiddleware, 
+    ticketRoutes
+);
+
+mainRoutes.use(
+    '/community', 
+    authMiddleware, 
+    messageRoutes
+);
+
 export default mainRoutes;

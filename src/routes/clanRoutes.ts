@@ -61,7 +61,6 @@ clanRoutes.get(
 
 clanRoutes.get(
   '/checkMembership/:clanId',
-
   clanController.checkClanMembership
 );
 

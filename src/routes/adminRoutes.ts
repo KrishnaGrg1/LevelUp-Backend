@@ -8,15 +8,25 @@ const adminRoutes = Router();
 // ============================================================================
 // DASHBOARD & ANALYTICS
 // ============================================================================
-adminRoutes.get('/overview', adminController.getOverview);
-adminRoutes.get('/user-growth', adminController.getUserGrowth);
+adminRoutes.get(
+  '/overview', 
+  adminController.getOverview
+);
+
+adminRoutes.get(
+  '/user-growth', 
+  adminController.getUserGrowth
+);
 
 // ============================================================================
 // USER MANAGEMENT
 // ============================================================================
 
 // List & Search
-adminRoutes.get('/users/all', adminController.getAllUsers);
+adminRoutes.get(
+  '/users/all', 
+  adminController.getAllUsers
+);
 
 // Specific User Operations (most specific first)
 adminRoutes.delete(
@@ -46,7 +56,11 @@ adminRoutes.get(
 // ============================================================================
 
 // Community Stats & List
-adminRoutes.get('/communities/stats', adminController.communityStats);
+adminRoutes.get(
+  '/communities/stats', 
+  adminController.communityStats
+);
+
 adminRoutes.get(
   '/communities/all',
   validate(adminValidation.getAllCommunities),
@@ -95,7 +109,10 @@ adminRoutes.delete(
 // ============================================================================
 // CATEGORY MANAGEMENT
 // ============================================================================
-adminRoutes.get('/categories/stats', adminController.categoryStats);
+adminRoutes.get(
+  '/categories/stats', 
+  adminController.categoryStats
+);
 
 adminRoutes.post(
   '/communities/addCategory',
