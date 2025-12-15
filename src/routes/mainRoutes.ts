@@ -9,6 +9,7 @@ import clanRoutes from './clanRoutes';
 import aiRoutes from './aiRoutes';
 import ticketRoutes from './ticketRoutes';
 import messageRoutes from './messageRoutes';
+import leaderboardRoutes from './leaderboardRoutes';
 
 const mainRoutes = Router();
 
@@ -40,6 +41,11 @@ mainRoutes.use(
     '/ai', 
     authMiddleware, 
     aiRoutes
+);
+
+mainRoutes.use(
+    '/leaderboard',
+    leaderboardRoutes
 );
 
 // mainRoutes.use('/goal', authMiddleware, goalRoute);
