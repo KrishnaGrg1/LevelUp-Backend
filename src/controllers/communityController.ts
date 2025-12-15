@@ -433,6 +433,8 @@ const joinPublicCommunity = async (req: AuthRequest, res: Response) => {
   const communityId = req.params.communityId;
   const lang = req.language as Language;
   const userId = req.user?.id; //from session -- logged in user
+  const { status = 'Beginner' } = req.body as { status?: string };
+
   try {
     console.log('User ID IS', userId);
     if (!userId) {
@@ -451,7 +453,7 @@ const joinPublicCommunity = async (req: AuthRequest, res: Response) => {
         .status(400)
         .json(
           makeErrorResponse(
-            new Error('Community name already exists'),
+            new Error('Community not found'),
             'error.community.community_not_found',
             lang,
             400
@@ -476,7 +478,11 @@ const joinPublicCommunity = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // join community
+    // Validate status is one of the allowed values
+    const validStatuses = ['Beginner', 'Intermediate', 'Advanced'];
+    const memberStatus = validStatuses.includes(status) ? status : 'Beginner';
+
+    // join community with selected experience level
     const communityJoin = await client.community.update({
       where: {
         id: community.id,
@@ -487,6 +493,7 @@ const joinPublicCommunity = async (req: AuthRequest, res: Response) => {
             {
               userId: user.id,
               role: 'MEMBER',
+              status: memberStatus as any,
             },
           ],
         },
@@ -497,7 +504,7 @@ const joinPublicCommunity = async (req: AuthRequest, res: Response) => {
       .status(200)
       .json(
         makeSuccessResponse(
-          communityJoin,
+          { communityJoin, memberStatus },
           'success.community.joined',
           lang,
           200
