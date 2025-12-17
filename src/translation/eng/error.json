@@ -32,6 +32,7 @@
     "failed_to_delete_community": "Failed to delete community. Try again.",
     "failed_to_create_community": "Failed to create community. Try again.",
     "failed_to_join_community": "Failed to join community. Try again.",
+    "failed_to_join_private_community": "Failed to join private community. Try again.",
     "failed_to_fetch_all_communities": "Failed to fetch all communities. Try again.",
     "failed_to_remove_community_member": "Failed to remove community member. Try again.",
     "failed_to_change_community_privacy": "Failed to change community privacy. Try again.",

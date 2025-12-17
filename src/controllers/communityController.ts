@@ -12,10 +12,6 @@ import authorizeAdmin from '../helpers/auth/adminHelper';
 import { deleteFile, extractPublicId } from '../helpers/files/multer';
 import { generateCode } from '../helpers/generateCode';
 
-const hashCode = (code: string): string => {
-  return Buffer.from(code).toString('base64');
-};
-
 // Get all communities
 export const getAllCommunities = async (req: AuthRequest, res: Response) => {
   try {
@@ -50,18 +46,6 @@ export const getAllCommunities = async (req: AuthRequest, res: Response) => {
                 isPrivate: false,
                 categoryId: {
                   in: userCategoryIds,
-                },
-              },
-            ]
-          : []),
-        // Include communities the user is already a member of (regardless of category)
-        ...(userId
-          ? [
-              {
-                members: {
-                  some: {
-                    userId: userId,
-                  },
                 },
               },
             ]
@@ -104,7 +88,7 @@ export const getAllCommunities = async (req: AuthRequest, res: Response) => {
         updatedAt: community.updatedAt,
         currentMembers: community._count?.members ?? 0,
         maxMembers: community.memberLimit,
-        visibility: community.isPrivate ? 'private' : 'public',
+        isPrivate: community.isPrivate,
         ...(userId
           ? {
               isMember: Boolean(membership),
@@ -205,7 +189,7 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
       photo: member.community?.photo ?? null,
       currentMembers: member.community?._count?.members ?? 0,
       maxMembers: member.community?.memberLimit,
-      visibility: member.community?.isPrivate ? 'private' : 'public',
+      isPrivate: member.community?.isPrivate,
       userRole: member.role,
       isPinned: member.isPinned,
     }));
@@ -419,12 +403,10 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
 
     // Generate join code only for private communities
     let rawCode: string | undefined;
-    let hash: string | undefined;
 
     if (isPrivateBool === true) {
       rawCode = generateCode(); // e.g. ABCD-9KX2
       console.log('Generated community join code:', rawCode);
-      hash = hashCode(rawCode);
     }
 
     // create community
@@ -436,9 +418,9 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
         memberLimit: memberLimitNum,
         isPrivate: isPrivateBool,
         photo: photoPath,
-        ...(isPrivateBool && hash
+        ...(isPrivateBool && rawCode
           ? {
-              joinCodeHash: hash,
+              joinCodeHash: rawCode,
               codeUpdatedAt: new Date(),
             }
           : {}),
@@ -562,6 +544,118 @@ const joinPublicCommunity = async (req: AuthRequest, res: Response) => {
         makeErrorResponse(
           new Error('Failed to join community'),
           'error.community.failed_to_join_community',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+const joinPrivateCommunity = async (req: AuthRequest, res: Response) => {
+  const communityId = req.params.communityId;
+  const lang = req.language as Language;
+  const joinCode = req.body.joinCode;
+
+  const userId = req.user?.id; //from session -- logged in user
+  try {
+    console.log('User ID IS', userId);
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    if (!joinCode || typeof joinCode !== 'string') {
+      return res.status(400).json(
+        makeErrorResponse(
+          new Error('Join code is required'),
+          'error.community.join_code_required',
+          lang,
+
+          400
+        )
+      );
+    }
+
+    const user = await findUser(userId as string, res, lang);
+    if (!user) return;
+
+    const community = await client.community.findUnique({
+      where: { joinCodeHash: joinCode },
+    });
+
+    if (!community) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(new Error('Community not found'), 'ss', lang, 400)
+        );
+    }
+
+    //checlk join code
+    if (community.joinCodeHash !== joinCode) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Invalid join code'),
+            'error.community.invalid_join_code',
+            lang,
+            400
+          )
+        );
+    }
+
+    //check if a user is already a member of the community
+    const alreadyMember = await client.communityMember.findFirst({
+      where: { communityId: community.id, userId: user.id },
+    });
+    if (alreadyMember) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('User already a member in this community'),
+            'error.community.user_already_in_community',
+            lang,
+            400
+          )
+        );
+    }
+
+    // join community
+    await client.community.update({
+      where: {
+        id: community.id,
+      },
+      data: {
+        members: {
+          create: [
+            {
+              userId: user.id,
+              role: 'MEMBER',
+            },
+          ],
+        },
+      },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { joined: true },
+          'success.community.joined',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to join private community'),
+          'error.community.failed_to_join_private_community',
           lang,
           500
         )
@@ -1279,6 +1373,7 @@ const toggleMultipleCommunityPin = async (req: AuthRequest, res: Response) => {
 const communityController = {
   createCommunity,
   joinPublicCommunity,
+  joinPrivateCommunity,
   myCommunities,
   getAllCommunities,
   leaveCommunity,
