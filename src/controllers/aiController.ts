@@ -624,8 +624,16 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
     // Determine token reward based on quest type
     const tokenReward = quest.type === 'Daily' ? 2 : quest.type === 'Weekly' ? 5 : 0;
 
-    // Mark quest as completed and award XP + tokens (global) + community XP
-    const [updatedQuest, updatedUser, updatedCommunityMember] = await Promise.all([
+    // Resolve clan membership inside the quest's community (if any)
+    const clanMembership = quest.communityId
+      ? await (client as any).clanMember.findFirst({
+          where: { userId, communityId: quest.communityId },
+          select: { clanId: true },
+        })
+      : null;
+
+    // Mark quest as completed and award XP + tokens (global) + community/member XP + clan/member XP
+    const [updatedQuest, updatedUser, updatedCommunityMember, updatedCommunity, updatedClanMember, updatedClan] = await Promise.all([
       (client as any).quest.update({
         where: { id: questId },
         data: { isCompleted: true, completedAt: new Date() },
@@ -643,6 +651,29 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
             select: { totalXP: true, level: true, communityId: true },
           })
         : Promise.resolve(null),
+      // Increment aggregate community XP when applicable
+      quest.communityId
+        ? (client as any).community.update({
+            where: { id: quest.communityId },
+            data: { xp: { increment: quest.xpValue } },
+            select: { id: true, xp: true },
+          })
+        : Promise.resolve(null),
+      // Increment clan member XP and clan XP if user belongs to a clan within this community
+      clanMembership?.clanId
+        ? (client as any).clanMember.update({
+            where: { userId_clanId: { userId, clanId: clanMembership.clanId } },
+            data: { totalXP: { increment: quest.xpValue } },
+            select: { totalXP: true, clanId: true },
+          })
+        : Promise.resolve(null),
+      clanMembership?.clanId
+        ? (client as any).clan.update({
+            where: { id: clanMembership.clanId },
+            data: { xp: { increment: quest.xpValue } },
+            select: { id: true, xp: true },
+          })
+        : Promise.resolve(null),
     ]);
 
     return res.status(200).json(
@@ -657,6 +688,10 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
           communityXp: updatedCommunityMember?.totalXP ?? undefined,
           communityLevel: updatedCommunityMember?.level ?? undefined,
           communityId: updatedCommunityMember?.communityId ?? quest.communityId ?? undefined,
+          communityTotalXp: updatedCommunity?.xp ?? undefined,
+          clanMemberXp: updatedClanMember?.totalXP ?? undefined,
+          clanId: updatedClanMember?.clanId ?? updatedClan?.id ?? clanMembership?.clanId ?? undefined,
+          clanTotalXp: updatedClan?.xp ?? undefined,
         },
         'success.ai.quest_completed',
         lang,
