@@ -25,21 +25,18 @@ communityRoutes.get(
 //  Get my communities
 communityRoutes.get(
   '/my',
-
   communityController.myCommunities
 );
 
 //  Search communities
 communityRoutes.get(
   '/search',
-
   communityController.searchCommunities
 );
 
 //  Get specific community details
 communityRoutes.get(
   '/:communityId',
-
   communityController.specificCommunity
 );
 
