@@ -10,8 +10,8 @@ const authValidation = {
         'string.max': 'Username mustnot exceed 150 characters long',
       }),
       email: Joi.string().email().required().messages({
-        'string.empty': 'Username is required',
-        'string.email': 'Username must be valid email address',
+        'string.empty': 'Email is required',
+        'string.email': 'Email must be valid email address',
       }),
       password: Joi.string().min(8).max(50).required().messages({
         'string.empty': 'Password is required',
