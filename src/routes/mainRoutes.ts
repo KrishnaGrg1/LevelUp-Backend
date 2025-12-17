@@ -9,6 +9,7 @@ import clanRoutes from './clanRoutes';
 import aiRoutes from './aiRoutes';
 import ticketRoutes from './ticketRoutes';
 import messageRoutes from './messageRoutes';
+import healthRoutes from './healthRoutes';
 
 const mainRoutes = Router();
 
@@ -43,16 +44,7 @@ mainRoutes.use(
 );
 
 // mainRoutes.use('/goal', authMiddleware, goalRoute);
-mainRoutes.use(
-    '/ticket', 
-    authMiddleware, 
-    ticketRoutes
-);
-
-mainRoutes.use(
-    '/community', 
-    authMiddleware, 
-    messageRoutes
-);
-
+mainRoutes.use('/ticket', authMiddleware, ticketRoutes);
+mainRoutes.use('/community', authMiddleware, messageRoutes);
+mainRoutes.use('/health', healthRoutes);
 export default mainRoutes;
