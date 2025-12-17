@@ -102,6 +102,10 @@ model Community {
   categoryId  String?
   updatedAt   DateTime @updatedAt
 
+   // Join code (only for private communities)
+  joinCodeHash  String?  @unique
+  codeUpdatedAt DateTime?
+  
   clans       Clan[]
   category    Category?         @relation(fields: [categoryId], references: [id])
   owner       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
