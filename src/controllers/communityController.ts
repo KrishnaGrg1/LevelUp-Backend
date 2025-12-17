@@ -17,52 +17,76 @@ export const getAllCommunities = async (req: AuthRequest, res: Response) => {
     const lang = req.language as Language;
     const userId = req.user?.id || undefined;
 
-    // Optional query params: pagination and search
-    const queryParams = req.query || {};
-    const page = Number(queryParams.page) || 1; // default to 1
-    const limit = Number(queryParams.limit) || 20; // default to 20
-    // sanitize limits
-    const safePage = Math.max(page, 1);
-    const safeLimit = Math.min(Math.max(limit, 1), 100);
-    const q =
-      typeof queryParams.q === 'string' ? queryParams.q.trim() : undefined;
+    // Fetch user's onboarding categories
+    const onboardingCategories = await client.userOnboarding.findUnique({
+      where: {
+        userId: userId,
+      },
+      include: {
+        categories: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
 
-    const where: any = q
-      ? {
-          OR: [
-            { name: { contains: q, mode: 'insensitive' } },
-            { description: { contains: q, mode: 'insensitive' } },
-          ],
-        }
-      : {};
+    // Extract category IDs from onboarding
+    const userCategoryIds =
+      onboardingCategories?.categories.map((cat) => cat.id) || [];
 
-    // Build include shape dynamically to add user membership info when logged in
-    const include: any = {
-      _count: { select: { members: true } },
+    // Build query filters
+    const whereConditions: any = {
+      OR: [
+        // Show public communities matching user's onboarding categories
+        ...(userCategoryIds.length > 0
+          ? [
+              {
+                isPrivate: false,
+                categoryId: {
+                  in: userCategoryIds,
+                },
+              },
+            ]
+          : []),
+        // Include communities the user is already a member of (regardless of category)
+        ...(userId
+          ? [
+              {
+                members: {
+                  some: {
+                    userId: userId,
+                  },
+                },
+              },
+            ]
+          : []),
+      ],
     };
-    if (userId) {
-      include.members = {
-        where: { userId },
-        select: { role: true },
-      };
+
+    // If no categories selected and not logged in, show all public communities
+    if (whereConditions.OR.length === 0) {
+      whereConditions.OR.push({ isPrivate: false });
     }
 
-    const [total, communities] = await Promise.all([
-      client.community.count({ where }),
-      client.community.findMany({
-        where,
-        include,
-        orderBy: { createdAt: 'desc' },
-        skip: (safePage - 1) * safeLimit,
-        take: safeLimit,
-      }),
-    ]);
+    const communities = await client.community.findMany({
+      where: whereConditions,
+      include: {
+        _count: {
+          select: { members: true },
+        },
+        members: userId
+          ? {
+              where: { userId },
+              select: { role: true, isPinned: true },
+            }
+          : false,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
-    const formattedCommunities = communities.map((community: any) => {
-      const membership =
-        userId && Array.isArray(community.members)
-          ? community.members[0] || null
-          : null;
+    const formattedCommunities = communities.map((community) => {
+      const membership = community.members?.[0];
 
       return {
         id: community.id,
