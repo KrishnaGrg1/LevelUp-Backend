@@ -10,6 +10,11 @@ import { Language } from '../translation/translation';
 import { findUser } from '../helpers/auth/userHelper';
 import authorizeAdmin from '../helpers/auth/adminHelper';
 import { deleteFile, extractPublicId } from '../helpers/files/multer';
+import { generateCode } from '../helpers/generateCode';
+
+const hashCode = (code: string): string => {
+  return Buffer.from(code).toString('base64');
+};
 
 // Get all communities
 export const getAllCommunities = async (req: AuthRequest, res: Response) => {
@@ -412,6 +417,16 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
       ? cloudinaryFile.path || cloudinaryFile.url
       : undefined;
 
+    // Generate join code only for private communities
+    let rawCode: string | undefined;
+    let hash: string | undefined;
+
+    if (isPrivateBool === true) {
+      rawCode = generateCode(); // e.g. ABCD-9KX2
+      console.log('Generated community join code:', rawCode);
+      hash = hashCode(rawCode);
+    }
+
     // create community
     const community = await client.community.create({
       data: {
@@ -421,6 +436,13 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
         memberLimit: memberLimitNum,
         isPrivate: isPrivateBool,
         photo: photoPath,
+        ...(isPrivateBool && hash
+          ? {
+              joinCodeHash: hash,
+              codeUpdatedAt: new Date(),
+            }
+          : {}),
+
         members: {
           create: [
             {
@@ -435,7 +457,12 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
     res
       .status(200)
       .json(
-        makeSuccessResponse(community, 'success.community.created', lang, 200)
+        makeSuccessResponse(
+          { id: community.id },
+          'success.community.created',
+          lang,
+          200
+        )
       );
   } catch (e: unknown) {
     console.error('Error in createCommunity:', e);
