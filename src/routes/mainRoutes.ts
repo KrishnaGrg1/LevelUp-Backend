@@ -33,6 +33,12 @@ mainRoutes.use(
 );
 
 mainRoutes.use(
+    '/messages', 
+    authMiddleware, 
+    messageRoutes
+);
+
+mainRoutes.use(
     '/clan', 
     authMiddleware, 
     clanRoutes
@@ -51,6 +57,5 @@ mainRoutes.use(
 
 // mainRoutes.use('/goal', authMiddleware, goalRoute);
 mainRoutes.use('/ticket', authMiddleware, ticketRoutes);
-mainRoutes.use('/community', authMiddleware, messageRoutes);
 mainRoutes.use('/health', healthRoutes);
 export default mainRoutes;

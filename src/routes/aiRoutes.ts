@@ -8,20 +8,33 @@ const aiRoutes = Router();
 
 // AI Chat endpoints (token-protected)
 aiRoutes.post(
-    '/chat', 
-    validate(aiValidation.chat), aiController.chat);
+    '/chat',
+    validate(aiValidation.chat),
+    aiController.chat
+);
 
-    aiRoutes.get(
-  '/chat/history', validate(aiValidation.chatHistory), aiController.getChatHistory);
+aiRoutes.get(
+  '/chat/history',
+  validate(aiValidation.chatHistory),
+  aiController.getChatHistory
+);
 
-  aiRoutes.get(
-  '/chat/tokens', aiController.getTokenBalance);
+aiRoutes.get(
+  '/chat/tokens',
+  aiController.getTokenBalance
+);
 
-  aiRoutes.delete(
-  '/chat/history', validate(aiValidation.deleteChatHistory), aiController.deleteChatHistory); // Delete all via ?all=true
+aiRoutes.delete(
+  '/chat/history',
+  validate(aiValidation.deleteChatHistory),
+  aiController.deleteChatHistory
+); // Delete all via ?all=true
 
-  aiRoutes.delete(
-  '/chat/history/:chatId', validate(aiValidation.chatId), aiController.deleteChatHistory); // Delete specific chat by ID
+aiRoutes.delete(
+  '/chat/history/:chatId', 
+  validate(aiValidation.chatId), 
+  aiController.deleteChatHistory
+); // Delete specific chat by ID
 
   // Quest generation endpoints
 aiRoutes.post(

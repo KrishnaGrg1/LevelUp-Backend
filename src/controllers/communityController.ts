@@ -149,49 +149,20 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
     const user = await findUser(userId as string, res, lang);
     if (!user) return;
 
-    let communities;
-    try {
-      // Prefer ordering by pinned first, then most recently joined
-      communities = await client.communityMember.findMany({
-        where: { userId: user.id },
-        include: {
-          community: {
-            include: {
-              _count: {
-                select: { members: true },
-              },
+    // Order by pinned first, then most recently joined
+    const communities = await client.communityMember.findMany({
+      where: { userId: user.id },
+      include: {
+        community: {
+          include: {
+            _count: {
+              select: { members: true },
             },
           },
         },
-        orderBy: [{ isPinned: 'desc' }, { joinedAt: 'desc' }],
-      });
-    } catch (err: any) {
-      // Fallback in case the DB schema hasn't added `isPinned` yet
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        (err.code === 'P2022' || err.code === 'P2010')
-      ) {
-        console.warn(
-          'myCommunities: falling back order (missing isPinned column or raw query failure):',
-          err.message
-        );
-        communities = await client.communityMember.findMany({
-          where: { userId: user.id },
-          include: {
-            community: {
-              include: {
-                _count: {
-                  select: { members: true },
-                },
-              },
-            },
-          },
-          orderBy: [{ joinedAt: 'desc' }],
-        });
-      } else {
-        throw err;
-      }
-    }
+      },
+      orderBy: [{ isPinned: 'desc' }, { joinedAt: 'desc' }],
+    });
 
     const formattedCommunities = communities.map((member) => ({
       id: member.community?.id,
@@ -282,12 +253,12 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
         },
       },
     });
-    if (!membership) {
+    if (!membership && community.isPrivate && !user.isAdmin) {
       return res
         .status(403)
         .json(
           makeErrorResponse(
-            new Error('Access Denied: Not a community member'),
+            new Error('Access Denied: Private community'),
             'error.community.access_denied',
             lang,
             403
@@ -330,26 +301,55 @@ const searchCommunities = async (req: AuthRequest, res: Response) => {
     const user = await findUser(userId as string, res, lang);
     if (!user) return;
 
-    const communities = await client.community.findMany({
-      where: {
-        name: {
-          contains: q as string,
-          mode: 'insensitive',
-        },
-      },
-      include: {
-        _count: {
-          select: { members: true },
-        },
-      },
+    // Add pagination
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const pageSize = Math.min(50, Math.max(1, parseInt(req.query.pageSize as string) || 20));
+    const skip = (page - 1) * pageSize;
 
-      orderBy: { createdAt: 'desc' },
-    });
+    const [communities, total] = await Promise.all([
+      client.community.findMany({
+        where: {
+          name: {
+            contains: q as string,
+            mode: 'insensitive',
+          },
+        },
+        include: {
+          _count: {
+            select: { members: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      client.community.count({
+        where: {
+          name: {
+            contains: q as string,
+            mode: 'insensitive',
+          },
+        },
+      }),
+    ]);
 
     res
       .status(200)
       .json(
-        makeSuccessResponse(communities, 'success.community.fetched', lang, 200)
+        makeSuccessResponse(
+          {
+            communities,
+            pagination: {
+              total,
+              page,
+              pageSize,
+              totalPages: Math.ceil(total / pageSize),
+            },
+          },
+          'success.community.fetched',
+          lang,
+          200
+        )
       );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';

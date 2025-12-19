@@ -67,6 +67,17 @@
   "ai": {
     "prompt_required": "需要提示",
     "not_configured": "AI 未配置",
+  "leaderboard": {
+    "global_failed": "无法获取全球排行榜。请再试一次。",
+    "community_id_required": "需要社区ID",
+    "community_not_found": "未找到社区",
+    "community_failed": "无法获取社区排行榜。请再试一次。",
+    "top_communities_failed": "无法获取顶级社区。请再试一次。",
+    "clan_id_required": "需要氏族ID",
+    "clan_not_found": "未找到氏族",
+    "clan_failed": "无法获取氏族排行榜。请再试一次。",
+    "top_clans_failed": "无法获取顶级氏族。请再试一次。"
+  },
     "chat_failed": "AI 聊天失败",
     "generate_failed": "生成任务失败",
     "goals_required": "需要目标",

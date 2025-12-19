@@ -69,6 +69,17 @@
     "failed_to_get_info": "क्लान जानकारी ल्याउन असफल। पुन: प्रयास गर्नुहोस्।",
     "user_not_found": "प्रणालीमा प्रयोगकर्ता फेला परेन"
   },
+  "leaderboard": {
+    "global_failed": "Failed to fetch global leaderboard. Try again.",
+    "community_id_required": "Community ID is required",
+    "community_not_found": "Community not found",
+    "community_failed": "Failed to fetch community leaderboard. Try again.",
+    "top_communities_failed": "Failed to fetch top communities. Try again.",
+    "clan_id_required": "Clan ID is required",
+    "clan_not_found": "Clan not found",
+    "clan_failed": "Failed to fetch clan leaderboard. Try again.",
+    "top_clans_failed": "Failed to fetch top clans. Try again."
+  },
   "ticket": {
     "failed_to_create": "टिकट बनाउन असफल। कृपया पुनः प्रयास गर्नुहोस्।",
     "failed_to_get_ticket": "टिकट प्राप्त गर्न असफल। कृपया पुनः प्रयास गर्नुहोस्।",

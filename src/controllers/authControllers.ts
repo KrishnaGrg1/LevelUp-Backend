@@ -14,6 +14,7 @@ import { lucia } from '../middlewares/lucia';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { deleteFile, extractPublicId } from '../helpers/files/multer';
 import { findUser } from '../helpers/auth/userHelper';
+import { createAndSendOTP } from '../helpers/auth/otpHelper';
 
 const register = async (
   req: TranslationRequest,
@@ -49,25 +50,7 @@ const register = async (
 
     if (user) {
       if (user.isVerified === false) {
-        await client.otp.deleteMany({ where: { userId: user.id } });
-
-        const otp = await sendEmailToken(
-          email,
-          email,
-          EmailTopic.VerifyEmail,
-          user.id
-        );
-        console.log('OTP sent:', otp);
-        const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
-
-        //create new otp
-        await client.otp.create({
-          data: {
-            otp_code: hashedOTP,
-            userId: user.id,
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
-          },
-        });
+        await createAndSendOTP(email, user.id, EmailTopic.VerifyEmail);
 
         res.status(200).json(
           makeSuccessResponse(user, 'success.auth.otp_resent', lang, 200, {
@@ -101,23 +84,8 @@ const register = async (
         isVerified: false,
       },
     });
-    const otp = await sendEmailToken(
-      email,
-      email,
-      EmailTopic.VerifyEmail,
-      newUser?.id
-    ); //send otp to email
-
-    const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
-
-    //create new otp
-    await client.otp.create({
-      data: {
-        otp_code: hashedOTP,
-        userId: newUser.id,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
-      },
-    });
+    
+    await createAndSendOTP(email, newUser.id, EmailTopic.VerifyEmail);
 
     res.status(200).json(
       makeSuccessResponse(newUser, 'success.auth.register', lang, 200, {
@@ -337,24 +305,7 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
       return;
     }
     if (existingUser.isVerified === false) {
-      await client.otp.deleteMany({ where: { userId: existingUser.id } });
-
-      const otp = await sendEmailToken(
-        email,
-        email,
-        EmailTopic.VerifyEmail,
-        existingUser.id
-      );
-      const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
-
-      //create new otp
-      await client.otp.create({
-        data: {
-          otp_code: hashedOTP,
-          userId: existingUser.id,
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
-        },
-      });
+      await createAndSendOTP(email, existingUser.id, EmailTopic.VerifyEmail);
 
       res
         .status(403)

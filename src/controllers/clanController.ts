@@ -59,15 +59,9 @@ const createClan = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Generate a unique slug
-    let slug = generateSlug(name);
-    let slugExists = await client.clan.findFirst({ where: { slug } });
-    let counter = 1;
-    while (slugExists) {
-      slug = `${slug}-${counter}`;
-      slugExists = await client.clan.findFirst({ where: { slug } });
-      counter++;
-    }
+    // Generate a unique slug with timestamp to avoid collisions
+    const baseSlug = generateSlug(name);
+    const slug = `${baseSlug}-${Date.now().toString(36)}`;
 
     // Create clan and assign owner in a transaction
     const clan = await client.$transaction(async (tx) => {
@@ -167,10 +161,15 @@ const joinClan = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Check if user is in community
-    const member = await client.communityMember.findFirst({
-      where: { userId, communityId: clan.communityId },
-    });
+    // Batch membership checks
+    const [member, existingClanMember] = await Promise.all([
+      client.communityMember.findFirst({
+        where: { userId, communityId: clan.communityId },
+      }),
+      client.clanMember.findFirst({
+        where: { userId, communityId: clan.communityId },
+      }),
+    ]);
 
     if (!member) {
       return res
@@ -184,11 +183,6 @@ const joinClan = async (req: AuthRequest, res: Response) => {
           )
         );
     }
-
-    // Check if user is already in a clan in this community
-    const existingClanMember = await client.clanMember.findFirst({
-      where: { userId, communityId: clan.communityId },
-    });
 
     if (existingClanMember) {
       return res
@@ -580,14 +574,9 @@ const updateClan = async (req: AuthRequest, res: Response) => {
           );
       }
 
-      slug = generateSlug(name);
-      let counter = 1;
-      while (
-        await client.clan.findFirst({ where: { slug, NOT: { id: clanId } } })
-      ) {
-        slug = `${slug}-${counter}`;
-        counter++;
-      }
+      // Generate new slug with timestamp for uniqueness
+      const baseSlug = generateSlug(name);
+      slug = `${baseSlug}-${Date.now().toString(36)}`;
     }
 
     const updated = await client.clan.update({

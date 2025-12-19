@@ -111,6 +111,14 @@ const communityValidation = {
       }),
     }),
   },
+  toggleMultipleCommunityPin: {
+    body: Joi.object().keys({
+      communityIds: Joi.array().items(Joi.string()).min(1).required().messages({
+        'array.base': 'Community IDs must be an array',
+        'array.min': 'At least one community ID is required',
+      }),
+    }),
+  },
 };
 
 export default communityValidation;

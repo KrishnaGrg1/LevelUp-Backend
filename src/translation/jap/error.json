@@ -49,7 +49,18 @@
     "failed_to_get_user_clans": "ユーザーのクラン取得に失敗しました。もう一度試してください。",
     "failed_to_get_members": "クランメンバーの取得に失敗しました。もう一度試してください。",
     "failed_to_get_info": "クラン情報の取得に失敗しました。もう一度試してください。",
-    "user_not_found": "システム内にユーザーが見つかりません"
+      "user_not_found": "システム内にユーザーが見つかりません",
+      "leaderboard": {
+        "global_failed": "グローバルリーダーボードの取得に失敗しました。もう一度試してください。",
+        "community_id_required": "コミュニティIDが必要です",
+        "community_not_found": "コミュニティが見つかりません",
+        "community_failed": "コミュニティリーダーボードの取得に失敗しました。もう一度試してください。",
+        "top_communities_failed": "トップコミュニティの取得に失敗しました。もう一度試してください。",
+        "clan_id_required": "クランIDが必要です",
+        "clan_not_found": "クランが見つかりません",
+        "clan_failed": "クランリーダーボードの取得に失敗しました。もう一度試してください。",
+        "top_clans_failed": "トップクランの取得に失敗しました。もう一度試してください。"
+      },
   },
   "ticket": {
     "failed_to_create": "チケットの作成に失敗しました。もう一度試してください。",

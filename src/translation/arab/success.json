@@ -46,6 +46,13 @@
     "members_retrieved": "تم جلب أعضاء الفريق بنجاح",
     "user_clans_retrieved": "تم جلب فرق المستخدم بنجاح"
   },
+  "leaderboard": {
+    "global": "Global leaderboard retrieved successfully",
+    "community": "Community leaderboard retrieved successfully",
+    "top_communities": "Top communities retrieved successfully",
+    "clan": "Clan leaderboard retrieved successfully",
+    "top_clans": "Top clans retrieved successfully"
+  },
   "ticket": {
     "create": "تم إنشاء التذكرة بنجاح",
     "fetch": "تم جلب التذكرة بنجاح",

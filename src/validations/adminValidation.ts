@@ -34,7 +34,7 @@ const adminValidation = {
 
   viewUserDetail: {
     params: Joi.object().keys({
-      userId: Joi.string().min(2).max(150).required().messages({
+      id: Joi.string().min(2).max(150).required().messages({
         'string.empty': 'User ID is required',
         'string.min': 'User ID must contain at least 2 characters long',
         'string.max': 'User ID must not exceed 150 characters long',

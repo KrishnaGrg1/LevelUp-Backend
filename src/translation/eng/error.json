@@ -69,6 +69,17 @@
     "failed_to_get_info": "Failed to fetch clan info. Try again.",
     "user_not_found": "User not found in the system"
   },
+  "leaderboard": {
+    "global_failed": "Failed to fetch global leaderboard. Try again.",
+    "community_id_required": "Community ID is required",
+    "community_not_found": "Community not found",
+    "community_failed": "Failed to fetch community leaderboard. Try again.",
+    "top_communities_failed": "Failed to fetch top communities. Try again.",
+    "clan_id_required": "Clan ID is required",
+    "clan_not_found": "Clan not found",
+    "clan_failed": "Failed to fetch clan leaderboard. Try again.",
+    "top_clans_failed": "Failed to fetch top clans. Try again."
+  },
   "ticket": {
     "failed_to_create": "Failed to create ticket. Please try again.",
     "failed_to_get_ticket": "Failed to retrieve ticket",

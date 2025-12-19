@@ -20,7 +20,9 @@ const viewUserDetail = async (req: AuthRequest, res: Response) => {
     const userId = req.params.id; //from params -- this is user(costumer)
 
     const user = await findUser(userId, res, lang);
-    if (!user) return; // If user not found, findUser already sent the response
+    if (!user) return
+    
+    // If user not found, findUser already sent the response
 
     res
       .status(200)
@@ -114,7 +116,6 @@ const updateUserDetails = async (req: AuthRequest, res: Response) => {
     if (level !== undefined) updateData.level = level;
     if (isVerified !== undefined) updateData.isVerified = isVerified;
 
-    // ADD THIS CHECK
     if (Object.keys(updateData).length === 0) {
       res
         .status(400)
@@ -164,17 +165,13 @@ const deleteUser = async (req: AuthRequest, res: Response) => {
     const lang = req.language as Language;
     const userId = req.body.id;
 
-    const user = await client.user.findUnique({
-      where: { id: userId },
-    });
-
-    const deleteUser = await client.user.delete({
+    const deletedUser = await client.user.delete({
       where: { id: userId },
     });
 
     res
       .status(200)
-      .json(makeSuccessResponse(user, 'success.admin.deleted_user', lang, 200));
+      .json(makeSuccessResponse(deletedUser, 'success.admin.deleted_user', lang, 200));
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
     res

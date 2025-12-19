@@ -92,6 +92,7 @@ communityRoutes.post(
 //toggle pin community for a member
 communityRoutes.post(
   '/toggle-pin',
+  validate(communityValidation.toggleMultipleCommunityPin),
   communityController.toggleMultipleCommunityPin
 );
 //pin the community

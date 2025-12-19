@@ -1,4 +1,4 @@
-import { format } from 'path';
+import { Response } from 'express';
 import client from '../helpers/prisma';
 import {
   makeErrorResponse,
@@ -10,11 +10,17 @@ import {
   checkCommunityMembership,
 } from '../sockets/chatSocket';
 import { Language } from '../translation/translation';
-import { Response } from 'express';
 const getCommunityMessages = async (req: AuthRequest, res: Response) => {
   try {
     const { communityId } = req.params;
-    const { page, limit } = req.query;
+    const lang = req.language as Language;
+    const userId = req.user?.id;
+
+    // Validate and sanitize pagination parameters
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const skip = (page - 1) * limit;
+
     console.log(
       'Fetching messages for communityId:',
       communityId,
@@ -23,9 +29,6 @@ const getCommunityMessages = async (req: AuthRequest, res: Response) => {
       'Limit:',
       limit
     );
-
-    const lang = req.language as Language;
-    const userId = req.user?.id;
 
     if (!userId) {
       res
@@ -58,32 +61,32 @@ const getCommunityMessages = async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    //get messages with pagination
-    const messages = await client.message.findMany({
-      where: {
-        communityId,
-      },
-      orderBy: { createdAt: 'desc' },
-      skip: (Number(page) - 1) * Number(limit),
-      take: Number(limit),
-      include: {
-        sender: {
-          select: {
-            id: true,
-            UserName: true,
-            profilePicture: true,
-            level: true,
+    //get messages and count in parallel
+    const [messages, totalMessages] = await Promise.all([
+      client.message.findMany({
+        where: {
+          communityId,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          sender: {
+            select: {
+              id: true,
+              UserName: true,
+              profilePicture: true,
+              level: true,
+            },
           },
         },
-      },
-    });
-
-    //get total count
-    const totalMessages = await client.message.count({
-      where: {
-        communityId,
-      },
-    });
+      }),
+      client.message.count({
+        where: {
+          communityId,
+        },
+      }),
+    ]);
 
     console.log('total messages are', totalMessages);
 
@@ -100,10 +103,10 @@ const getCommunityMessages = async (req: AuthRequest, res: Response) => {
     const data = {
       messages: formattedMessages.reverse(), //reverse to chronological order
       pagination: {
-        page: Number(page),
-        limit: Number(limit),
+        page,
+        limit,
         total: totalMessages,
-        hasMore: totalMessages > Number(page) * Number(limit),
+        hasMore: totalMessages > page * limit,
       },
     };
 
@@ -128,10 +131,14 @@ const getCommunityMessages = async (req: AuthRequest, res: Response) => {
 
 const getClanMessages = async (req: AuthRequest, res: Response) => {
   const clanId = req.params.clanId;
-  const { page = 1, limit = 20 } = req.query;
-
   const lang = req.language as Language;
   const userId = req.user?.id;
+  
+  // Validate and sanitize pagination parameters
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+  const skip = (page - 1) * limit;
+
   try {
     if (!userId) {
       res
@@ -147,7 +154,7 @@ const getClanMessages = async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    // 1️⃣ Get clan to know communityId
+    // Get clan and check membership
     const clan = await client.clan.findUnique({
       where: { id: clanId },
       select: { communityId: true },
@@ -170,6 +177,7 @@ const getClanMessages = async (req: AuthRequest, res: Response) => {
     console.log('Checking membership for user:', userId);
     console.log('Clan communityId:', clan.communityId);
     console.log('Clan ID:', clanId);
+    
     //check clan membership
     const isClanMember = await checkClanMembership(userId, clanId);
 
@@ -187,33 +195,34 @@ const getClanMessages = async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    //get messages wiht pagingtion
-    const message = await client.message.findMany({
-      where: {
-        clanId: clanId,
-      },
-      orderBy: { createdAt: 'desc' },
-      skip: (Number(page) - 1) * Number(limit),
-      take: Number(limit),
-      include: {
-        sender: {
-          select: {
-            id: true,
-            UserName: true,
-            profilePicture: true,
-            level: true,
+    //get messages and count with pagination in parallel
+    const [message, totalMessages] = await Promise.all([
+      client.message.findMany({
+        where: {
+          clanId: clanId,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          sender: {
+            select: {
+              id: true,
+              UserName: true,
+              profilePicture: true,
+              level: true,
+            },
           },
         },
-      },
-    });
+      }),
+      client.message.count({
+        where: {
+          clanId: clanId,
+        },
+      }),
+    ]);
+    
     console.log('message are', message);
-    //get total count
-    const totalMessages = await client.message.count({
-      where: {
-        clanId: clanId,
-      },
-    });
-
     console.log('total messages are', totalMessages);
 
     //format messages
@@ -229,10 +238,10 @@ const getClanMessages = async (req: AuthRequest, res: Response) => {
     const data = {
       messages: formattedMessages.reverse(), //reverse to chronological order
       pagination: {
-        page: Number(page),
-        limit: Number(limit),
+        page,
+        limit,
         total: totalMessages,
-        hasMore: totalMessages > Number(page) * Number(limit),
+        hasMore: totalMessages > page * limit,
       },
     };
     res

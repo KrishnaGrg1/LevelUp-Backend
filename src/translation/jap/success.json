@@ -46,6 +46,13 @@
     "members_retrieved": "クランメンバーを正常に取得しました",
     "user_clans_retrieved": "ユーザーのクランを正常に取得しました"
   },
+  "leaderboard": {
+    "global": "Global leaderboard retrieved successfully",
+    "community": "Community leaderboard retrieved successfully",
+    "top_communities": "Top communities retrieved successfully",
+    "clan": "Clan leaderboard retrieved successfully",
+    "top_clans": "Top clans retrieved successfully"
+  },
   "ticket": {
     "create": "チケットが正常に作成されました",
     "fetch": "チケットを正常に取得しました",

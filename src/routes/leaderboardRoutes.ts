@@ -13,8 +13,8 @@ leaderboardRoutes.get(
 
 // Community leaderboard (members ranked by community XP)
 leaderboardRoutes.get(
-  '/community/:communityId'
-  , authMiddleware, 
+  '/community/:communityId',
+  authMiddleware, 
   leaderboardController.getCommunityLeaderboard
 );
 

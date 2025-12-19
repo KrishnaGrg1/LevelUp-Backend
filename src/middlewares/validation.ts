@@ -43,8 +43,13 @@ const validate = (validateSchema: IvalidatonSchema = {}) => {
         req.headers = validateResult as any;
       }
       next();
-    } catch (e) {
-      if (e instanceof Error) {
+    } catch (e: any) {
+      if (e.isJoi) {
+        res.status(400).json({
+          message: e.message,
+          details: e.details,
+        });
+      } else if (e instanceof Error) {
         res.status(500).json({
           message: e.message,
         });

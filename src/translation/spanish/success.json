@@ -46,6 +46,13 @@
     "members_retrieved": "Miembros del clan recuperados con éxito",
     "user_clans_retrieved": "Clanes del usuario recuperados con éxito"
   },
+  "leaderboard": {
+    "global": "Global leaderboard retrieved successfully",
+    "community": "Community leaderboard retrieved successfully",
+    "top_communities": "Top communities retrieved successfully",
+    "clan": "Clan leaderboard retrieved successfully",
+    "top_clans": "Top clans retrieved successfully"
+  },
   "ticket": {
     "create": "Ticket creado con éxito",
     "fetch": "Ticket recuperado con éxito",

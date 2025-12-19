@@ -67,6 +67,17 @@
   "ai": {
     "prompt_required": "Se requiere un prompt",
     "not_configured": "La IA no está configurada",
+  "leaderboard": {
+    "global_failed": "Failed to fetch global leaderboard. Try again.",
+    "community_id_required": "Community ID is required",
+    "community_not_found": "Community not found",
+    "community_failed": "Failed to fetch community leaderboard. Try again.",
+    "top_communities_failed": "Failed to fetch top communities. Try again.",
+    "clan_id_required": "Clan ID is required",
+    "clan_not_found": "Clan not found",
+    "clan_failed": "Failed to fetch clan leaderboard. Try again.",
+    "top_clans_failed": "Failed to fetch top clans. Try again."
+  },
     "chat_failed": "Falló el chat de IA",
     "generate_failed": "No se pudieron generar las misiones",
     "goals_required": "Se requieren objetivos",

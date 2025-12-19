@@ -46,6 +46,13 @@
     "members_retrieved": "क्लान सदस्यहरू सफलतापूर्वक प्राप्त भए",
     "user_clans_retrieved": "प्रयोगकर्ताका क्लानहरू सफलतापूर्वक प्राप्त भए"
   },
+  "leaderboard": {
+    "global": "Global leaderboard retrieved successfully",
+    "community": "Community leaderboard retrieved successfully",
+    "top_communities": "Top communities retrieved successfully",
+    "clan": "Clan leaderboard retrieved successfully",
+    "top_clans": "Top clans retrieved successfully"
+  },
   "ticket": {
     "create": "टिकट सफलतापूर्वक सिर्जना भयो",
     "fetch": "टिकट सफलतापूर्वक प्राप्त भयो",

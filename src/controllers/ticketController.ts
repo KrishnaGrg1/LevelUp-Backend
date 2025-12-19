@@ -21,18 +21,15 @@ const createTicket = async (req: AuthRequest, res: Response): Promise<void> => {
         updatedAt: new Date(),
       },
     });
-    res
-      .status(201)
-      .json({ message: 'Ticket created successfully', ticket: newTicket });
 
-    res.status(200).json(
+    res.status(201).json(
       makeSuccessResponse(
         {
           ticket: newTicket,
         },
         'success.ticket.create',
         lang,
-        200
+        201
       )
     );
     return;
@@ -63,45 +60,21 @@ const getAllTicketsByUser = async (
     const pageSize = parseInt(req.query.pageSize as string) || 10;
     const skip = (page - 1) * pageSize;
     const userId = req.user?.id;
+    
     const user = await client.user.findUnique({
       where: {
         id: userId as string,
       },
+      select: {
+        isAdmin: true,
+      },
     });
-    if (user?.isAdmin === true) {
-      const [tickets, total] = await Promise.all([
-        client.ticket.findMany({
-          orderBy: {
-            createdAt: 'desc',
-          },
-          skip,
-          take: pageSize,
-        }),
-        client.ticket.count(),
-      ]);
-      res.status(200).json(
-        makeSuccessResponse(
-          {
-            tickets,
-            pagination: {
-              total,
-              page,
-              pageSize,
-              totalPages: Math.ceil(total / pageSize),
-            },
-          },
-          'success.ticket.fetch_all',
-          lang,
-          200
-        )
-      );
-      return;
-    }
+    
+    const whereCondition = user?.isAdmin ? {} : { userId: userId as string };
+    
     const [tickets, total] = await Promise.all([
       client.ticket.findMany({
-        where: {
-          userId: userId as string,
-        },
+        where: whereCondition,
         orderBy: {
           createdAt: 'desc',
         },
@@ -109,11 +82,10 @@ const getAllTicketsByUser = async (
         take: pageSize,
       }),
       client.ticket.count({
-        where: {
-          userId: userId as string,
-        },
+        where: whereCondition,
       }),
     ]);
+    
     res.status(200).json(
       makeSuccessResponse(
         {
@@ -155,16 +127,23 @@ const getTicketById = async (
     const lang = (req.language as Language) || 'eng';
     const ticketId = req.params.id;
     const userId = req.user?.id;
-    const user = await client.user.findUnique({
-      where: {
-        id: userId as string,
-      },
-    });
-    const ticket = await client.ticket.findFirst({
-      where: {
-        id: ticketId as string,
-      },
-    });
+    
+    const [user, ticket] = await Promise.all([
+      client.user.findUnique({
+        where: {
+          id: userId as string,
+        },
+        select: {
+          isAdmin: true,
+        },
+      }),
+      client.ticket.findFirst({
+        where: {
+          id: ticketId as string,
+        },
+      }),
+    ]);
+    
     if (!ticket) {
       res
         .status(404)

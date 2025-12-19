@@ -44,8 +44,8 @@ const chat = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    const user = await (client as any).user.findUnique({ where: { id: userId }, select: { tokens: true } });
-    if (!user || (user as any).tokens <= 0) {
+    const user = await client.user.findUnique({ where: { id: userId }, select: { tokens: true } });
+    if (!user || user.tokens <= 0) {
       return res.status(402).json(
         makeErrorResponse(new Error('Insufficient tokens'), 'error.ai.insufficient_tokens', lang, 402)
       );
@@ -57,7 +57,7 @@ const chat = async (req: AuthRequest, res: Response) => {
       console.debug(`[AI] chat reply chars=${reply.length} preview="${reply.slice(0, 200).replace(/\s+/g, ' ')}"`);
     }
     // Deduct 1 token after successful call
-    await (client as any).user.update({ where: { id: userId }, data: { tokens: { decrement: 1 } } });
+    await client.user.update({ where: { id: userId }, data: { tokens: { decrement: 1 } } });
     return res.status(200).json(makeSuccessResponse({ reply }, 'success.ai.chat', lang, 200));
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
@@ -77,8 +77,12 @@ const generateDailyQuests = async (req: AuthRequest, res: Response) => {
       return res.status(401).json(makeErrorResponse(new Error('Not authenticated'), 'error.auth.not_authenticated', lang, 401));
     }
     await runDailyAiQuestForUser(userId);
-    // Return today's grouped quests per community
-    const today = await (client as any).quest.findMany({ where: { userId, type: 'Daily', periodStatus: 'TODAY' }, orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }] });
+    // Return today's grouped quests per community (limited to 100)
+    const today = await client.quest.findMany({ 
+      where: { userId, type: 'Daily', periodStatus: 'TODAY' }, 
+      orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }],
+      take: 100
+    });
     return res.status(200).json(makeSuccessResponse({ today }, 'success.ai.quests_generated', lang, 200));
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
@@ -94,7 +98,11 @@ const generateWeeklyQuests = async (req: AuthRequest, res: Response) => {
       return res.status(401).json(makeErrorResponse(new Error('Not authenticated'), 'error.auth.not_authenticated', lang, 401));
     }
     await runWeeklyAiQuestForUser(userId);
-    const thisWeek = await (client as any).quest.findMany({ where: { userId, type: 'Weekly', periodStatus: 'THIS_WEEK' }, orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }] });
+    const thisWeek = await client.quest.findMany({ 
+      where: { userId, type: 'Weekly', periodStatus: 'THIS_WEEK' }, 
+      orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }],
+      take: 100
+    });
     return res.status(200).json(makeSuccessResponse({ thisWeek }, 'success.ai.quests_generated', lang, 200));
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
@@ -113,9 +121,21 @@ const getDailyQuests = async (req: AuthRequest, res: Response) => {
   }
   try {
     const [today, yesterday, dayBeforeYesterday] = await Promise.all([
-      (client as any).quest.findMany({ where: { userId, type: 'Daily', periodStatus: 'TODAY' }, orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }] }),
-      (client as any).quest.findMany({ where: { userId, type: 'Daily', periodStatus: 'YESTERDAY' }, orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }] }),
-      (client as any).quest.findMany({ where: { userId, type: 'Daily', periodStatus: 'DAY_BEFORE_YESTERDAY' }, orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }] }),
+      client.quest.findMany({ 
+        where: { userId, type: 'Daily', periodStatus: 'TODAY' }, 
+        orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }],
+        take: 100
+      }),
+      client.quest.findMany({ 
+        where: { userId, type: 'Daily', periodStatus: 'YESTERDAY' }, 
+        orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }],
+        take: 100
+      }),
+      client.quest.findMany({ 
+        where: { userId, type: 'Daily', periodStatus: 'DAY_BEFORE_YESTERDAY' }, 
+        orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }],
+        take: 100
+      }),
     ]);
     return res.status(200).json(makeSuccessResponse({ today, yesterday, dayBeforeYesterday }, 'success.ai.quests_generated', lang, 200));
   } catch (e) {
@@ -133,9 +153,21 @@ const getWeeklyQuests = async (req: AuthRequest, res: Response) => {
   }
   try {
     const [thisWeek, lastWeek, twoWeeksAgo] = await Promise.all([
-      (client as any).quest.findMany({ where: { userId, type: 'Weekly', periodStatus: 'THIS_WEEK' }, orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }] }),
-      (client as any).quest.findMany({ where: { userId, type: 'Weekly', periodStatus: 'LAST_WEEK' }, orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }] }),
-      (client as any).quest.findMany({ where: { userId, type: 'Weekly', periodStatus: 'TWO_WEEKS_AGO' }, orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }] }),
+      client.quest.findMany({ 
+        where: { userId, type: 'Weekly', periodStatus: 'THIS_WEEK' }, 
+        orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }],
+        take: 100
+      }),
+      client.quest.findMany({ 
+        where: { userId, type: 'Weekly', periodStatus: 'LAST_WEEK' }, 
+        orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }],
+        take: 100
+      }),
+      client.quest.findMany({ 
+        where: { userId, type: 'Weekly', periodStatus: 'TWO_WEEKS_AGO' }, 
+        orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }],
+        take: 100
+      }),
     ]);
     return res.status(200).json(makeSuccessResponse({ thisWeek, lastWeek, twoWeeksAgo }, 'success.ai.quests_generated', lang, 200));
   } catch (e) {

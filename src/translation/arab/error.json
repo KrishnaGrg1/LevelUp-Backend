@@ -67,6 +67,17 @@
   "ai": {
     "prompt_required": "المطالبة مطلوبة",
     "not_configured": "الذكاء الاصطناعي غير مُكوَّن",
+    "leaderboard": {
+      "global_failed": "فشل في جلب لوحة الصدارة العالمية. حاول مرة أخرى.",
+      "community_id_required": "معرف المجتمع مطلوب",
+      "community_not_found": "المجتمع غير موجود",
+      "community_failed": "فشل في جلب لوحة صدارة المجتمع. حاول مرة أخرى.",
+      "top_communities_failed": "فشل في جلب أفضل المجتمعات. حاول مرة أخرى.",
+      "clan_id_required": "معرف العشيرة مطلوب",
+      "clan_not_found": "العشيرة غير موجودة",
+      "clan_failed": "فشل في جلب لوحة صدارة العشيرة. حاول مرة أخرى.",
+      "top_clans_failed": "فشل في جلب أفضل العشائر. حاول مرة أخرى."
+    },
     "chat_failed": "فشل دردشة الذكاء الاصطناعي",
     "generate_failed": "فشل إنشاء المهام",
     "goals_required": "الأهداف مطلوبة",
