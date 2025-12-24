@@ -14,7 +14,7 @@ const addsubscriptionPlan = async (
   try {
     const lang = req.language as Language;
 
-    const { planName, durationMonth, price } = req.body;
+    const { planName, durationMonth, price, features } = req.body;
 
     const existingsubscriptionPlan = await client.subscriptionPlan.findFirst({
       where: {
@@ -42,6 +42,7 @@ const addsubscriptionPlan = async (
         planName,
         durationMonth,
         price,
+        features: features || [], //  an array
       },
     });
 

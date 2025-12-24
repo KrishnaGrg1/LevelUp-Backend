@@ -364,6 +364,7 @@ model SubscriptionPlan {
   planName      String   @unique
   durationMonth Int
   price         Int
+  features      Json     // JSON array of features
 
   purchasedPlans PurchasedPlan[]
   subscriptions  Subscription[]

@@ -161,7 +161,10 @@ const completeKhaltiPayment = async (req: Request, res: Response) => {
       });
     });
 
-    return res.json({ success: true, message: 'Payment successful' });
+    // Redirect to success page with query parameters
+    return res.redirect(
+      `${process.env.FRONTEND_URI}/eng/payment/success?pidx=${pidx}&purchase_order_id=${purchase_order_id}&transaction_id=${transaction_id}`
+    );
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Payment verification failed' });

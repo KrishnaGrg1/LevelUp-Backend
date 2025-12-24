@@ -1,8 +1,6 @@
 import { Router } from 'express';
 import client from '../helpers/prisma';
 import paymentController from '../controllers/paymentController';
-import paymentValidation from '../validations/paymentValidation';
-import validate from '../middlewares/validation';
 import { authMiddleware } from '../middlewares/authMiddleware';
 
 const paymentRoutes = Router();
@@ -26,9 +24,10 @@ paymentRoutes.post(
 // it is our `return url` where we verify the payment done by user
 paymentRoutes.get(
   '/complete-khalti-payment',
-
   paymentController.completeKhaltiPayment
 );
+
+export default paymentRoutes;
 
 //need to add subsscription plan
 
@@ -39,5 +38,3 @@ paymentRoutes.get(
 // );
 
 // paymentRoutes.get('/verify', paymentController.completepayment);
-
-export default paymentRoutes;
