@@ -1,7 +1,8 @@
 import { Server } from 'socket.io';
 import client from '../helpers/prisma';
 import { AuthenticatedSocket } from '../middlewares/socketAuthMiddleware';
-import { count } from 'console';
+import logger from '../helpers/logger';
+import { checkAuthentication, validateMessageContent, emitSocketError, emitSocketSuccess } from '../helpers/socketResponse';
 
 interface JoinCommunityData {
   communityId: string;
@@ -34,7 +35,6 @@ interface MessagePayload {
   };
 }
 
-//check if user is a member of a community
 export async function checkCommunityMembership(
   userId: string,
   communityId: string
@@ -50,7 +50,6 @@ export async function checkCommunityMembership(
   return !!membership;
 }
 
-//check if user is a member of a clan
 export async function checkClanMembership(
   userId: string,
 
@@ -67,47 +66,38 @@ export async function checkClanMembership(
   return !!membership;
 }
 
-//chat socket handler
 export default function chatSocketHandler(
   io: Server,
   socket: AuthenticatedSocket
 ) {
-  //join a community chat room
-
-  //check membership -- join room -- send confirmation -- load recent messages
   socket.on('join-community', async (data: JoinCommunityData) => {
     try {
       const { communityId } = data;
 
-      if (!socket.user) {
-        socket.emit('error', { message: 'Not Authenticated' });
-        return;
-      }
+      if (!checkAuthentication(socket)) return;
 
-      //check if user is a member of the community
       const isMember = await checkCommunityMembership(
         socket.user.id,
         communityId
       );
 
       if (!isMember) {
-        socket.emit('error', {
-          message: 'Access Denied: Not a community member',
+        emitSocketError(socket, 'error', {
+          code: 'NOT_MEMBER',
+          messageKey: 'error.community.not_member',
         });
         return;
       }
 
       //join the community room
       socket.join(`community:${communityId}`);
-      console.log(`${socket.user.UserName} joined community:${communityId}`);
+      logger.info('Community joined', { username: socket.user.UserName, userId: socket.user.id, communityId });
 
-      //notify user
-      socket.emit('joined-community', {
-        communityId,
-        message: 'Successfully joined community chat',
+      emitSocketSuccess(socket, 'joined-community', {
+        messageKey: 'success.community.joined_chat',
+        data: { communityId, code: 'JOINED_COMMUNITY_CHAT' },
       });
 
-      //notify other members in the community
       socket.to(`community:${communityId}`).emit('user-joined', {
         user: {
           id: socket.user.id,
@@ -116,7 +106,6 @@ export default function chatSocketHandler(
         timestamp: new Date(),
       });
 
-      //load recent messages
       const recentMessages = await client.message.findMany({
         where: { communityId },
         orderBy: { createdAt: 'desc' },
@@ -150,16 +139,18 @@ export default function chatSocketHandler(
         count: formattedMessages.length,
       });
     } catch (error) {
-      console.error('Error joining community:', error);
-      socket.emit('error', { message: 'Failed to join community' });
+      logger.error('Error joining community', error, { userId: socket.user?.id, communityId: data?.communityId });
+      emitSocketError(socket, 'error', {
+        code: 'COMMUNITY_JOIN_FAILED',
+        messageKey: 'error.community.failed_to_join_community',
+      });
     }
   });
 
-  //leave a community room
   socket.on('leave-community', (data: JoinCommunityData) => {
     const { communityId } = data;
     socket.leave(`community:${communityId}`);
-    console.log(`${socket.user?.UserName} left community: ${communityId}`);
+    logger.info('Community left', { username: socket.user?.UserName, userId: socket.user?.id, communityId });
     socket.to(`community:${communityId}`).emit('user-left', {
       user: {
         id: socket.user?.id,
@@ -169,50 +160,33 @@ export default function chatSocketHandler(
     });
   });
 
-  //send a message to community
   socket.on(
     'community:send-message',
     async (data: SendCommunityMessageData) => {
       const { communityId, content } = data;
 
-      console.log('📨 Received community:send-message:', {
-        communityId,
-        content,
-        userId: socket.user?.id,
-      });
+      logger.debug('📨 Received community:send-message', { communityId, contentPreview: content?.slice(0, 100), userId: socket.user?.id });
 
       try {
-        if (!socket.user) {
-          console.error('❌ User not authenticated');
-          socket.emit('error', { message: 'Not Authenticated' });
+        if (!checkAuthentication(socket)) {
+          logger.error('❌ User not authenticated', undefined, { socketId: socket.id });
           return;
         }
 
-        if (!content || content.trim().length === 0) {
-          socket.emit('error', { message: 'Message cannot be empty.' });
-          return;
-        }
+        if (!validateMessageContent(socket, content)) return;
 
-        if (content.length > 2000) {
-          socket.emit('error', {
-            message: 'Message too long. Max 2000 characters.',
-          });
-          return;
-        }
-
-        //check membership
         const isMember = await checkCommunityMembership(
           socket.user.id,
           communityId
         );
         if (!isMember) {
-          socket.emit('error', {
-            message: 'You are not a member of this community',
+          emitSocketError(socket, 'error', {
+            code: 'NOT_MEMBER',
+            messageKey: 'error.community.not_member',
           });
           return;
         }
 
-        //save message to database
         const message = await client.message.create({
           data: {
             content: content.trim(),
@@ -231,7 +205,6 @@ export default function chatSocketHandler(
           },
         });
 
-        //prepare message payload matching frontend Message interface
         const messagePayload = {
           id: message.id,
           content: message.content,
@@ -239,7 +212,7 @@ export default function chatSocketHandler(
           communityId: message.communityId,
           senderId: message.sender.id,
           UserName: message.sender.UserName,
-          sender: message.sender, // Keep for backward compatibility
+          sender: message.sender,
         };
 
         //broadcast to all members in the community
@@ -248,49 +221,41 @@ export default function chatSocketHandler(
           messagePayload
         );
 
-        console.log(
-          `✅ Message sent from ${socket.user.UserName} in community ${communityId}:`,
-          messagePayload
-        );
+        logger.info('✅ Message sent to community', { username: socket.user.UserName, userId: socket.user.id, communityId, messageId: messagePayload.id });
       } catch (error) {
-        console.error('Error sending message:', error);
-        socket.emit('error', { message: 'Failed to send message' });
+        logger.error('Error sending community message', error, { userId: socket.user?.id, communityId });
+        emitSocketError(socket, 'error', {
+          code: 'MESSAGE_SEND_FAILED',
+          messageKey: 'error.message.send_failed',
+        });
       }
     }
   );
 
-  //check membership -- join room -- send confirmation -- load recent messages
   socket.on('join-clan', async (data: JoinClanData) => {
     try {
       const { clanId } = data;
 
-      if (!socket.user) {
-        socket.emit('error', { message: 'Not Authenticated' });
-        return;
-      }
+      if (!checkAuthentication(socket)) return;
 
-      //check if user is a member of the community
       const isMember = await checkClanMembership(socket.user.id, clanId);
 
       if (!isMember) {
-        socket.emit('clan-access-denied', {
+        emitSocketError(socket, 'clan-access-denied', {
           code: 'NOT_A_MEMBER',
-          message: `Access denied to clan ${clanId}.`,
+          messageKey: 'error.clan.not_member',
         });
         return;
       }
 
-      //join the community room
       socket.join(`clan:${clanId}`);
-      console.log(`${socket.user.UserName} joined clan kkkkkkkkkk:${clanId}`);
+      logger.info('Clan joined', { username: socket.user.UserName, userId: socket.user.id, clanId });
 
-      //notify user
-      socket.emit('joined-clan', {
-        clanId,
-        message: 'Successfully joined clan chat',
+      emitSocketSuccess(socket, 'joined-clan', {
+        messageKey: 'success.clan.joined_chat',
+        data: { clanId, code: 'JOINED_CLAN_CHAT' },
       });
 
-      //notify other members in the community
       socket.to(`clan:${clanId}`).emit('user-joined', {
         user: {
           id: socket.user.id,
@@ -299,7 +264,6 @@ export default function chatSocketHandler(
         timestamp: new Date(),
       });
 
-      //load recent messages
       const recentMessages = await client.message.findMany({
         where: { clanId },
         orderBy: { createdAt: 'desc' },
@@ -332,52 +296,38 @@ export default function chatSocketHandler(
         count: formattedMessages.length,
       });
     } catch (error) {
-      console.error('Error joining clan:', error);
-      socket.emit('error', { message: 'Failed to join clan' });
+      logger.error('Error joining clan', error, { userId: socket.user?.id, clanId: data?.clanId });
+      emitSocketError(socket, 'error', {
+        code: 'CLAN_JOIN_FAILED',
+        messageKey: 'error.clan.failed_to_join_clan',
+      });
     }
   });
   // send a message to clan
   socket.on('clan:send-message', async (data: SendClanMessageData) => {
     const { clanId, content } = data;
 
-    console.log('📨 Received clan:send-message:', {
-      clanId,
-      content,
-      userId: socket.user?.id,
-    });
+    logger.debug('📨 Received clan:send-message', { clanId, contentPreview: content?.slice(0, 100), userId: socket.user?.id });
 
     try {
-      if (!socket.user) {
-        console.error('❌ User not authenticated');
-        socket.emit('error', { message: 'Not Authenticated' });
+      if (!checkAuthentication(socket)) {
+        logger.error('❌ User not authenticated', undefined, { socketId: socket.id });
         return;
       }
 
-      if (!content || content.trim().length === 0) {
-        socket.emit('error', { message: 'Message cannot be empty.' });
-        return;
-      }
+      if (!validateMessageContent(socket, content)) return;
 
-      if (content.length > 2000) {
-        socket.emit('error', {
-          message: 'Message too long. Max 2000 characters.',
-        });
-        return;
-      }
-
-      //check membership
       const isMember = await checkClanMembership(socket.user.id, clanId);
       if (!isMember) {
-        socket.emit('clan-access-denied', {
+        emitSocketError(socket, 'clan-access-denied', {
           code: 'NOT_A_MEMBER',
-          message: `Access Denied: You are not a member of clan ${clanId}`,
+          messageKey: 'error.clan.not_member',
         });
         return;
       }
 
-      console.log(' Membership verified for user:', socket.user.id, isMember);
+      logger.debug('Membership verified for clan message', { userId: socket.user.id, clanId, isMember });
 
-      //save message to database
       const message = await client.message.create({
         data: {
           content: content.trim(),
@@ -396,7 +346,6 @@ export default function chatSocketHandler(
         },
       });
 
-      //prepare message payload matching frontend Message interface
       const messagePayload = {
         id: message.id,
         content: message.content,
@@ -404,27 +353,25 @@ export default function chatSocketHandler(
         clanId: message.clanId,
         senderId: message.sender.id,
         UserName: message.sender.UserName,
-        sender: message.sender, // Keep for backward compatibility
+        sender: message.sender,
       };
 
-      //broadcast to all members in the community
       io.to(`clan:${clanId}`).emit('clan:new-message', messagePayload);
 
-      console.log(
-        `✅ Message sent from ${socket.user.UserName} in clan ${clanId}:`,
-        messagePayload
-      );
+      logger.info('✅ Message sent to clan', { username: socket.user.UserName, userId: socket.user.id, clanId, messageId: messagePayload.id });
     } catch (error) {
-      console.error('Error sending message:', error);
-      socket.emit('error', { message: 'Failed to send message' });
+      logger.error('Error sending clan message', error, { userId: socket.user?.id, clanId });
+      emitSocketError(socket, 'error', {
+        code: 'MESSAGE_SEND_FAILED',
+        messageKey: 'error.message.send_failed',
+      });
     }
   });
 
-  //leave a clan room
   socket.on('leave-clan', (data: JoinClanData) => {
     const { clanId } = data;
     socket.leave(`clan:${clanId}`);
-    console.log(`${socket.user?.UserName} left clan: ${clanId}`);
+    logger.info('Clan left', { username: socket.user?.UserName, userId: socket.user?.id, clanId });
     socket.to(`clan:${clanId}`).emit('user-left', {
       user: {
         id: socket.user?.id,
@@ -460,8 +407,7 @@ export default function chatSocketHandler(
     });
   });
 
-  //handle disconnection
   socket.on('disconnect', () => {
-    console.log(`${socket.user?.UserName} disconnected from chat socket`);
+    logger.info('Chat socket disconnected', { username: socket.user?.UserName, userId: socket.user?.id, socketId: socket.id });
   });
 }

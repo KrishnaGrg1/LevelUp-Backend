@@ -6,6 +6,7 @@ import {
 } from '../helpers/standardResponse';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { Language } from '../translation/translation';
+import logger from '../helpers/logger';
 import { findUser } from '../helpers/auth/userHelper';
 import { startOfMonth, startOfDay, startOfWeek, format } from 'date-fns';
 
@@ -733,7 +734,7 @@ const addCategoryForCommunity = async (
     return;
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('Error adding categories:', e);
+      logger.error('Error adding categories', e);
     res
       .status(500)
       .json(
@@ -1206,6 +1207,109 @@ const updateTicket = async (req: AuthRequest, res: Response): Promise<void> => {
   }
 };
 
+/* ===============================
+ * MEMBER ROLE MANAGEMENT
+ * =============================== */
+
+const changeMemberRole = async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = req.language as Language;
+    const { communityId, memberId } = req.params;
+    const { role } = req.body; // expected: 'ADMIN' | 'MEMBER'
+
+    // Validate role
+    if (!['ADMIN', 'MEMBER'].includes(role)) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Invalid role'),
+            'error.community.invalid_role',
+            lang,
+            400
+          )
+        );
+    }
+
+    // Find the community
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+      include: { members: true },
+    });
+
+    if (!community) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.community.not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    // Prevent changing owner's role
+    if (memberId === community.ownerId) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Cannot change owner role'),
+            'error.community.cannot_change_owner_role',
+            lang,
+            400
+          )
+        );
+    }
+
+    // Check if target user exists in the community
+    const member = community.members.find((m) => m.userId === memberId);
+    if (!member) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Member not found'),
+            'error.community.member_not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    // Update member role
+    const updatedMember = await client.communityMember.update({
+      where: { id: member.id },
+      data: { role },
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          updatedMember,
+          'success.community.role_changed',
+          lang,
+          200
+        )
+      );
+  } catch (e) {
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to change member role'),
+          'error.community.failed_to_change_role',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const adminController = {
   updateUserDetails,
   viewUserDetail,
@@ -1223,6 +1327,7 @@ const adminController = {
   changeCommunityPrivacy,
   changeCommunityCategory,
   removeCommunityMember,
+  changeMemberRole,
   deleteCategory,
   categoryStats,
   editCategoryName,

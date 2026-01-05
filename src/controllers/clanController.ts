@@ -8,6 +8,7 @@ import { AuthRequest } from '../middlewares/authMiddleware';
 import { Language } from '../translation/translation';
 import { findUser } from '../helpers/auth/userHelper';
 import { generateSlug } from '../helpers/slugGenerator';
+import logger from '../helpers/logger';
 
 /**
  * Create a new Clan inside a Community
@@ -98,14 +99,14 @@ const createClan = async (req: AuthRequest, res: Response) => {
       return newClan;
     });
 
-    console.log(`Clan ${clan.id} created by user ${user.id}`);
+    logger.info('Clan created', { clanId: clan.id, userId: user.id });
 
     return res
       .status(200)
       .json(makeSuccessResponse(clan, 'success.clan.created', lang, 200));
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('Failed to create clan:', e);
+    logger.error('Failed to create clan', e, { userId: req.user?.id });
     return res
       .status(500)
       .json(
@@ -457,7 +458,7 @@ const getClanMembers = async (req: AuthRequest, res: Response) => {
       );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('Failed to get clan members:', e);
+    logger.error('Failed to get clan members', e, { userId: req.user?.id, clanId: req.params.clanId });
     return res
       .status(500)
       .json(
@@ -600,7 +601,7 @@ const updateClan = async (req: AuthRequest, res: Response) => {
       .json(makeSuccessResponse(updated, 'success.clan.updated', lang, 200));
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('Failed to update clan:', e);
+    logger.error('Failed to update clan', e, { userId: req.user?.id, clanId: req.params.clanId });
     return res
       .status(500)
       .json(
@@ -663,7 +664,7 @@ const getUserClans = async (req: AuthRequest, res: Response) => {
       );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('Failed to fetch user clans:', e);
+    logger.error('Failed to fetch user clans', e, { userId: req.user?.id });
     return res
       .status(500)
       .json(
@@ -718,7 +719,7 @@ const checkClanMembership = async (req: AuthRequest, res: Response) => {
       );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('Failed to fetch user clans:', e);
+    logger.error('Failed to fetch user clans', e, { userId: req.user?.id });
     return res
       .status(500)
       .json(

@@ -10,6 +10,7 @@ import { TranslationRequest } from '../middlewares/translationMiddleware';
 import { Language } from '../translation/translation';
 import env from '../helpers/config';
 import qs from 'qs';
+import logger from '../helpers/logger';
 
 const oauthLogin = async (req: TranslationRequest, res: Response) => {
   const lang = req.language as Language;
@@ -71,7 +72,7 @@ const oauthLogin = async (req: TranslationRequest, res: Response) => {
           providerId: profile.data.sub,
         };
       } catch (error) {
-        console.error('Google OAuth error:', error);
+        logger.error('Google OAuth error', error);
         res
           .status(400)
           .json(
@@ -149,7 +150,7 @@ const oauthLogin = async (req: TranslationRequest, res: Response) => {
           providerId: profile.data.id.toString(),
         };
       } catch (error) {
-        console.error('GitHub OAuth error:', error);
+        logger.error('GitHub OAuth error', error);
         return res
           .status(400)
           .json(
@@ -288,7 +289,7 @@ const oauthLogin = async (req: TranslationRequest, res: Response) => {
       )
     );
   } catch (err) {
-    console.error('OAuth error:', err);
+    logger.error('OAuth error', err);
 
     // Handle specific OAuth errors
     if (axios.isAxiosError(err)) {

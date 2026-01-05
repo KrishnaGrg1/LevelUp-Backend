@@ -10,6 +10,7 @@ import { validateUser, sanitizeUserStats, getSkillName, validateCommunity } from
 import { ensureAIConfigured, OpenAIChatWithTimeout, validateQuestResponse } from './aiValidation';
 import { rotateDailyQuests, rotateWeeklyQuests, cleanupOrphanedQuests } from './rotation';
 import { createQuestsForCommunity, generateFallbackQuests } from './creation';
+import logger from '../logger';
 
 const QUEST_COUNT = 5;
 const LOCK_TIMEOUT = 300; // 5 minutes
@@ -45,13 +46,13 @@ export async function generateQuestsForAllCommunities(
   });
 
   if (!user) {
-    console.warn(`${logPrefix} User ${userId} not found`);
+    logger.warn(`${logPrefix} User not found`, { userId });
     return;
   }
 
   const aiConfigured = ensureAIConfigured();
   if (!aiConfigured) {
-    console.log(`${logPrefix} AI not configured, using fallback mode for user ${userId}`);
+    logger.debug(`${logPrefix} AI not configured, using fallback mode`, { userId });
   }
 
   // Only delete and regenerate if it's a new period OR if forcing regeneration
@@ -88,11 +89,11 @@ export async function generateQuestsForAllCommunities(
         const promptLevel = questType === 'Weekly' ? effLevel + 1 : effLevel;
         const promptXp = questType === 'Weekly' ? xp + 20 : xp;
 
-        console.log(`${logPrefix} Calling AI for ${skillName}, Level: ${promptLevel}, Status: ${status}`);
+        logger.debug(`${logPrefix} Calling AI`, { userId, skillName, promptLevel, status });
         const prompt = getDailyQuestSetPrompt(skillName, promptLevel, status, promptXp);
         res = await OpenAIChatWithTimeout({ prompt }, 60000); // Increased to 60 seconds
         
-        console.log(`${logPrefix} AI Response received, length: ${res?.content?.length || 0}`);
+        logger.debug(`${logPrefix} AI response received`, { userId, contentLength: res?.content?.length || 0 });
         
         // Clean the response content before parsing
         let content = res?.content ?? '{}';
@@ -101,7 +102,7 @@ export async function generateQuestsForAllCommunities(
         const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
         if (jsonMatch) {
           content = jsonMatch[1];
-          console.log(`${logPrefix} Extracted JSON from markdown code block`);
+          logger.debug(`${logPrefix} Extracted JSON from markdown code block`, { userId });
         }
         
         // Remove any potential BOM or whitespace
@@ -111,17 +112,16 @@ export async function generateQuestsForAllCommunities(
 
         if (validateQuestResponse(parsed)) {
           quests = parsed.quests;
-          console.log(`${logPrefix} ✅ AI generated ${quests.length} quests successfully`);
+          logger.debug(`${logPrefix} AI generated quests successfully`, { userId, count: quests.length });
         } else {
-          console.warn(`${logPrefix} ❌ Invalid AI response structure for user ${userId}, using fallback`);
-          console.warn(`${logPrefix} Response:`, JSON.stringify(parsed).substring(0, 300));
+          logger.warn(`${logPrefix} Invalid AI response structure, using fallback`, { userId, snippet: JSON.stringify(parsed).substring(0, 300) });
         }
       } catch (error) {
-        console.error(`${logPrefix} ❌ AI failed for user ${userId}, community ${membership.communityId}:`, error);
+        logger.error(`${logPrefix} AI failed`, error, { userId, communityId: membership.communityId });
         if (error instanceof SyntaxError) {
-          console.error(`${logPrefix} JSON parse error. Raw response:`, res?.content?.substring(0, 800));
+          logger.error(`${logPrefix} JSON parse error`, error, { userId, snippet: res?.content?.substring(0, 800) });
         } else if (error instanceof Error) {
-          console.error(`${logPrefix} Error message:`, error.message);
+          logger.error(`${logPrefix} Error message`, error, { userId });
         }
       }
     }
@@ -187,7 +187,7 @@ export async function generateQuestsWithLock(params: GenerationParams): Promise<
   const lockKey = `quest_gen_${questType}:${userId}`;
   
   if (!await acquireLock(lockKey, LOCK_TIMEOUT)) {
-    console.log(`${logPrefix} Generation already in progress for user ${userId}`);
+    logger.debug(`${logPrefix} Generation already in progress`, { userId });
     return;
   }
 
@@ -214,7 +214,7 @@ export async function generateQuestsWithLock(params: GenerationParams): Promise<
         where: { id: userId },
         data: { tokens: 50 },
       });
-      console.log(`${logPrefix} Reset tokens to 50 for user ${userId} (was ${user.tokens})`);
+      logger.debug(`${logPrefix} Reset tokens to default`, { userId, previousTokens: user.tokens });
     }
 
     // Check timing (unless forced)
@@ -249,13 +249,13 @@ export async function generateQuestsWithLock(params: GenerationParams): Promise<
 
     // Skip if already generated (unless forced)
     if (!isNewPeriod && !force) {
-      console.log(`${logPrefix} Quests already generated for user ${userId} on ${periodKey}`);
+      logger.debug(`${logPrefix} Quests already generated`, { userId, periodKey });
       return;
     }
 
     // Rotate quests if new period
     if (isNewPeriod) {
-      console.log(`${logPrefix} New period detected for user ${userId}, rotating quests...`);
+      logger.debug(`${logPrefix} New period detected, rotating quests`, { userId, periodKey });
       
       await client.$transaction(async (tx) => {
         if (questType === 'Daily') {
@@ -265,14 +265,14 @@ export async function generateQuestsWithLock(params: GenerationParams): Promise<
         }
       });
 
-      console.log(`${logPrefix} Quest rotation completed for user ${userId}`);
+      logger.debug(`${logPrefix} Quest rotation completed`, { userId, periodKey });
     }
 
     // Determine progression
     const progressive = isNewPeriod ? Boolean(currentQuest?.isCompleted) : false;
     const effLevel = progressive ? Math.min(level + 1, 100) : level;
 
-    console.log(`${logPrefix} Generating quests for user ${userId}: Level ${effLevel}, Progressive: ${progressive}`);
+    logger.debug(`${logPrefix} Generating quests`, { userId, effLevel, progressive });
 
     // Generate quests
     await generateQuestsForAllCommunities({
@@ -288,7 +288,7 @@ export async function generateQuestsWithLock(params: GenerationParams): Promise<
     });
 
   } catch (error) {
-    console.error(`${logPrefix} Generation failed for user ${userId}:`, error);
+    logger.error(`${logPrefix} Generation failed`, error, { userId });
   } finally {
     await releaseLock(lockKey);
   }

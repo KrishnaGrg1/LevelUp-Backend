@@ -7,78 +7,65 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  MEMBER
-  ADMIN
-}
-
 model User {
-  id             String   @id @default(cuid())
-  UserName       String   @unique
-  email          String   @unique
-  password       String? // nullable for OAuth users
-  provider       String? // e.g., "github", "google"
-  providerId     String? // provider-specific user ID
-  profilePicture String? // path to profile picture
-  xp             Int      @default(0)
-  level          Int      @default(1)
-  tokens         Int      @default(50)
-  timezone       String   @default("UTC")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  // categoryId     String?
-  category      Category[]
-  isVerified     Boolean  @default(false)
-  isAdmin        Boolean  @default(false)
-
-  isBanned Boolean   @default(false)
-  banUntil DateTime?
-  hasOnboarded    Boolean  @default(false)   
-
-  messages        Message[]         @relation("senderMessages")
+  id              String            @id @default(cuid())
+  UserName        String            @unique
+  email           String            @unique
+  password        String?
+  xp              Int               @default(0)
+  level           Int               @default(1)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  isVerified      Boolean           @default(false)
+  provider        String?
+  providerId      String?
+  isAdmin         Boolean           @default(false)
+  banUntil        DateTime?
+  isBanned        Boolean           @default(false)
+  profilePicture  String?
+  timezone        String            @default("UTC")
+  tokens          Int               @default(50)
+  hasOnboarded    Boolean           @default(false)
+  AIChatHistory   AIChatHistory[]
   Clan            Clan[]
   Community       Community[]
   CommunityMember CommunityMember[]
+  keys            Key[]
+  messages        Message[]         @relation("senderMessages")
+  otps            Otp[]
+  Quest           Quest[]
+  sessions        Session[]
+  Ticket          Ticket[]
+  onboarding      UserOnboarding?
   ClanMember      ClanMember[]
-
-  otps     Otp[]
-  Quest    Quest[]
-  // category Category? @relation(fields: [categoryId], references: [id])
-  sessions Session[]
-  keys     Key[]
-  Ticket   Ticket[]
-  AIChatHistory   AIChatHistory[]
-  onboarding UserOnboarding?
-
+  category        Category[]        @relation("CategoryToUser")
 }
 
 model Session {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Key {
   id             String    @id
   userId         String
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   hashedPassword String?
   expiresAt      DateTime?
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Category {
-  id          String      @id @default(cuid())
-  name        String      @unique
-  description String?
-  createdBy   String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  communities Community[]
-  users       User[]
-
-  // Relation to onboarding
-  userOnboardings UserOnboarding[]
+  id              String           @id @default(cuid())
+  name            String           @unique
+  description     String?
+  createdBy       String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  communities     Community[]
+  users           User[]           @relation("CategoryToUser")
+  userOnboardings UserOnboarding[] @relation("CategoryToUserOnboarding")
 }
 
 model Otp {
@@ -91,45 +78,44 @@ model Otp {
 }
 
 model Community {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  photo       String? // path to community photo
-  isPrivate   Boolean  @default(false)
-  memberLimit Int      @default(100)
-  createdAt   DateTime @default(now())
-  ownerId     String
-  categoryId  String?
-  updatedAt   DateTime @updatedAt
-
-   // Join code (only for private communities)
-  joinCodeHash  String?  @unique
+  id            String            @id @default(cuid())
+  name          String            @unique
+  description   String?
+  createdAt     DateTime          @default(now())
+  ownerId       String
+  categoryId    String?
+  updatedAt     DateTime          @updatedAt
+  isPrivate     Boolean           @default(false)
+  memberLimit   Int               @default(100)
+  photo         String?
+  xp            Int               @default(0)
   codeUpdatedAt DateTime?
-  
-  clans       Clan[]
-  category    Category?         @relation(fields: [categoryId], references: [id])
-  owner       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  members     CommunityMember[]
-  clanMembers ClanMember[]
-  messages    Message[]
-  quests      Quest[]
-  xp             Int      @default(0)
+  joinCodeHash  String?           @unique
+  level         Int               @default(1)
+  clans         Clan[]
+  category      Category?         @relation(fields: [categoryId], references: [id])
+  owner         User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members       CommunityMember[]
+  messages      Message[]
+  quests        Quest[]
+  clanMembers   ClanMember[]
 }
 
 model Clan {
-  id             String   @id @default(cuid())
-  name           String   @unique
-  slug           String?  @unique // URL-friendly version of name
-  isPrivate      Boolean  @default(false)
-  xp             Int      @default(0)
+  id             String       @id @default(cuid())
+  name           String       @unique
+  slug           String?      @unique // URL-friendly version of name
+  isPrivate      Boolean      @default(false)
+  xp             Int          @default(0)
+  level          Int          @default(1)
   description    String?
   ownerId        String
   communityId    String
-  limit          Int      @default(50)
+  limit          Int          @default(50)
   welcomeMessage String?
   stats          Json?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   community Community    @relation(fields: [communityId], references: [id])
   owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
@@ -138,66 +124,119 @@ model Clan {
 }
 
 model CommunityMember {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   userId      String
   communityId String
-  role        Role     @default(MEMBER)
-  joinedAt    DateTime @default(now())
-  totalXP     Int      @default(0)
-
-  level    Int          @default(1)
-  status   MemberStatus @default(Beginner)
-  isPinned Boolean      @default(false)
-
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quest     Quest[]
+  joinedAt    DateTime     @default(now())
+  totalXP     Int          @default(0)
+  level       Int          @default(1)
+  status      MemberStatus @default(Beginner)
+  role        Role         @default(MEMBER)
+  isPinned    Boolean      @default(false)
+  community   Community    @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest       Quest[]
 
   @@unique([userId, communityId])
 }
 
 model ClanMember {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String
   clanId      String
-  communityId String   // must match clan.communityId
-  joinedAt    DateTime @default(now())
-  totalXP     Int      @default(0)
+  communityId String
+  joinedAt    DateTime  @default(now())
+  totalXP     Int       @default(0)
+  clan        Clan      @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clan      Clan      @relation(fields: [clanId], references: [id], onDelete: Cascade)
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, clanId]) // user cannot rejoin the same clan twice
-  @@index([userId, communityId]) // check clans inside a community
-  @@map("clanMember") // Map to camelCase table name for Prisma client
+  @@unique([userId, clanId])
+  @@index([userId, communityId])
+  @@map("clanMember")
 }
 
 model Quest {
-  id                String      @id @default(cuid())
+  id                String           @id @default(cuid())
   userId            String
-  communityId       String?
   xpValue           Int
-  isCompleted       Boolean     @default(false)
+  isCompleted       Boolean          @default(false)
   date              DateTime
-  createdAt         DateTime    @default(now())
-  type              QuestType   @default(Daily)
+  createdAt         DateTime         @default(now())
+  type              QuestType        @default(Daily)
   communityMemberId String?
   description       String
-  source            QuestSource @default(AI)
-  periodStatus      PeriodStatus @default(NONE)
+  source            QuestSource      @default(AI)
   periodKey         String?
-  periodSeq         Int          @default(0) // 1..5 for daily/weekly sets
-  viewedAt          DateTime?    // When user first viewed/opened the quest
-  startedAt         DateTime?    // When user clicked "Start Quest"
-  completedAt       DateTime?    // When user marked it complete
-  estimatedMinutes  Int          @default(30) // AI-generated estimated completion time in minutes
-
-  CommunityMember CommunityMember? @relation(fields: [communityMemberId], references: [id])
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  community       Community?       @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  periodStatus      PeriodStatus     @default(NONE)
+  periodSeq         Int              @default(0)
+  communityId       String?
+  completedAt       DateTime?
+  estimatedMinutes  Int              @default(30)
+  startedAt         DateTime?
+  viewedAt          DateTime?
+  community         Community?       @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  CommunityMember   CommunityMember? @relation(fields: [communityMemberId], references: [id])
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, communityId, type, date])
+}
+
+model Ticket {
+  id                       String         @id @default(cuid())
+  userId                   String
+  subject                  SubjectType
+  message                  String
+  status                   TicketStatus   @default(PENDING)
+  priority                 TicketPriority @default(LOW)
+  expectedDateOfCompletion DateTime?
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+  user                     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id          String     @id @default(uuid())
+  communityId String?
+  senderId    String
+  content     String
+  createdAt   DateTime   @default(now())
+  clanId      String?
+  clan        Clan?      @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  sender      User       @relation("senderMessages", fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model AIChatHistory {
+  id           String   @id @default(cuid())
+  userId       String
+  sessionId    String?
+  prompt       String
+  response     String
+  tokensUsed   Int      @default(1)
+  responseTime Int?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([sessionId])
+}
+
+model UserOnboarding {
+  id           String      @id @default(cuid())
+  userId       String      @unique
+  heardAboutUs String?
+  goal         String?
+  experience   Experience?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categories   Category[]  @relation("CategoryToUserOnboarding")
+}
+
+enum Role {
+  MEMBER
+  ADMIN
 }
 
 enum MemberStatus {
@@ -219,7 +258,6 @@ enum QuestSource {
   MANUAL
 }
 
-// Tracks position of a quest in recent daily/weekly rolls
 enum PeriodStatus {
   TODAY
   YESTERDAY
@@ -259,71 +297,7 @@ enum TicketPriority {
 }
 
 enum Experience {
- BEGINNER
+  BEGINNER
   INTERMEDIATE
   ADVANCED
-}
-
-model Ticket {
-  id                       String         @id @default(cuid())
-  userId                   String
-  subject                  SubjectType
-  message                  String
-  status                   TicketStatus   @default(PENDING)
-  priority                 TicketPriority @default(LOW)
-  expectedDateOfCompletion DateTime?
-  createdAt                DateTime       @default(now())
-updatedAt                DateTime       @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-// Chat messages per community
-model Message {
-  id          String   @id @default(uuid())
-  content     String
-  communityId String?
-  senderId    String
-  clanId      String?
-  createdAt   DateTime @default(now())
-
-  community Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  clan      Clan?      @relation(fields: [clanId], references: [id], onDelete: Cascade)
-  sender    User       @relation("senderMessages", fields: [senderId], references: [id], onDelete: Cascade)
-}
-
-// AI Chat History
-model AIChatHistory {
-  id           String   @id @default(cuid())
-  userId       String
-  sessionId    String? // Optional session grouping
-  prompt       String   @db.Text
-  response     String   @db.Text
-  tokensUsed   Int      @default(1)
-  responseTime Int? // Response time in milliseconds
-  createdAt    DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
-  @@index([sessionId])
-}
-
-model UserOnboarding {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  
-  heardAboutUs String? // where user found your platform
-  goal   String? // user goal
-  experience   Experience? // Beginner / Intermediate / Advanced
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
-  // Many-to-many relation with Category
-
-  categories Category[]
-
 }

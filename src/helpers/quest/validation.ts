@@ -3,6 +3,7 @@
  */
 
 import { Prisma } from '@prisma/client';
+import logger from '../logger';
 
 type UserWithRelations = Prisma.UserGetPayload<{
   include: {
@@ -29,19 +30,17 @@ export function validateUser(
   logPrefix: string
 ): { valid: boolean; reason?: string } {
   if (!user) {
-    console.warn(`${logPrefix} User ${userId} not found`);
+    logger.warn(`${logPrefix} User not found`, { userId });
     return { valid: false, reason: 'not_found' };
   }
 
   if (user.isBanned) {
-    console.log(`${logPrefix} User ${userId} is banned - skipping`);
+    logger.debug(`${logPrefix} User is banned - skipping`, { userId });
     return { valid: false, reason: 'banned' };
   }
 
   if (!user.CommunityMember || user.CommunityMember.length === 0) {
-    console.warn(
-      `${logPrefix} User ${userId} has no community memberships - skipping`
-    );
+    logger.warn(`${logPrefix} User has no community memberships - skipping`, { userId });
     return { valid: false, reason: 'no_communities' };
   }
 
@@ -73,9 +72,7 @@ export function getSkillName(
     'Personal Development';
 
   if (!skillName || skillName.trim() === '') {
-    console.warn(
-      `${logPrefix} Invalid skill name for user ${user.id}, community ${membership.communityId}`
-    );
+    logger.warn(`${logPrefix} Invalid skill name`, { userId: user.id, communityId: membership.communityId });
     return null;
   }
 
@@ -87,9 +84,7 @@ export function getSkillName(
  */
 export function validateCommunity(membership: any, logPrefix: string): boolean {
   if (!membership.community) {
-    console.warn(
-      `${logPrefix} Community not found for membership ${membership.id}`
-    );
+    logger.warn(`${logPrefix} Community not found for membership`, { membershipId: membership.id });
     return false;
   }
   return true;

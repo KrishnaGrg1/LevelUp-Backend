@@ -6,11 +6,8 @@ import { Language } from '../translation/translation';
 import { Role } from '@prisma/client';
 
 /**
- * Middleware factory to check if a user has the required role(s)
- * in a specific community.
- *
- * Usage:
- * router.post('/:communityId/something', checkRole(['ADMIN', 'OWNER']), handler)
+ * Middleware to ensure the user has one of the allowed roles in the community.
+ * Note: Community owners are always allowed regardless of their membership role.
  */
 export const checkRole = (allowedRoles: Role[]) => {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -66,6 +63,16 @@ export const checkRole = (allowedRoles: Role[]) => {
               403
             )
           );
+      }
+
+      // Allow if the user is the community owner
+      const community = await client.community.findUnique({
+        where: { id: communityId },
+        select: { ownerId: true },
+      });
+
+      if (community?.ownerId === userId) {
+        return next();
       }
 
       // Check if user has one of the allowed roles

@@ -29,6 +29,16 @@ const communityValidation = {
       }),
     }),
   },
+
+  joinPrivateCommunity: {
+    body: Joi.object().keys({
+      joinCode: Joi.string().min(3).max(150).required().messages({
+        'string.empty': 'Join code is required',
+        'string.min': 'Join code must contain at least 3 characters long',
+        'string.max': 'Join code must not exceed 150 characters long',
+      }),
+    }),
+  },
   getAllCommunities: {
     query: Joi.object().keys({
       page: Joi.number().integer().min(1).optional().messages({
@@ -46,14 +56,18 @@ const communityValidation = {
     }),
   },
 
+  getCommunityOwner: {
+    params: Joi.object().keys({
+      communityId: Joi.string().min(3).max(150).required().messages({
+        'string.empty': 'Community ID is required',
+        'string.min': 'Community ID must contain at least 3 characters long',
+        'string.max': 'Community ID must not exceed 150 characters long',
+      }),
+    }),
+  },
+
   joinPublicCommunity: {
     params: Joi.object().keys({
-      // communityName: Joi.string().min(3).max(150).required().messages({
-      //   'string.empty': 'Community Name is required',
-      //   'string.min': 'Username must contain altleast 3 characters long',
-      //   'string.max': 'Username mustnot exceed 150 characters long',
-      // }),
-
       communityId: Joi.string().min(3).max(150).required().messages({
         'string.empty': 'Community ID is required',
         'string.min': 'Community ID must contain at least 3 characters long',
@@ -87,15 +101,16 @@ const communityValidation = {
     }),
   },
   updateCommunity: {
-    body: Joi.object().keys({
+    params: Joi.object().keys({
       communityId: Joi.string().min(3).max(150).required().messages({
         'string.empty': 'Community ID is required',
         'string.min': 'Community ID must contain at least 3 characters long',
         'string.max': 'Community ID must not exceed 150 characters long',
       }),
+    }),
+    body: Joi.object().keys({
       name: Joi.string().min(3).max(150).optional().messages({
         'string.min': 'Community Name must contain at least 3 characters long',
-
         'string.max': 'Community Name must not exceed 150 characters long',
       }),
       description: Joi.string().max(500).optional().messages({

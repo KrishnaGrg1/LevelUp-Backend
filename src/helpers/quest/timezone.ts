@@ -1,6 +1,7 @@
 /**
  * Timezone utilities for quest generation
  */
+import logger from '../logger';
 
 /**
  * Get user's local date components with timezone support
@@ -25,7 +26,7 @@ export function getUserLocalComponents(tz: string, logPrefix = '[Quest]') {
     return { dateKey, hour: parseInt(hourStr, 10) };
   } catch (error) {
     // Invalid timezone - fallback to UTC
-    console.warn(`${logPrefix} Invalid timezone "${tz}", using UTC`);
+    logger.warn(`${logPrefix} Invalid timezone, using UTC`, { timezone: tz });
     return getUserLocalComponents('UTC', logPrefix);
   }
 }
@@ -65,7 +66,7 @@ export function getUserLocalComponentsWithWeekday(tz: string, logPrefix = '[Ques
       weekday: weekdayMap[weekdayStr] ?? 0,
     };
   } catch (error) {
-    console.warn(`${logPrefix} Invalid timezone "${tz}", using UTC`);
+    logger.warn(`${logPrefix} Invalid timezone, using UTC`, { timezone: tz });
     return getUserLocalComponentsWithWeekday('UTC', logPrefix);
   }
 }

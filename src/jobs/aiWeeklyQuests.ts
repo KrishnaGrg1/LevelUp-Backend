@@ -7,6 +7,7 @@ import cron from 'node-cron';
 import client from '../helpers/prisma';
 import { getUserLocalComponentsWithWeekday, computeWeekKeyFromLocal } from '../helpers/quest/timezone';
 import { generateQuestsWithLock } from '../helpers/quest/generator';
+import logger from '../helpers/logger';
 
 let isRunning = false;
 
@@ -59,7 +60,7 @@ async function runWeeklyQuestGenerationBatch(force = false, onlyUserId?: string)
 export function startWeeklyAiQuestJob(): void {
   cron.schedule('0 0 * * 1', async () => {
     if (isRunning) {
-      console.warn('[WeeklyQuest] Previous run still in progress, skipping');
+      logger.warn('[WeeklyQuest] Previous run still in progress, skipping');
       return;
     }
 
@@ -67,12 +68,12 @@ export function startWeeklyAiQuestJob(): void {
     try {
       await runWeeklyQuestGenerationBatch(false);
     } catch (e) {
-      console.error('[WeeklyQuest] Cron Error', e);
+      logger.error('[WeeklyQuest] Cron Error', e);
     } finally {
       isRunning = false;
     }
   });
-  console.log('✅ Weekly AI Quest cron job scheduled (Monday 00:00 UTC)');
+  logger.info('✅ Weekly AI Quest cron job scheduled (Monday 00:00 UTC)');
 }
 
 /**

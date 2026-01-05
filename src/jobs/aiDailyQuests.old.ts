@@ -1,3 +1,4 @@
+// DEPRECATED: Legacy daily quest generator retained for reference. Not scheduled in current runtime.
 import cron from 'node-cron';
 import { startOfDay } from 'date-fns';
 import client from '../helpers/prisma';
@@ -5,6 +6,7 @@ import env from '../helpers/config';
 import OpenAIChat from '../helpers/ai/aiHelper';
 import { getDailyQuestSetPrompt } from '../helpers/ai/prompts';
 import { MemberStatus, QuestSource, QuestType } from '@prisma/client';
+import { logger } from '../helpers/logger';
 
 // ==================== LOCKS & GUARDS ====================
 const locks = new Map<string, number>();
@@ -81,7 +83,7 @@ function getUserLocalComponents(tz: string) {
     return { dateKey, hour: parseInt(hourStr, 10) };
   } catch (error) {
     // Invalid timezone - fallback to UTC
-    console.warn(`[DailyQuest] Invalid timezone "${tz}", using UTC`);
+    logger.warn(`[DailyQuest] Invalid timezone "${tz}", using UTC`);
     return getUserLocalComponents('UTC');
   }
 }

@@ -7,6 +7,7 @@ import cron from 'node-cron';
 import client from '../helpers/prisma';
 import { getUserLocalComponents } from '../helpers/quest/timezone';
 import { generateQuestsWithLock } from '../helpers/quest/generator';
+import logger from '../helpers/logger';
 
 let isRunning = false;
 
@@ -58,7 +59,7 @@ async function runDailyQuestGenerationBatch(force = false, onlyUserId?: string):
 export function startDailyAiQuestJob(): void {
   cron.schedule('0 * * * *', async () => {
     if (isRunning) {
-      console.warn('[DailyQuest] Previous run still in progress, skipping');
+      logger.warn('[DailyQuest] Previous run still in progress, skipping');
       return;
     }
 
@@ -66,12 +67,12 @@ export function startDailyAiQuestJob(): void {
     try {
       await runDailyQuestGenerationBatch(false);
     } catch (err) {
-      console.error('[DailyQuest] Error', err);
+      logger.error('[DailyQuest] Error', err);
     } finally {
       isRunning = false;
     }
   });
-  console.log('✅ Daily AI Quest cron job scheduled (hourly)');
+  logger.info('✅ Daily AI Quest cron job scheduled (hourly)');
 }
 
 /**

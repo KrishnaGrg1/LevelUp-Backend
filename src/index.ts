@@ -9,6 +9,7 @@ import { Server } from 'socket.io';
 import initializeSocket from './sockets';
 import { startDailyAiQuestJob } from './jobs/aiDailyQuests';
 import { startWeeklyAiQuestJob } from './jobs/aiWeeklyQuests';
+import logger from './helpers/logger';
 const app = express();
 const port = env.PORT;
 
@@ -53,7 +54,7 @@ const corsOptions = {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.warn(`❌ CORS blocked origin: ${origin}`);
+      logger.warn('❌ CORS blocked origin', { origin });
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -81,8 +82,7 @@ app.use(
 
 // Request logging middleware
 app.use((req, res, next) => {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] ${req.method} ${req.originalUrl}`);
+  logger.info('HTTP request', { method: req.method, url: req.originalUrl });
   next();
 });
 
@@ -93,24 +93,15 @@ app.use('/api/v1/', translationMiddeware, mainRoutes);
 initializeSocket(io);
 
 httpServer.listen(port, () => {
-  console.log('\n🚀 =====================================');
-  console.log('   LevelUp Backend Server Started');
-  console.log('=====================================');
-  console.log(`📍 HTTP Server: http://localhost:${port}`);
-  console.log(`🔌 Socket.IO: ws://localhost:${port}/socket.io/`);
-  console.log(`💬 Real-time chat enabled`);
-  console.log(`🤖 AI Chat enabled`);
-  console.log(`🌍 Environment: ${env.NODE_ENV}`);
-  console.log(`🔐 CORS allowed origins:`);
-  console.log(`   - http://localhost:3000`);
-  console.log(`   - https://www.melevelup.me`);
-  if (env.NEXT_PUBLIC_APP_URL) {
-    console.log(`   - ${env.NEXT_PUBLIC_APP_URL}`);
-  }
-  console.log(`=====================================\n`);
-  
+  logger.info('🚀 LevelUp Backend Server Started', { port, environment: env.NODE_ENV });
+  logger.info('📍 HTTP Server', { url: `http://localhost:${port}` });
+  logger.info('🔌 Socket.IO', { url: `ws://localhost:${port}/socket.io/` });
+  logger.info('🔐 CORS allowed origins', {
+    origins: ['http://localhost:3000', 'https://www.melevelup.me', env.NEXT_PUBLIC_APP_URL].filter(Boolean),
+  });
+
   // Start AI quest cron jobs
   startDailyAiQuestJob();
   startWeeklyAiQuestJob();
-  console.log('✅ AI Quest cron jobs scheduled\n');
+  logger.info('✅ AI Quest cron jobs scheduled');
 });

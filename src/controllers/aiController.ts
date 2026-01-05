@@ -9,6 +9,13 @@ import { MemberStatus } from '@prisma/client';
 import client from '../helpers/prisma';
 import { runDailyAiQuestForUser, runDailyAiQuestNow } from '../jobs/aiDailyQuests';
 import { runWeeklyAiQuestForUser, runWeeklyAiQuestNow } from '../jobs/aiWeeklyQuests';
+import logger from '../helpers/logger';
+import { computeLevelFromXp } from '../helpers/leveling';
+import {
+  consumeTokens,
+  refundTokens,
+  getTokenCostPerChat,
+} from '../helpers/ai/tokenService';
 
 const ensureAIConfigured = () => {
   const apiKey = env.OPENAI_API_KEY as string | undefined;
@@ -34,9 +41,11 @@ const chat = async (req: AuthRequest, res: Response) => {
 
     const systemPrompt = getChatModerationPrompt(prompt);
     if ((env.NODE_ENV as string) !== 'production') {
-      console.debug(`[AI] chat request promptChars=${prompt.length} systemPromptChars=${systemPrompt.length}`);
+      logger.debug('AI chat request', {
+        promptChars: prompt.length,
+        systemPromptChars: systemPrompt.length,
+      });
     }
-    // Check tokens
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json(
@@ -44,21 +53,43 @@ const chat = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    const user = await (client as any).user.findUnique({ where: { id: userId }, select: { tokens: true } });
-    if (!user || (user as any).tokens <= 0) {
+    const tokenCost = getTokenCostPerChat();
+    const tokenResult = await consumeTokens(userId, tokenCost);
+    if (!tokenResult.ok) {
       return res.status(402).json(
         makeErrorResponse(new Error('Insufficient tokens'), 'error.ai.insufficient_tokens', lang, 402)
       );
     }
 
-    const message = await OpenAIChat({ prompt: systemPrompt });
-    const reply = message?.content ?? translate('success.ai.no_response', lang);
-    if ((env.NODE_ENV as string) !== 'production') {
-      console.debug(`[AI] chat reply chars=${reply.length} preview="${reply.slice(0, 200).replace(/\s+/g, ' ')}"`);
+    let tokensDebited = true;
+    try {
+      const message = await OpenAIChat({ prompt: systemPrompt });
+      const reply = message?.content ?? translate('success.ai.no_response', lang);
+      if ((env.NODE_ENV as string) !== 'production') {
+        logger.debug('AI chat reply', {
+          replyChars: reply.length,
+          replyPreview: reply.slice(0, 200).replace(/\s+/g, ' '),
+        });
+      }
+
+      return res.status(200).json(
+        makeSuccessResponse(
+          { reply, remainingTokens: tokenResult.remainingTokens },
+          'success.ai.chat',
+          lang,
+          200
+        )
+      );
+    } catch (err) {
+      if (tokensDebited) {
+        try {
+          await refundTokens(userId, tokenCost);
+        } catch (refundError) {
+          logger.error('[AI Chat] Failed to refund tokens', refundError, { userId, tokenCost });
+        }
+      }
+      throw err;
     }
-    // Deduct 1 token after successful call
-    await (client as any).user.update({ where: { id: userId }, data: { tokens: { decrement: 1 } } });
-    return res.status(200).json(makeSuccessResponse({ reply }, 'success.ai.chat', lang, 200));
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
     return res.status(500).json(
@@ -68,8 +99,7 @@ const chat = async (req: AuthRequest, res: Response) => {
 };
 
 const generateDailyQuests = async (req: AuthRequest, res: Response) => {
-
-  console.log('generateDailyQuests called');
+  logger.debug('generateDailyQuests called', { userId: req.user?.id });
   try {
     const lang = (req.language as Language) || 'eng';
     const userId = req.user?.id;
@@ -77,7 +107,6 @@ const generateDailyQuests = async (req: AuthRequest, res: Response) => {
       return res.status(401).json(makeErrorResponse(new Error('Not authenticated'), 'error.auth.not_authenticated', lang, 401));
     }
     await runDailyAiQuestForUser(userId);
-    // Return today's grouped quests per community
     const today = await (client as any).quest.findMany({ where: { userId, type: 'Daily', periodStatus: 'TODAY' }, orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }] });
     return res.status(200).json(makeSuccessResponse({ today }, 'success.ai.quests_generated', lang, 200));
   } catch (e: unknown) {
@@ -103,7 +132,7 @@ const generateWeeklyQuests = async (req: AuthRequest, res: Response) => {
 };
 
 const getDailyQuests = async (req: AuthRequest, res: Response) => {
-  console.log('getDailyQuests called');
+  logger.debug('getDailyQuests called', { userId: req.user?.id });
   const lang = (req.language as Language) || 'eng';
   const userId = req.user?.id;
   if (!userId) {
@@ -160,7 +189,7 @@ const health = async (req: AuthRequest, res: Response) => {
       dbResponseTime = Date.now() - dbStart;
       dbHealthy = true;
     } catch (dbError) {
-      console.error('[Health] Database check failed:', dbError);
+      logger.error('[Health] Database check failed', dbError);
     }
 
     // Get quest generation statistics
@@ -181,7 +210,7 @@ const health = async (req: AuthRequest, res: Response) => {
           completionRate: totalQuests > 0 ? Math.round((completedQuests / totalQuests) * 100) : 0,
         };
       } catch (statError) {
-        console.error('[Health] Quest stats failed:', statError);
+        logger.error('[Health] Quest stats failed', statError);
       }
     }
 
@@ -216,7 +245,7 @@ const health = async (req: AuthRequest, res: Response) => {
       makeSuccessResponse(healthData, 'success.ai.health', lang, statusCode)
     );
   } catch (error) {
-    console.error('[Health] Health check failed:', error);
+    logger.error('[Health] Health check failed', error);
     return res.status(503).json(
       makeErrorResponse(new Error('Health check failed'), 'error.ai.health_check_failed', lang, 503)
     );
@@ -260,7 +289,7 @@ const config = async (req: AuthRequest, res: Response) => {
           };
         }
       } catch (userError) {
-        console.error('[Config] User data fetch failed:', userError);
+        logger.error('[Config] User data fetch failed', userError, { userId });
       }
     }
 
@@ -271,7 +300,7 @@ const config = async (req: AuthRequest, res: Response) => {
         configured: ensureAIConfigured(),
         model: env.MODEL_NAME || null,
         maxPromptChars: 4000,
-        tokenCostPerChat: 1,
+        tokenCostPerChat: getTokenCostPerChat(),
       },
       quests: {
         dailyCount: 5,
@@ -305,7 +334,7 @@ const config = async (req: AuthRequest, res: Response) => {
       makeSuccessResponse(payload, 'success.ai.config', lang, 200)
     );
   } catch (error) {
-    console.error('[Config] Config fetch failed:', error);
+    logger.error('[Config] Config fetch failed', error);
     const fallbackPayload = {
       version: '1.0.0',
       environment: env.NODE_ENV,
@@ -413,7 +442,7 @@ const forceDailyQuests = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    console.log(`[Force Daily] Forcing daily quest generation for user ${userId}`);
+    logger.debug('[Force Daily] Forcing daily quest generation', { userId });
     await runDailyAiQuestForUser(userId, true);
 
     const today = await client.quest.findMany({
@@ -436,7 +465,7 @@ const forceDailyQuests = async (req: AuthRequest, res: Response) => {
     );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('[Force Daily] Error:', e);
+    logger.error('[Force Daily] Error', e, { userId: req.user?.id });
     return res.status(500).json(
       makeErrorResponse(new Error('Failed to force generate daily quests'), 'error.ai.force_generate_failed', lang, 500)
     );
@@ -454,7 +483,7 @@ const forceWeeklyQuests = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    console.log(`[Force Weekly] Forcing weekly quest generation for user ${userId}`);
+    logger.debug('[Force Weekly] Forcing weekly quest generation', { userId });
     await runWeeklyAiQuestForUser(userId, true);
 
     const thisWeek = await client.quest.findMany({
@@ -477,7 +506,7 @@ const forceWeeklyQuests = async (req: AuthRequest, res: Response) => {
     );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('[Force Weekly] Error:', e);
+    logger.error('[Force Weekly] Error', e, { userId: req.user?.id });
     return res.status(500).json(
       makeErrorResponse(new Error('Failed to force generate weekly quests'), 'error.ai.force_generate_failed', lang, 500)
     );
@@ -573,7 +602,6 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // Find the quest and verify ownership
     const quest = await (client as any).quest.findUnique({
       where: { id: questId },
       select: { id: true, userId: true, isCompleted: true, description: true, xpValue: true, type: true, communityId: true, startedAt: true, estimatedMinutes: true },
@@ -597,17 +625,15 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // Validate quest was started
     if (!quest.startedAt) {
       return res.status(400).json(
         makeErrorResponse(new Error('Quest must be started before completion'), 'error.ai.quest_not_started', lang, 400)
       );
     }
 
-    // Validate minimum time elapsed using AI-generated estimatedMinutes
     const timeElapsed = Date.now() - new Date(quest.startedAt).getTime();
-    const requiredMinutes = quest.estimatedMinutes || 30; // Fallback to 30 if not set
-    const minTimeRequired = requiredMinutes * 60 * 1000; // Convert to milliseconds
+    const requiredMinutes = quest.estimatedMinutes || 30;
+    const minTimeRequired = requiredMinutes * 60 * 1000;
     
     if (timeElapsed < minTimeRequired) {
       const remainingMinutes = Math.ceil((minTimeRequired - timeElapsed) / 60000);
@@ -621,10 +647,15 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // Determine token reward based on quest type
     const tokenReward = quest.type === 'Daily' ? 2 : quest.type === 'Weekly' ? 5 : 0;
 
-    // Resolve clan membership inside the quest's community (if any)
+    const communityMemberRecord = quest.communityId
+      ? await (client as any).communityMember.findUnique({
+          where: { userId_communityId: { userId, communityId: quest.communityId } },
+          select: { userId: true, communityId: true, totalXP: true, level: true },
+        })
+      : null;
+
     const clanMembership = quest.communityId
       ? await (client as any).clanMember.findFirst({
           where: { userId, communityId: quest.communityId },
@@ -632,7 +663,6 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
         })
       : null;
 
-    // Mark quest as completed and award XP + tokens (global) + community/member XP + clan/member XP
     const [updatedQuest, updatedUser, updatedCommunityMember, updatedCommunity, updatedClanMember, updatedClan] = await Promise.all([
       (client as any).quest.update({
         where: { id: questId },
@@ -643,23 +673,20 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
         data: { xp: { increment: quest.xpValue }, tokens: { increment: tokenReward } },
         select: { xp: true, level: true, tokens: true },
       }),
-      // Increment per-community XP if quest belongs to a community
-      quest.communityId
+      quest.communityId && communityMemberRecord
         ? (client as any).communityMember.update({
             where: { userId_communityId: { userId, communityId: quest.communityId } },
             data: { totalXP: { increment: quest.xpValue } },
             select: { totalXP: true, level: true, communityId: true },
           })
         : Promise.resolve(null),
-      // Increment aggregate community XP when applicable
       quest.communityId
         ? (client as any).community.update({
             where: { id: quest.communityId },
             data: { xp: { increment: quest.xpValue } },
-            select: { id: true, xp: true },
+            select: { id: true, xp: true, level: true },
           })
         : Promise.resolve(null),
-      // Increment clan member XP and clan XP if user belongs to a clan within this community
       clanMembership?.clanId
         ? (client as any).clanMember.update({
             where: { userId_clanId: { userId, clanId: clanMembership.clanId } },
@@ -671,10 +698,59 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
         ? (client as any).clan.update({
             where: { id: clanMembership.clanId },
             data: { xp: { increment: quest.xpValue } },
-            select: { id: true, xp: true },
+            select: { id: true, xp: true, level: true },
           })
         : Promise.resolve(null),
     ]);
+
+    // Recompute and persist levels after XP gains (global, community, clan)
+    const userProgress = computeLevelFromXp(updatedUser.xp);
+    let finalUser = updatedUser;
+    if (userProgress.level !== updatedUser.level) {
+      finalUser = await (client as any).user.update({
+        where: { id: userId },
+        data: { level: userProgress.level },
+        select: { xp: true, level: true, tokens: true },
+      });
+    }
+
+    let finalCommunityMember = updatedCommunityMember;
+    let finalCommunity = updatedCommunity;
+    if (updatedCommunityMember) {
+      const cmProgress = computeLevelFromXp(updatedCommunityMember.totalXP);
+      if (cmProgress.level !== updatedCommunityMember.level) {
+        finalCommunityMember = await (client as any).communityMember.update({
+          where: { userId_communityId: { userId, communityId: updatedCommunityMember.communityId } },
+          data: { level: cmProgress.level },
+          select: { totalXP: true, level: true, communityId: true },
+        });
+      }
+    }
+
+    if (updatedCommunity) {
+      const communityProgress = computeLevelFromXp(updatedCommunity.xp);
+      if (communityProgress.level !== updatedCommunity.level) {
+        finalCommunity = await (client as any).community.update({
+          where: { id: updatedCommunity.id },
+          data: { level: communityProgress.level },
+          select: { id: true, xp: true, level: true },
+        });
+      }
+    }
+
+    let finalClanMember = updatedClanMember;
+    let finalClan = updatedClan;
+
+    if (updatedClan) {
+      const clanProgressOrg = computeLevelFromXp(updatedClan.xp);
+      if (clanProgressOrg.level !== updatedClan.level) {
+        finalClan = await (client as any).clan.update({
+          where: { id: updatedClan.id },
+          data: { level: clanProgressOrg.level },
+          select: { id: true, xp: true, level: true },
+        });
+      }
+    }
 
     return res.status(200).json(
       makeSuccessResponse(
@@ -682,16 +758,18 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
           quest: updatedQuest,
           xpAwarded: quest.xpValue,
           tokensAwarded: tokenReward,
-          currentXp: updatedUser.xp,
-          currentLevel: updatedUser.level,
-          currentTokens: updatedUser.tokens,
-          communityXp: updatedCommunityMember?.totalXP ?? undefined,
-          communityLevel: updatedCommunityMember?.level ?? undefined,
-          communityId: updatedCommunityMember?.communityId ?? quest.communityId ?? undefined,
-          communityTotalXp: updatedCommunity?.xp ?? undefined,
-          clanMemberXp: updatedClanMember?.totalXP ?? undefined,
-          clanId: updatedClanMember?.clanId ?? updatedClan?.id ?? clanMembership?.clanId ?? undefined,
-          clanTotalXp: updatedClan?.xp ?? undefined,
+          currentXp: finalUser.xp,
+          currentLevel: finalUser.level,
+          currentTokens: finalUser.tokens,
+          communityXp: finalCommunityMember?.totalXP ?? communityMemberRecord?.totalXP ?? undefined,
+          communityLevel: finalCommunityMember?.level ?? communityMemberRecord?.level ?? undefined,
+          communityId: finalCommunityMember?.communityId ?? communityMemberRecord?.communityId ?? quest.communityId ?? undefined,
+          communityTotalXp: finalCommunity?.xp ?? undefined,
+          communityTotalLevel: finalCommunity?.level ?? undefined,
+          clanMemberXp: finalClanMember?.totalXP ?? undefined,
+          clanId: finalClanMember?.clanId ?? finalClan?.id ?? clanMembership?.clanId ?? undefined,
+          clanTotalXp: finalClan?.xp ?? undefined,
+          clanTotalLevel: finalClan?.level ?? undefined,
         },
         'success.ai.quest_completed',
         lang,
@@ -700,10 +778,14 @@ const completeQuest = async (req: AuthRequest, res: Response) => {
     );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
+    logger.error('Quest completion error', e, { 
+      questId: (req.body as any).questId,
+      userId: req.user?.id
+    });
     return res.status(500).json(
-      makeErrorResponse(new Error('Failed to complete quest'), 'error.ai.complete_quest_failed', lang, 500)
+      makeErrorResponse(e instanceof Error ? e : new Error('Failed to complete quest'), 'error.ai.complete_quest_failed', lang, 500)
     );
-  };
+  }
 };
 
 const startQuest = async (req: AuthRequest, res: Response) => {
@@ -724,7 +806,6 @@ const startQuest = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // Find the quest and verify ownership
     const quest = await client.quest.findUnique({
       where: { id: questId },
       select: { id: true, userId: true, isCompleted: true, startedAt: true, description: true },
@@ -754,7 +835,6 @@ const startQuest = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // Mark quest as started
     const updatedQuest = await client.quest.update({
       where: { id: questId },
       data: { startedAt: new Date() },
@@ -869,6 +949,7 @@ const getTokenBalance = async (req: AuthRequest, res: Response) => {
         where: { userId },
       }),
     ]);
+    const costPerChat = getTokenCostPerChat();
 
     if (!user) {
       return res.status(404).json(
@@ -881,7 +962,7 @@ const getTokenBalance = async (req: AuthRequest, res: Response) => {
         {
           tokens: user.tokens,
           totalChats,
-          costPerChat: 1,
+          costPerChat,
         },
         'success.ai.token_balance_fetched',
         lang,
@@ -963,7 +1044,6 @@ const deleteChatHistory = async (req: AuthRequest, res: Response) => {
     }
 
     if (deleteAll) {
-      // Delete all chat history for user
       const result = await client.aIChatHistory.deleteMany({
         where: { userId },
       });
@@ -977,7 +1057,6 @@ const deleteChatHistory = async (req: AuthRequest, res: Response) => {
         )
       );
     } else if (chatId) {
-      // Delete specific chat
       const chat = await client.aIChatHistory.findUnique({
         where: { id: chatId },
         select: { userId: true },
@@ -1027,15 +1106,13 @@ const adminGenerateDailyAll = async (req: AuthRequest, res: Response) => {
   try {
     const lang = (req.language as Language) || 'eng';
     
-    console.log('[Admin] Generating daily quests for all users');
+    logger.info('[Admin] Generating daily quests for all users');
     const startTime = Date.now();
     
-    // Force generate for all non-banned users
     await runDailyAiQuestNow();
     
     const elapsed = Date.now() - startTime;
     
-    // Count generated quests
     const todayCount = await client.quest.count({
       where: { type: 'Daily', periodStatus: 'TODAY' },
     });
@@ -1054,7 +1131,7 @@ const adminGenerateDailyAll = async (req: AuthRequest, res: Response) => {
     );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('[Admin] Generate daily all error:', e);
+    logger.error('[Admin] Generate daily all error', e);
     return res.status(500).json(
       makeErrorResponse(new Error('Failed to generate daily quests for all users'), 'error.ai.admin_generate_failed', lang, 500)
     );
@@ -1093,14 +1170,13 @@ const adminGenerateDailyUser = async (req: AuthRequest, res: Response) => {
       );
     }
     
-    console.log(`[Admin] Generating daily quests for user ${userId} (${user.UserName})`);
+    logger.info('[Admin] Generating daily quests for user', { userId, userName: user.UserName });
     const startTime = Date.now();
     
     await runDailyAiQuestForUser(userId, true);
     
     const elapsed = Date.now() - startTime;
     
-    // Fetch generated quests
     const todayQuests = await client.quest.findMany({
       where: { userId, type: 'Daily', periodStatus: 'TODAY' },
       orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }],
@@ -1128,7 +1204,7 @@ const adminGenerateDailyUser = async (req: AuthRequest, res: Response) => {
     );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('[Admin] Generate daily user error:', e);
+    logger.error('[Admin] Generate daily user error', e, { userId: req.params.userId });
     return res.status(500).json(
       makeErrorResponse(new Error('Failed to generate daily quests for user'), 'error.ai.admin_generate_failed', lang, 500)
     );
@@ -1142,15 +1218,13 @@ const adminGenerateWeeklyAll = async (req: AuthRequest, res: Response) => {
   try {
     const lang = (req.language as Language) || 'eng';
     
-    console.log('[Admin] Generating weekly quests for all users');
+    logger.info('[Admin] Generating weekly quests for all users');
     const startTime = Date.now();
     
-    // Force generate for all non-banned users
     await runWeeklyAiQuestNow();
     
     const elapsed = Date.now() - startTime;
     
-    // Count generated quests
     const thisWeekCount = await client.quest.count({
       where: { type: 'Weekly', periodStatus: 'THIS_WEEK' },
     });
@@ -1169,7 +1243,7 @@ const adminGenerateWeeklyAll = async (req: AuthRequest, res: Response) => {
     );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('[Admin] Generate weekly all error:', e);
+    logger.error('[Admin] Generate weekly all error', e);
     return res.status(500).json(
       makeErrorResponse(new Error('Failed to generate weekly quests for all users'), 'error.ai.admin_generate_failed', lang, 500)
     );
@@ -1208,14 +1282,13 @@ const adminGenerateWeeklyUser = async (req: AuthRequest, res: Response) => {
       );
     }
     
-    console.log(`[Admin] Generating weekly quests for user ${userId} (${user.UserName})`);
+    logger.info('[Admin] Generating weekly quests for user', { userId, userName: user.UserName });
     const startTime = Date.now();
     
     await runWeeklyAiQuestForUser(userId, true);
     
     const elapsed = Date.now() - startTime;
     
-    // Fetch generated quests
     const thisWeekQuests = await client.quest.findMany({
       where: { userId, type: 'Weekly', periodStatus: 'THIS_WEEK' },
       orderBy: [{ communityId: 'asc' }, { periodSeq: 'asc' }],
@@ -1243,7 +1316,7 @@ const adminGenerateWeeklyUser = async (req: AuthRequest, res: Response) => {
     );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('[Admin] Generate weekly user error:', e);
+    logger.error('[Admin] Generate weekly user error', e, {   userId: req.params.userId });
     return res.status(500).json(
       makeErrorResponse(new Error('Failed to generate weekly quests for user'), 'error.ai.admin_generate_failed', lang, 500)
     );
@@ -1322,7 +1395,7 @@ const adminGetQuestStats = async (req: AuthRequest, res: Response) => {
     );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('[Admin] Get quest stats error:', e);
+    logger.error('[Admin] Get quest stats error', e);
     return res.status(500).json(
       makeErrorResponse(new Error('Failed to fetch quest statistics'), 'error.ai.admin_stats_failed', lang, 500)
     );
@@ -1358,7 +1431,6 @@ const adminBulkDeleteQuests = async (req: AuthRequest, res: Response) => {
       if (endDate) where.createdAt.lte = new Date(endDate);
     }
     
-    // Validate that at least one filter is provided
     if (Object.keys(where).length === 0) {
       return res.status(400).json(
         makeErrorResponse(
@@ -1370,7 +1442,7 @@ const adminBulkDeleteQuests = async (req: AuthRequest, res: Response) => {
       );
     }
     
-    console.log('[Admin] Bulk deleting quests with filters:', where);
+    logger.info('[Admin] Bulk deleting quests with filters', { filters: where });
     
     const result = await client.quest.deleteMany({ where });
     
@@ -1388,7 +1460,7 @@ const adminBulkDeleteQuests = async (req: AuthRequest, res: Response) => {
     );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    console.error('[Admin] Bulk delete quests error:', e);
+    logger.error('[Admin] Bulk delete quests error', e);
     return res.status(500).json(
       makeErrorResponse(new Error('Failed to delete quests'), 'error.ai.admin_delete_failed', lang, 500)
     );
@@ -1414,7 +1486,6 @@ const aiController = {
   health,
   config,
   getCommunityMemberships,
-  // Admin functions
   adminGenerateDailyAll,
   adminGenerateDailyUser,
   adminGenerateWeeklyAll,

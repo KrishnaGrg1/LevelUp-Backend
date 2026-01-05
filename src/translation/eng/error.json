@@ -12,7 +12,8 @@
     "user_verified": "User is already verified",
     "logout_failed": "Logout failed. Try again.",
     "session_expired": "Session expired. Please log in again.",
-    "failed_to_fetch_all_users": "Failed to fetch all users"
+    "failed_to_fetch_all_users": "Failed to fetch all users",
+    "not_authenticated": "Not authenticated"
   },
   "admin": {
     "forbidden": "You do not have permission to perform this action",
@@ -37,7 +38,9 @@
     "failed_to_remove_community_member": "Failed to remove community member. Try again.",
     "failed_to_change_community_privacy": "Failed to change community privacy. Try again.",
     "failed_to_fetch_community_members": "Failed to fetch community members. Try again.",
-    "failed_to_change_community_category": "Failed to change community category. Try again."
+    "failed_to_change_community_category": "Failed to change community category. Try again.",
+    "not_member": "You are not a member of this community",
+    "invalid_community_ids": "Community IDs must be an array"
   },
   "category": {
     "category_not_found": "Category not found",
@@ -68,7 +71,8 @@
     "failed_to_get_user_clans": "Failed to fetch user's clans. Try again.",
     "failed_to_get_members": "Failed to fetch clan members. Try again.",
     "failed_to_get_info": "Failed to fetch clan info. Try again.",
-    "user_not_found": "User not found in the system"
+    "user_not_found": "User not found in the system",
+    "not_member_general": "You are not a member of this clan"
   },
   "ticket": {
     "failed_to_create": "Failed to create ticket. Please try again.",
@@ -110,5 +114,11 @@
     "force_generation_failed": "Failed to force quest generation",
     "health_check_failed": "Health check failed",
     "config_fetch_failed": "Failed to fetch configuration"
+  }
+  ,
+  "message": {
+    "empty": "Message cannot be empty.",
+    "too_long": "Message too long. Max 2000 characters.",
+    "send_failed": "Failed to send message"
   }
 }

@@ -3,6 +3,7 @@ import { lucia } from './lucia';
 import { TranslationRequest } from './translationMiddleware';
 import { makeErrorResponse } from '../helpers/standardResponse';
 import { Language } from '../translation/translation';
+import logger from '../helpers/logger';
 
 export interface AuthRequest extends TranslationRequest {
   user?: {
@@ -23,15 +24,16 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ) => {
-  console.log('🔍 Auth Debug:');
-  console.log('- Cookies:', req.headers.cookie);
-  console.log('- Origin:', req.headers.origin);
-  console.log('- NODE_ENV:', process.env.NODE_ENV);
+  logger.debug('Auth middleware invoked', {
+    hasCookie: Boolean(req.headers.cookie),
+    origin: req.headers.origin,
+    nodeEnv: process.env.NODE_ENV,
+  });
 
   // Try session-based auth first (Lucia)
   const sessionId = lucia.readSessionCookie(req.headers.cookie ?? '');
   const lang = req.language as Language;
-  console.log('- Session ID from cookie:', sessionId);
+  logger.debug('Auth middleware session lookup', { hasSessionId: Boolean(sessionId) });
   if (sessionId) {
     try {
       const { session, user } = await lucia.validateSession(sessionId);
@@ -64,7 +66,7 @@ export const authMiddleware = async (
         return;
       }
     } catch (error) {
-      console.error('Session validation error:', error);
+      logger.error('Session validation error', error);
     }
   }
 

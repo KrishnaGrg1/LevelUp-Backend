@@ -11,55 +11,22 @@ import { findUser } from '../helpers/auth/userHelper';
 import authorizeAdmin from '../helpers/auth/adminHelper';
 import { deleteFile, extractPublicId } from '../helpers/files/multer';
 import { generateCode } from '../helpers/generateCode';
+import logger from '../helpers/logger';
 
-// Get all communities
+// Get all communities (public) with pagination
 export const getAllCommunities = async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id || undefined;
+  logger.apiRequest('GET', '/community', { userId, action: 'getAllCommunities' });
+  
   try {
     const lang = req.language as Language;
-    const userId = req.user?.id || undefined;
 
-    // Fetch user's onboarding categories
-    const onboardingCategories = await client.userOnboarding.findUnique({
-      where: {
-        userId: userId,
-      },
-      include: {
-        categories: {
-          select: {
-            id: true,
-          },
-        },
-      },
-    });
-
-    // Extract category IDs from onboarding
-    const userCategoryIds =
-      onboardingCategories?.categories.map((cat) => cat.id) || [];
-
-    // Build query filters
-    const whereConditions: any = {
-      OR: [
-        // Show public communities matching user's onboarding categories
-        ...(userCategoryIds.length > 0
-          ? [
-              {
-                isPrivate: false,
-                categoryId: {
-                  in: userCategoryIds,
-                },
-              },
-            ]
-          : []),
-      ],
-    };
-
-    // If no categories selected and not logged in, show all public communities
-    if (whereConditions.OR.length === 0) {
-      whereConditions.OR.push({ isPrivate: false });
-    }
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const rawPageSize = Number(req.query.pageSize) || 20;
+    const pageSize = Math.min(Math.max(rawPageSize, 1), 50);
 
     const communities = await client.community.findMany({
-      where: whereConditions,
+      where: { isPrivate: false },
       include: {
         _count: {
           select: { members: true },
@@ -72,6 +39,8 @@ export const getAllCommunities = async (req: AuthRequest, res: Response) => {
           : false,
       },
       orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     });
 
     const formattedCommunities = communities.map((community) => {
@@ -106,11 +75,13 @@ export const getAllCommunities = async (req: AuthRequest, res: Response) => {
           formattedCommunities,
           'success.community.fetched',
           lang,
-          200
+          200,
+          { 'X-Pagination': JSON.stringify({ page, pageSize, returned: formattedCommunities.length }) }
         )
       );
+    logger.apiSuccess('GET', '/community', 200, { userId, page, pageSize, count: formattedCommunities.length });
   } catch (e: unknown) {
-    console.error('Error in getAllCommunities:', e);
+    logger.apiError('GET', '/community', 500, e, { userId, action: 'getAllCommunities' });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -126,11 +97,11 @@ export const getAllCommunities = async (req: AuthRequest, res: Response) => {
 };
 
 const myCommunities = async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  logger.apiRequest('GET', '/community/my', { userId, action: 'myCommunities' });
+  
   try {
     const lang = req.language as Language;
-
-    const userId = req.user?.id; //from session -- logged in user
-    console.log('User ID IS', userId);
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -149,6 +120,9 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
               _count: {
                 select: { members: true },
               },
+              owner: {
+                select: { id: true },
+              },
             },
           },
         },
@@ -160,10 +134,7 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
         err instanceof Prisma.PrismaClientKnownRequestError &&
         (err.code === 'P2022' || err.code === 'P2010')
       ) {
-        console.warn(
-          'myCommunities: falling back order (missing isPinned column or raw query failure):',
-          err.message
-        );
+        logger.warn('myCommunities: falling back order (missing isPinned column or raw query failure)', { error: err.message });
         communities = await client.communityMember.findMany({
           where: { userId: user.id },
           include: {
@@ -171,6 +142,9 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
               include: {
                 _count: {
                   select: { members: true },
+                },
+                owner: {
+                  select: { id: true },
                 },
               },
             },
@@ -187,6 +161,7 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
       name: member.community?.name,
       description: member.community?.description,
       photo: member.community?.photo ?? null,
+      ownerId: member.community?.ownerId || member.community?.owner?.id,
       currentMembers: member.community?._count?.members ?? 0,
       maxMembers: member.community?.memberLimit,
       isPrivate: member.community?.isPrivate,
@@ -203,8 +178,10 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
           200
         )
       );
+    logger.apiSuccess('GET', '/community/my', 200, { userId, count: formattedCommunities.length });
   } catch (e: unknown) {
-    console.error('Error in myCommunities:', e);
+    logger.apiError('GET', '/community/my', 500, e, { userId, action: 'myCommunities' });
+    logger.error('Error in myCommunities', e, { userId });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -221,19 +198,11 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
 
 const specificCommunity = async (req: AuthRequest, res: Response) => {
   const lang = req.language as Language;
-
-  const userId = req.user?.id; //from session -- logged in user
+  const userId = req.user?.id;
   const communityId = req.params.communityId;
-  console.log('User ID IS', userId);
+  logger.apiRequest('GET', `/community/${communityId}`, { userId, communityId, action: 'specificCommunity' });
 
   try {
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
-
-    const user = await findUser(userId as string, res, lang);
-    if (!user) return;
-
     const community = await client.community.findUnique({
       where: { id: communityId },
       select: {
@@ -243,6 +212,7 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
         photo: true,
         isPrivate: true,
         memberLimit: true,
+        ownerId: true,
         _count: {
           select: { members: true, clans: true },
         },
@@ -262,26 +232,39 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    //check membership
-    const membership = await client.communityMember.findUnique({
-      where: {
-        userId_communityId: {
-          userId: user.id,
-          communityId: community.id,
-        },
-      },
-    });
-    if (!membership) {
-      return res
-        .status(403)
-        .json(
+    if (community.isPrivate) {
+      if (!userId) {
+        return res.status(401).json(
           makeErrorResponse(
-            new Error('Access Denied: Not a community member'),
-            'error.community.access_denied',
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
             lang,
-            403
+            401
           )
         );
+      }
+
+      const membership = await client.communityMember.findUnique({
+        where: {
+          userId_communityId: {
+            userId,
+            communityId: community.id,
+          },
+        },
+      });
+
+      if (!membership) {
+        return res
+          .status(403)
+          .json(
+            makeErrorResponse(
+              new Error('Access Denied: Not a community member'),
+              'error.community.access_denied',
+              lang,
+              403
+            )
+          );
+      }
     }
 
     res
@@ -289,14 +272,16 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
       .json(
         makeSuccessResponse(community, 'success.community.fetched', lang, 200)
       );
+    logger.apiSuccess('GET', `/community/${req.params.communityId}`, 200, { userId, communityId });
   } catch (e: unknown) {
-    console.error('Error in myCommunities:', e);
+    logger.apiError('GET', `/community/${req.params.communityId}`, 500, e, { userId, communityId: req.params.communityId });
+    logger.error('Error in specificCommunity', e, { userId, communityId });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
       .json(
         makeErrorResponse(
-          new Error('Failed to fetch my communities'),
+          new Error('Failed to fetch community'),
           'error.community.failed_to_fetch_my_communities',
           lang,
           500
@@ -306,23 +291,36 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
 };
 
 const searchCommunities = async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  const searchQuery = req.query.q;
+  logger.apiRequest('GET', '/community/search', { userId, q: searchQuery, action: 'searchCommunities' });
+  
   try {
     const lang = req.language as Language;
-    const q = req.query.q;
+    const q = (req.query.q as string | undefined)?.trim() || '';
 
-    const userId = req.user?.id; //from session -- logged in user
-    console.log('User ID IS', userId);
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    if (!q) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Search query is required'),
+            'error.community.failed_to_fetch_communities',
+            lang,
+            400
+          )
+        );
     }
 
-    const user = await findUser(userId as string, res, lang);
-    if (!user) return;
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const rawPageSize = Number(req.query.pageSize) || 20;
+    const pageSize = Math.min(Math.max(rawPageSize, 1), 50);
 
     const communities = await client.community.findMany({
       where: {
+        isPrivate: false,
         name: {
-          contains: q as string,
+          contains: q,
           mode: 'insensitive',
         },
       },
@@ -331,22 +329,31 @@ const searchCommunities = async (req: AuthRequest, res: Response) => {
           select: { members: true },
         },
       },
-
       orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     });
 
     res
       .status(200)
       .json(
-        makeSuccessResponse(communities, 'success.community.fetched', lang, 200)
+        makeSuccessResponse(
+          communities,
+          'success.community.fetched',
+          lang,
+          200,
+          { 'X-Pagination': JSON.stringify({ page, pageSize, returned: communities.length }) }
+        )
       );
+    logger.apiSuccess('GET', '/community/search', 200, { userId, q: searchQuery, page, pageSize, count: communities.length });
   } catch (e: unknown) {
+    logger.apiError('GET', '/community/search', 500, e, { userId, q: searchQuery });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
       .json(
         makeErrorResponse(
-          new Error('Failed to join community'),
+          new Error('Failed to search communities'),
           'error.community.failed_to_join_community',
           lang,
           500
@@ -358,9 +365,8 @@ const searchCommunities = async (req: AuthRequest, res: Response) => {
 const createCommunity = async (req: AuthRequest, res: Response) => {
   const { communityName, memberLimit, isPrivate, description } = req.body;
   const lang = req.language as Language;
-
-  const userId = req.user?.id; //from session -- logged in user
-  console.log('User ID IS', userId);
+  const userId = req.user?.id;
+  logger.apiRequest('POST', '/community/create', { userId, communityName, isPrivate, action: 'createCommunity' });
   try {
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -370,7 +376,6 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
     if (!user) return;
 
     const communityExists = await client.community.findUnique({
-      // check if community name already exists
       where: { name: communityName },
     });
 
@@ -387,53 +392,63 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Coerce types from multipart/form-data (strings)
-    const memberLimitNum = Number(memberLimit) || 100;
+    const memberLimitNumRaw = Number(memberLimit ?? 100);
+    const memberLimitNum = Number.isFinite(memberLimitNumRaw)
+      ? memberLimitNumRaw
+      : 100;
+
+    if (memberLimitNum < 1 || memberLimitNum > 50000) {
+      return res.status(400).json(
+        makeErrorResponse(
+          new Error('memberLimit must be between 1 and 50000'),
+          'error.community.failed_to_create_community',
+          lang,
+          400
+        )
+      );
+    }
+
     const isPrivateBool =
       typeof isPrivate === 'boolean'
         ? isPrivate
         : ['true', '1', 'yes', 'on'].includes(String(isPrivate).toLowerCase());
     const descriptionStr = typeof description === 'string' ? description : '';
 
-    // Get photo URL from uploaded file if available (Cloudinary)
     const cloudinaryFile = req.file as any;
     const photoPath = cloudinaryFile
       ? cloudinaryFile.path || cloudinaryFile.url
       : undefined;
 
-    // Generate join code only for private communities
     let rawCode: string | undefined;
-
     if (isPrivateBool === true) {
-      rawCode = generateCode(); // e.g. ABCD-9KX2
-      console.log('Generated community join code:', rawCode);
+      rawCode = generateCode();
     }
 
-    // create community
-    const community = await client.community.create({
-      data: {
-        name: communityName,
-        description: descriptionStr,
-        ownerId: userId,
-        memberLimit: memberLimitNum,
-        isPrivate: isPrivateBool,
-        photo: photoPath,
-        ...(isPrivateBool && rawCode
-          ? {
-              joinCodeHash: rawCode,
-              codeUpdatedAt: new Date(),
-            }
-          : {}),
-
-        members: {
-          create: [
-            {
-              userId: user.id,
-              role: 'ADMIN',
-            },
-          ],
+    const community = await client.$transaction(async (tx) => {
+      return tx.community.create({
+        data: {
+          name: communityName,
+          description: descriptionStr,
+          ownerId: userId,
+          memberLimit: memberLimitNum,
+          isPrivate: isPrivateBool,
+          photo: photoPath,
+          ...(isPrivateBool && rawCode
+            ? {
+                joinCodeHash: rawCode,
+                codeUpdatedAt: new Date(),
+              }
+            : {}),
+          members: {
+            create: [
+              {
+                userId: user.id,
+                role: 'ADMIN',
+              },
+            ],
+          },
         },
-      },
+      });
     });
 
     res
@@ -447,7 +462,7 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
         )
       );
   } catch (e: unknown) {
-    console.error('Error in createCommunity:', e);
+    logger.error('Error in createCommunity', e, { userId });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -465,9 +480,10 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
 const joinPublicCommunity = async (req: AuthRequest, res: Response) => {
   const communityId = req.params.communityId;
   const lang = req.language as Language;
-  const userId = req.user?.id; //from session -- logged in user
+  const userId = req.user?.id;
+  logger.apiRequest('POST', `/community/${communityId}/join`, { userId, communityId, action: 'joinPublicCommunity' });
+  
   try {
-    console.log('User ID IS', userId);
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -536,7 +552,9 @@ const joinPublicCommunity = async (req: AuthRequest, res: Response) => {
           200
         )
       );
+    logger.apiSuccess('POST', `/community/${req.params.communityId}/join`, 200, { userId, communityId: req.params.communityId });
   } catch (e: unknown) {
+    logger.apiError('POST', `/community/${req.params.communityId}/join`, 500, e, { userId, communityId: req.params.communityId });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -555,10 +573,10 @@ const joinPrivateCommunity = async (req: AuthRequest, res: Response) => {
   const communityId = req.params.communityId;
   const lang = req.language as Language;
   const joinCode = req.body.joinCode;
-
-  const userId = req.user?.id; //from session -- logged in user
+  const userId = req.user?.id;
+  logger.apiRequest('POST', '/community/join', { userId, joinCode: joinCode?.substring(0, 4) + '****', action: 'joinPrivateCommunity' });
+  
   try {
-    console.log('User ID IS', userId);
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -648,7 +666,9 @@ const joinPrivateCommunity = async (req: AuthRequest, res: Response) => {
           200
         )
       );
+    logger.apiSuccess('POST', '/community/join', 200, { userId, communityId: req.params.communityId });
   } catch (e: unknown) {
+    logger.apiError('POST', '/community/join', 500, e, { userId });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -664,10 +684,12 @@ const joinPrivateCommunity = async (req: AuthRequest, res: Response) => {
 };
 
 const leaveCommunity = async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  const communityId = req.params.communityId;
+  logger.apiRequest('POST', `/community/${communityId}/leave`, { userId, communityId, action: 'leaveCommunity' });
+  
   try {
     const lang = req.language as Language;
-    const userId = req.user?.id;
-    const communityId = req.params.communityId;
 
     if (!userId) return res.status(401).json({ error: 'Not authenticated' });
 
@@ -711,7 +733,9 @@ const leaveCommunity = async (req: AuthRequest, res: Response) => {
     await client.communityMember.delete({ where: { id: member.id } });
 
     res.json(makeSuccessResponse(null, 'success.community.left', lang, 200));
+    logger.apiSuccess('POST', `/community/${communityId}/leave`, 200, { userId, communityId });
   } catch (e) {
+    logger.apiError('POST', `/community/${communityId}/leave`, 500, e, { userId, communityId });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -727,11 +751,13 @@ const leaveCommunity = async (req: AuthRequest, res: Response) => {
 };
 
 const transferOwnership = async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  const communityId = req.params.communityId;
+  const { newOwnerId } = req.body;
+  logger.apiRequest('POST', `/community/${communityId}/transfer-ownership`, { userId, communityId, newOwnerId, action: 'transferOwnership' });
+  
   try {
     const lang = req.language as Language;
-    const userId = req.user?.id;
-    const communityId = req.params.communityId;
-    const { newOwnerId } = req.body;
 
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -770,9 +796,18 @@ const transferOwnership = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if the target user is a member of the community
-    const isMember = await client.communityMember.findFirst({
+    // Support both userId and CommunityMember ID
+    let isMember = await client.communityMember.findFirst({
       where: { communityId, userId: newOwnerId },
     });
+    
+    // If not found by userId, try finding by CommunityMember ID
+    if (!isMember) {
+      isMember = await client.communityMember.findFirst({
+        where: { communityId, id: newOwnerId },
+      });
+    }
+    
     if (!isMember) {
       return res
         .status(400)
@@ -786,22 +821,30 @@ const transferOwnership = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Perform ownership transfer
-    const updatedCommunity = await client.community.update({
-      where: { id: communityId },
-      data: { ownerId: newOwnerId },
-    });
+    // Get the actual userId from the member record
+    const actualNewOwnerId = isMember.userId;
 
-    // promote new owner to ADMIN role
-    await client.communityMember.updateMany({
-      where: { communityId, userId: newOwnerId },
-      data: { role: 'ADMIN' },
-    });
+    // Perform ownership transfer in a transaction
+    const updatedCommunity = await client.$transaction(async (tx) => {
+      // Update community owner
+      const community = await tx.community.update({
+        where: { id: communityId },
+        data: { ownerId: actualNewOwnerId },
+      });
 
-    // Demote current owner to MEMBER role
-    await client.communityMember.updateMany({
-      where: { communityId, userId },
-      data: { role: 'MEMBER' },
+      // Promote new owner to ADMIN role
+      await tx.communityMember.updateMany({
+        where: { communityId, userId: actualNewOwnerId },
+        data: { role: 'ADMIN' },
+      });
+
+      // Demote current owner to MEMBER role
+      await tx.communityMember.updateMany({
+        where: { communityId, userId },
+        data: { role: 'MEMBER' },
+      });
+
+      return community;
     });
 
     res
@@ -814,7 +857,9 @@ const transferOwnership = async (req: AuthRequest, res: Response) => {
           200
         )
       );
+    logger.apiSuccess('POST', `/community/${communityId}/transfer-ownership`, 200, { userId, communityId, newOwnerId: actualNewOwnerId });
   } catch (e) {
+    logger.apiError('POST', `/community/${communityId}/transfer-ownership`, 500, e, { userId, communityId, newOwnerId: req.body.newOwnerId });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -831,8 +876,11 @@ const transferOwnership = async (req: AuthRequest, res: Response) => {
 
 const updateCommunity = async (req: AuthRequest, res: Response) => {
   const lang = req.language as Language;
-  const { communityId, name, memberLimit, description, isPrivate } = req.body;
   const userId = req.user?.id;
+  const communityId = req.params.communityId || req.body.communityId;
+  const { name, memberLimit, description, isPrivate } = req.body;
+  logger.apiRequest('PATCH', `/community/${communityId}`, { userId, communityId, action: 'updateCommunity' });
+  
   try {
     // Check ownership
     const community = await client.community.findUnique({
@@ -860,8 +908,10 @@ const updateCommunity = async (req: AuthRequest, res: Response) => {
     res.json(
       makeSuccessResponse(updated, 'success.community.updated', lang, 200)
     );
+    logger.apiSuccess('PATCH', `/community/${communityId}`, 200, { userId, communityId });
     return;
   } catch (e) {
+    logger.apiError('PATCH', `/community/${communityId}`, 500, e, { userId, communityId });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -881,6 +931,7 @@ const removeMember = async (req: AuthRequest, res: Response) => {
     const lang = req.language as Language;
     const userId = req.user?.id;
     const { communityId, memberId } = req.params;
+    logger.apiRequest('DELETE', `/community/${communityId}/members/${memberId}`, { userId, communityId, memberId, action: 'removeMember' });
 
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -928,22 +979,15 @@ const removeMember = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Prevent owner from being removed
-    if (memberId === community.ownerId) {
-      return res
-        .status(400)
-        .json(
-          makeErrorResponse(
-            new Error('Cannot remove the community owner'),
-            'error.community.cannot_remove_owner',
-            lang,
-            400
-          )
-        );
-    }
-
     // Check if the target user is a member
-    const member = community.members.find((m) => m.userId === memberId);
+    // memberId can be either the userId or the CommunityMember record ID
+    let member = community.members.find((m) => m.userId === memberId);
+    
+    // If not found by userId, try to find by CommunityMember ID
+    if (!member) {
+      member = community.members.find((m) => m.id === memberId);
+    }
+    
     if (!member) {
       return res
         .status(404)
@@ -953,6 +997,20 @@ const removeMember = async (req: AuthRequest, res: Response) => {
             'error.community.member_not_found',
             lang,
             404
+          )
+        );
+    }
+
+    // Prevent owner from being removed
+    if (member.userId === community.ownerId) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Cannot remove the community owner'),
+            'error.community.cannot_remove_owner',
+            lang,
+            400
           )
         );
     }
@@ -967,7 +1025,9 @@ const removeMember = async (req: AuthRequest, res: Response) => {
       .json(
         makeSuccessResponse(null, 'success.community.member_removed', lang, 200)
       );
+    logger.apiSuccess('DELETE', `/community/${req.params.communityId}/members/${req.params.memberId}`, 200, { userId: req.user?.id, communityId: req.params.communityId, memberId: req.params.memberId });
   } catch (e) {
+    logger.apiError('DELETE', `/community/${req.params.communityId}/members/${req.params.memberId}`, 500, e, { userId: req.user?.id, communityId: req.params.communityId, memberId: req.params.memberId });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -988,6 +1048,7 @@ const changeMemberRole = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     const { communityId, memberId } = req.params;
     const { role } = req.body; // expected: 'ADMIN' | 'MEMBER'
+    logger.apiRequest('PATCH', `/community/${communityId}/members/${memberId}/role`, { userId, communityId, memberId, newRole: role, action: 'changeMemberRole' });
 
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -1047,22 +1108,14 @@ const changeMemberRole = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Prevent changing owner's role
-    if (memberId === community.ownerId) {
-      return res
-        .status(400)
-        .json(
-          makeErrorResponse(
-            new Error('Cannot change owner role'),
-            'error.community.cannot_change_owner_role',
-            lang,
-            400
-          )
-        );
-    }
-
     // Check if target user exists in the community
-    const member = community.members.find((m) => m.userId === memberId);
+    // Support both userId and CommunityMember ID for flexibility
+    let member = community.members.find((m) => m.userId === memberId);
+    if (!member) {
+      // Fallback: try to find by CommunityMember record ID
+      member = community.members.find((m) => m.id === memberId);
+    }
+    
     if (!member) {
       return res
         .status(404)
@@ -1072,6 +1125,20 @@ const changeMemberRole = async (req: AuthRequest, res: Response) => {
             'error.community.member_not_found',
             lang,
             404
+          )
+        );
+    }
+
+    // Prevent changing owner's role (check after finding member)
+    if (member.userId === community.ownerId) {
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('Cannot change owner role'),
+            'error.community.cannot_change_owner_role',
+            lang,
+            400
           )
         );
     }
@@ -1092,7 +1159,9 @@ const changeMemberRole = async (req: AuthRequest, res: Response) => {
           200
         )
       );
+    logger.apiSuccess('PATCH', `/community/${req.params.communityId}/members/${req.params.memberId}/role`, 200, { userId: req.user?.id, communityId: req.params.communityId, memberId: req.params.memberId, newRole: req.body.role });
   } catch (e) {
+    logger.apiError('PATCH', `/community/${req.params.communityId}/members/${req.params.memberId}/role`, 500, e, { userId: req.user?.id, communityId: req.params.communityId, memberId: req.params.memberId });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -1110,6 +1179,7 @@ const changeMemberRole = async (req: AuthRequest, res: Response) => {
 const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
   const lang = (req.language as Language) || 'eng';
   const communityId = req.params.communityId;
+  logger.apiRequest('POST', `/community/${communityId}/upload-photo`, { userId: req.user?.id, communityId, action: 'uploadCommunityPhoto' });
 
   try {
     const userId = req.user?.id;
@@ -1221,8 +1291,10 @@ const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
           200
         )
       );
+    logger.apiSuccess('POST', `/community/${req.params.communityId}/upload-photo`, 200, { userId: req.user?.id, communityId: req.params.communityId });
   } catch (error) {
-    console.error('Error uploading community photo:', error);
+    logger.apiError('POST', `/community/${req.params.communityId}/upload-photo`, 500, error, { userId: req.user?.id, communityId: req.params.communityId });
+    logger.error('Error uploading community photo', error, { userId: req.user?.id, communityId });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -1239,11 +1311,20 @@ const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
 const toggleMultipleCommunityPin = async (req: AuthRequest, res: Response) => {
   const { communityIds } = req.body; // array of IDs to pin
   const userId = req.user?.id;
+  const lang = (req.headers['accept-language'] as Language) || 'eng';
+  logger.apiRequest('POST', '/community/toggle-pin', { userId, communityIds, action: 'toggleMultipleCommunityPin' });
 
-  if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+  if (!userId) {
+    return res.status(401).json(
+      makeErrorResponse(new Error('Not authenticated'), 'error.auth.not_authenticated', lang, 401)
+    );
+  }
 
-  if (!Array.isArray(communityIds))
-    return res.status(400).json({ message: 'communityIds must be an array' });
+  if (!Array.isArray(communityIds)) {
+    return res.status(400).json(
+      makeErrorResponse(new Error('Community IDs must be an array'), 'error.community.invalid_community_ids', lang, 400)
+    );
+  }
 
   try {
     // Get all the user's communities
@@ -1268,16 +1349,21 @@ const toggleMultipleCommunityPin = async (req: AuthRequest, res: Response) => {
       communityId: u.communityId,
       isPinned: u.isPinned,
     }));
-    res.status(200).json({
-      message: 'Updated pinned communities successfully',
-      data: updatedMembers,
-    });
+    res.status(200).json(
+      makeSuccessResponse(
+        { data: updatedMembers },
+        'success.community.pinned_updated',
+        lang,
+        200
+      )
+    );
+    logger.apiSuccess('POST', '/community/toggle-pin', 200, { userId, count: updatedMembers.length });
   } catch (err) {
-    console.error('Toggle pin error:', err);
-    res.status(500).json({
-      message: 'Failed to update pinned communities',
-      error: err,
-    });
+    logger.apiError('POST', '/community/toggle-pin', 500, err, { userId, communityIds: req.body.communityIds });
+    logger.error('Toggle pin error', err, { userId, communityIds });
+    res.status(500).json(
+      makeErrorResponse(new Error('Failed to update pinned communities'), 'error.community.failed_to_update_community', lang, 500)
+    );
   }
 };
 
@@ -1370,6 +1456,122 @@ const toggleMultipleCommunityPin = async (req: AuthRequest, res: Response) => {
 //   }
 // };
 
+// Get community members
+const getCommunityMembers = async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  const communityId = req.params.communityId;
+  logger.apiRequest('GET', `/community/${communityId}/members`, { userId, communityId, action: 'getCommunityMembers' });
+
+  try {
+    const lang = req.language as Language;
+
+    if (!userId) {
+      return res.status(401).json(
+        makeErrorResponse(
+          new Error('Not authenticated'),
+          'error.auth.not_authenticated',
+          lang,
+          401
+        )
+      );
+    }
+
+    // Check if user is a member of the community
+    const membership = await client.communityMember.findUnique({
+      where: {
+        userId_communityId: {
+          userId,
+          communityId,
+        },
+      },
+    });
+
+    if (!membership) {
+      return res.status(403).json(
+        makeErrorResponse(
+          new Error('Not a member of this community'),
+          'error.community.not_member',
+          lang,
+          403
+        )
+      );
+    }
+
+    // Fetch all members
+    const members = await client.communityMember.findMany({
+      where: { communityId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            UserName: true,
+            profilePicture: true,
+            level: true,
+            xp: true,
+          },
+        },
+      },
+      orderBy: { joinedAt: 'asc' },
+    });
+
+    const formattedMembers = members.map((member) => ({
+      id: member.id,
+      userId: member.user.id,
+      userName: member.user.UserName,
+      profilePicture: member.user.profilePicture,
+      level: member.user.level,
+      xp: member.user.xp,
+      role: member.role,
+      isPinned: member.isPinned,
+      joinedAt: member.joinedAt,
+    }));
+
+    res.status(200).json(
+      makeSuccessResponse(
+        { members: formattedMembers, count: formattedMembers.length },
+        'success.community.members_retrieved',
+        lang,
+        200
+      )
+    );
+    logger.apiSuccess('GET', `/community/${communityId}/members`, 200, { userId, communityId, count: formattedMembers.length });
+  } catch (e: unknown) {
+    logger.apiError('GET', `/community/${communityId}/members`, 500, e, { userId, communityId });
+    const lang = (req.language as Language) || 'eng';
+    res.status(500).json(
+      makeErrorResponse(
+        new Error('Failed to fetch community members'),
+        'error.community.failed_to_fetch_members',
+        lang,
+        500
+      )
+    );
+  }
+};
+
+// Return only the ownerId for a community
+const getCommunityOwner = async (req: AuthRequest, res: Response) => {
+  try {
+    const communityId = req.params.communityId;
+    if (!communityId) {
+      return res.status(400).json({ error: 'Community ID is required' });
+    }
+
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+      select: { ownerId: true },
+    });
+
+    if (!community) {
+      return res.status(404).json({ error: 'Community not found' });
+    }
+
+    return res.status(200).json({ ownerId: community.ownerId });
+  } catch (e) {
+    return res.status(500).json({ error: 'Failed to fetch owner' });
+  }
+};
+
 const communityController = {
   createCommunity,
   joinPublicCommunity,
@@ -1386,6 +1588,8 @@ const communityController = {
   // unpinCommunity,
   searchCommunities,
   specificCommunity,
+  getCommunityOwner,
+  getCommunityMembers,
 };
 
 export default communityController;

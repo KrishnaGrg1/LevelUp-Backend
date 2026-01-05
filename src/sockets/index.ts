@@ -5,46 +5,39 @@ import {
 } from '../middlewares/socketAuthMiddleware';
 import chatSocketHandler from './chatSocket';
 import aiChatSocketHandler from './aiChatSocket';
+import logger from '../helpers/logger';
 
 export default function initializeSocket(io: Server) {
-  console.log('🔌 Socket.IO initializing...');
+  logger.info('🔌 Socket.IO initializing...');
 
-  //apply global authentication middleware
   io.use(socketAuthMiddleware);
 
-  //global connection handler -- WHEN CLIENT CONNECTS
   io.on('connection', (socket: AuthenticatedSocket) => {
-    console.log(`✅ Client Connected: ${socket.id} | User: ${socket.user?.UserName} (${socket.user?.id})`);
+    logger.info('✅ Client Connected', { socketId: socket.id, username: socket.user?.UserName, userId: socket.user?.id });
 
-    // Initialize chat handlers
-    chatSocketHandler(io, socket); // Community chat functionality
-    aiChatSocketHandler(io, socket); // AI chat functionality
+    chatSocketHandler(io, socket);
+    aiChatSocketHandler(io, socket);
 
-    //global disconnect handler
     socket.on('disconnect', (reason) => {
-      console.log(`Client Disconnected: ${socket.id} Reason: ${reason}`);
+      logger.info('Client Disconnected', { socketId: socket.id, reason });
     });
 
-    //global error handler
     socket.on('error', (error) => {
-      console.error('🔴 Socket error:', {
+      logger.error('🔴 Socket error', error, {
         socketId: socket.id,
         user: socket.user?.UserName,
-
-        error: error.message,
       });
     });
   });
 
-  // Handle connection errors at the server level
   io.engine.on('connection_error', (err) => {
-    console.error('Socket.IO connection error:', {
+    logger.error('Socket.IO connection error', err, {
       code: err.code,
       message: err.message,
       context: err.context,
     });
   });
 
-  console.log('✅ Socket.IO server initialized successfully');
-  console.log(`📡 Listening for WebSocket connections...`);
+  logger.info('✅ Socket.IO server initialized successfully');
+  logger.info('📡 Listening for WebSocket connections...');
 }

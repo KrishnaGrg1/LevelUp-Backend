@@ -6,6 +6,7 @@ import {
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { Language } from '../translation/translation';
 import client from '../helpers/prisma';
+import logger from '../helpers/logger';
 
 const createTicket = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -21,11 +22,8 @@ const createTicket = async (req: AuthRequest, res: Response): Promise<void> => {
         updatedAt: new Date(),
       },
     });
-    res
-      .status(201)
-      .json({ message: 'Ticket created successfully', ticket: newTicket });
-
-    res.status(200).json(
+    
+    res.status(201).json(
       makeSuccessResponse(
         {
           ticket: newTicket,
@@ -37,7 +35,7 @@ const createTicket = async (req: AuthRequest, res: Response): Promise<void> => {
     );
     return;
   } catch (e: unknown) {
-    console.error('❌ Prisma create error:', e);
+    logger.error('Prisma create ticket error', e, { userId: req.user?.id });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)

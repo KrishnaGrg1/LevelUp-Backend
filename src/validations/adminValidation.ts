@@ -196,6 +196,24 @@ const adminValidation = {
     }),
   },
 
+  changeMemberRole: {
+    params: Joi.object().keys({
+      communityId: Joi.string().required().messages({
+        'string.empty': 'Community ID is required',
+      }),
+      memberId: Joi.string().required().messages({
+        'string.empty': 'Member ID is required',
+      }),
+    }),
+    body: Joi.object().keys({
+      role: Joi.string().valid('ADMIN', 'MEMBER').required().messages({
+        'string.empty': 'Role is required',
+        'any.only': 'Role must be either ADMIN or MEMBER',
+        'any.required': 'Role is required',
+      }),
+    }),
+  },
+
   /* =========================
    * TICKET
    * ========================= */

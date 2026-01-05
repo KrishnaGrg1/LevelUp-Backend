@@ -1,3 +1,4 @@
+// DEPRECATED: Legacy weekly quest generator retained for reference. Not scheduled in current runtime.
 import cron from 'node-cron';
 import { startOfDay } from 'date-fns';
 import client from '../helpers/prisma';

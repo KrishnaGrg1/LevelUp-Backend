@@ -1,11 +1,12 @@
 import { startSessionCleanupJob } from './sessionCleanup';
 import { startDailyAiQuestJob } from './aiDailyQuests';
 import { startWeeklyAiQuestJob } from './aiWeeklyQuests';
+import logger from '../helpers/logger';
 
 startSessionCleanupJob();
 startDailyAiQuestJob();
 startWeeklyAiQuestJob();
-console.log('Worker started: running cron jobs...');
+logger.info('Worker started: running cron jobs...');
 
 // Gracefully disconnect Prisma when process stops
 import client from '../helpers/prisma';

@@ -27,7 +27,9 @@
     "changed_community_category": "Community category changed successfully",
     "removed_community_member": "Member removed from community successfully",
     "retrieved_all_communities": "All communities retrieved successfully",
-    "retrieved_all_community_members": "Community members retrieved successfully"
+    "retrieved_all_community_members": "Community members retrieved successfully",
+    "joined_chat": "Successfully joined community chat",
+    "pinned_updated": "Updated pinned communities successfully"
   },
   "category": {
     "added_category": "Category added successfully",
@@ -44,7 +46,8 @@
     "retrieved": "Clans retrieved successfully",
     "info_retrieved": "Clan info retrieved successfully",
     "members_retrieved": "Clan members retrieved successfully",
-    "user_clans_retrieved": "User's clans retrieved successfully"
+    "user_clans_retrieved": "User's clans retrieved successfully",
+    "joined_chat": "Successfully joined clan chat"
   },
   "ticket": {
     "create": "Ticket created successfully",

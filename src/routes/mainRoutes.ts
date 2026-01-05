@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import authRoutes from './authRoutes';
-// import goalRoute from './goalRoutes';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import adminRoutes from './adminRoutes';
 import communityRoutes from './communityRoutes';
@@ -49,7 +48,6 @@ mainRoutes.use(
     leaderboardRoutes
 );
 
-// mainRoutes.use('/goal', authMiddleware, goalRoute);
 mainRoutes.use('/ticket', authMiddleware, ticketRoutes);
 mainRoutes.use('/community', authMiddleware, messageRoutes);
 mainRoutes.use('/health', healthRoutes);

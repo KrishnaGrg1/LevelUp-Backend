@@ -3,6 +3,7 @@ import SMTPTransport from 'nodemailer/lib/smtp-transport'; // 👈 add this
 import env from './config';
 import html, { EmailTopic } from './emailMessage';
 import { Resend } from 'resend';
+import logger from './logger';
 // const transporter = nodemailer.createTransport({
 //   host: env.SMTP_HOST,
 //   port: Number(env.SMTP_PORT),
@@ -23,7 +24,7 @@ async function sendEmail(
   htmlMsg: string
 ): Promise<any> {
   try {
-    console.log('Sending email to:', to);
+    logger.debug('Sending email', { to });
     const { data, error } = await resend.emails.send({
       from: env.RESEND_EMAIL_FROM as string,
       to: [to],
@@ -31,13 +32,13 @@ async function sendEmail(
       html: htmlMsg,
     });
     if (error) {
-      console.error('Resend API error:', error);
+      logger.error('Resend API error', error, { to });
       throw new Error(error.message);
     }
-    console.log('Message sent: %s', data);
+    logger.debug('Email sent', { to, id: data?.id });
     return data;
   } catch (error) {
-    console.error('Failed to send email:', error);
+    logger.error('Failed to send email', error, { to });
     throw new Error('Email service failure');
   }
 }
@@ -49,7 +50,7 @@ export async function sendEmailToken(
   userId?: string | number
 ): Promise<string> {
   const token = generateToken();
-  console.log('Generated Token:', userId);
+  logger.debug('Generated email token', { topic, userEmail });
   const htmlMsg = html({
     token,
     topic,
