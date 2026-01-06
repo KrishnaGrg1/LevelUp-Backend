@@ -11,44 +11,28 @@ import messageRoutes from './messageRoutes';
 import leaderboardRoutes from './leaderboardRoutes';
 import healthRoutes from './healthRoutes';
 
+import subscriptionRoutes from './subscriptionRoutes';
+
+import paymentRoutes from './paymentRoutes';
+
 const mainRoutes = Router();
 
-mainRoutes.use(
-    '/auth', 
-    authRoutes
-);
+mainRoutes.use('/auth', authRoutes);
 
-mainRoutes.use(
-    '/admin', 
-    authMiddleware, 
-    adminMiddleware, 
-    adminRoutes
-);
+mainRoutes.use('/admin', authMiddleware, adminMiddleware, adminRoutes);
 
-mainRoutes.use(
-    '/community', 
-    authMiddleware, 
-    communityRoutes
-);
+mainRoutes.use('/community', authMiddleware, communityRoutes);
 
-mainRoutes.use(
-    '/clan', 
-    authMiddleware, 
-    clanRoutes
-);
+mainRoutes.use('/clan', authMiddleware, clanRoutes);
 
-mainRoutes.use(
-    '/ai', 
-    authMiddleware, 
-    aiRoutes
-);
+mainRoutes.use('/ai', authMiddleware, aiRoutes);
 
-mainRoutes.use(
-    '/leaderboard',
-    leaderboardRoutes
-);
+mainRoutes.use('/leaderboard', leaderboardRoutes);
 
 mainRoutes.use('/ticket', authMiddleware, ticketRoutes);
 mainRoutes.use('/community', authMiddleware, messageRoutes);
 mainRoutes.use('/health', healthRoutes);
+
+mainRoutes.use('/payment', paymentRoutes);
+mainRoutes.use('/subscription', authMiddleware, subscriptionRoutes);
 export default mainRoutes;
