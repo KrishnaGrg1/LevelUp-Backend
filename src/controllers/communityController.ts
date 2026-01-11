@@ -403,10 +403,13 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
 
     // Generate join code only for private communities
     let rawCode: string | undefined;
+    let cleanCode: string | undefined;
 
     if (isPrivateBool === true) {
       rawCode = generateCode(); // e.g. ABCD-9KX2
       console.log('Generated community join code:', rawCode);
+      cleanCode = rawCode.replace(/-/g, ''); // Returns "ZM5KXEKD"
+      console.log('Clean community join code:', cleanCode);
     }
 
     // create community
@@ -418,9 +421,9 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
         memberLimit: memberLimitNum,
         isPrivate: isPrivateBool,
         photo: photoPath,
-        ...(isPrivateBool && rawCode
+        ...(isPrivateBool && cleanCode
           ? {
-              joinCodeHash: rawCode,
+              joinCodeHash: cleanCode,
               codeUpdatedAt: new Date(),
             }
           : {}),
@@ -586,7 +589,12 @@ const joinPrivateCommunity = async (req: AuthRequest, res: Response) => {
       return res
         .status(400)
         .json(
-          makeErrorResponse(new Error('Community not found'), 'ss', lang, 400)
+          makeErrorResponse(
+            new Error('Community not found'),
+            'Community Not Found',
+            lang,
+            400
+          )
         );
     }
 
