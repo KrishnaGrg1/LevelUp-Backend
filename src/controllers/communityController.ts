@@ -325,8 +325,21 @@ const searchCommunities = async (req: AuthRequest, res: Response) => {
           contains: q as string,
           mode: 'insensitive',
         },
+        members: {
+          none: {
+            userId: userId,
+          },
+        },
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        isPrivate: true,
+        memberLimit: true,
+        photo: true,
+        createdAt: true,
+        // Note: updatedAt, ownerId, and joinCodeHash are NOT here, so they are excluded
         _count: {
           select: { members: true },
         },
