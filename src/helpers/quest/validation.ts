@@ -40,7 +40,9 @@ export function validateUser(
   }
 
   if (!user.CommunityMember || user.CommunityMember.length === 0) {
-    logger.warn(`${logPrefix} User has no community memberships - skipping`, { userId });
+    logger.warn(`${logPrefix} User has no community memberships - skipping`, {
+      userId,
+    });
     return { valid: false, reason: 'no_communities' };
   }
 
@@ -72,7 +74,10 @@ export function getSkillName(
     'Personal Development';
 
   if (!skillName || skillName.trim() === '') {
-    logger.warn(`${logPrefix} Invalid skill name`, { userId: user.id, communityId: membership.communityId });
+    logger.warn(`${logPrefix} Invalid skill name`, {
+      userId: user.id,
+      communityId: membership.communityId,
+    });
     return null;
   }
 
@@ -84,7 +89,9 @@ export function getSkillName(
  */
 export function validateCommunity(membership: any, logPrefix: string): boolean {
   if (!membership.community) {
-    logger.warn(`${logPrefix} Community not found for membership`, { membershipId: membership.id });
+    logger.warn(`${logPrefix} Community not found for membership`, {
+      membershipId: membership.id,
+    });
     return false;
   }
   return true;

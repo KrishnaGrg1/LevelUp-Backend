@@ -1,4 +1,4 @@
-import { MemberStatus } from "@prisma/client";
+import { MemberStatus } from '@prisma/client';
 
 /**
  * Daily Quest (single)
@@ -66,9 +66,9 @@ Seed: ${seed}
 
 CLARIFICATION
 ${
-  skillName === "Gym"
+  skillName === 'Gym'
     ? "Interpret '${skillName}' as physical workouts. Not OpenAI gym."
-    : "Interpret skill as practical real-world execution."
+    : 'Interpret skill as practical real-world execution.'
 }
 
 ABSOLUTE RULES FOR ALL 5 QUESTS
@@ -82,11 +82,11 @@ ABSOLUTE RULES FOR ALL 5 QUESTS
 
 DIFFICULTY LOGIC FOR ${status}
 ${
-  status === "Beginner"
-    ? "Simple structured tasks with clear output"
-    : status === "Intermediate"
-    ? "Applied multi-step reasoning"
-    : "Complex synthesis or optimization"
+  status === 'Beginner'
+    ? 'Simple structured tasks with clear output'
+    : status === 'Intermediate'
+      ? 'Applied multi-step reasoning'
+      : 'Complex synthesis or optimization'
 }
 
 STRICT JSON
@@ -249,7 +249,7 @@ export function getSkillRecommendationPrompt(
 You recommend 3-5 new skills.
 
 COMPLETED SKILLS
-${completedSkills.join(", ") || "None"}
+${completedSkills.join(', ') || 'None'}
 
 RULES
 - Recommend skills that synergize with above

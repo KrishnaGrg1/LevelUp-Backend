@@ -4,7 +4,13 @@
 
 import { startOfDay } from 'date-fns';
 import client from '../prisma';
-import { Prisma, MemberStatus, QuestType, QuestSource, PeriodStatus } from '@prisma/client';
+import {
+  Prisma,
+  MemberStatus,
+  QuestType,
+  QuestSource,
+  PeriodStatus,
+} from '@prisma/client';
 
 interface QuestData {
   description: string;
@@ -30,11 +36,16 @@ export async function createQuestsForCommunity(
     const q = quests[i];
     const xpReward = Number.isFinite(q.xpReward)
       ? Math.max(1, Math.floor(q.xpReward!))
-      : Math.max(questType === 'Daily' ? 10 : 30, effLevel * (questType === 'Daily' ? 10 : 20));
-    
+      : Math.max(
+          questType === 'Daily' ? 10 : 30,
+          effLevel * (questType === 'Daily' ? 10 : 20)
+        );
+
     const estimatedMinutes = Number.isFinite(q.estimatedMinutes)
       ? Math.max(5, Math.min(20, Math.floor(q.estimatedMinutes!)))
-      : (questType === 'Daily' ? 15 : 20);
+      : questType === 'Daily'
+        ? 15
+        : 20;
 
     await tx.quest.create({
       data: {
@@ -90,6 +101,6 @@ export function generateFallbackQuests(
   return Array.from({ length: questCount }, (_, i) => ({
     description: questPool[i % questPool.length],
     xpReward: Math.max(questType === 'Daily' ? 10 : 30, baseXp + i * 5),
-    estimatedMinutes: baseTime + (i * 2),
+    estimatedMinutes: baseTime + i * 2,
   }));
 }

@@ -734,7 +734,7 @@ const addCategoryForCommunity = async (
     return;
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-      logger.error('Error adding categories', e);
+    logger.error('Error adding categories', e);
     res
       .status(500)
       .json(

@@ -13,7 +13,11 @@ export default function initializeSocket(io: Server) {
   io.use(socketAuthMiddleware);
 
   io.on('connection', (socket: AuthenticatedSocket) => {
-    logger.info('✅ Client Connected', { socketId: socket.id, username: socket.user?.UserName, userId: socket.user?.id });
+    logger.info('✅ Client Connected', {
+      socketId: socket.id,
+      username: socket.user?.UserName,
+      userId: socket.user?.id,
+    });
 
     chatSocketHandler(io, socket);
     aiChatSocketHandler(io, socket);

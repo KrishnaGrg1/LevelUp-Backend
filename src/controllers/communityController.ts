@@ -16,8 +16,11 @@ import logger from '../helpers/logger';
 // Get all communities (public) with pagination
 export const getAllCommunities = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id || undefined;
-  logger.apiRequest('GET', '/community', { userId, action: 'getAllCommunities' });
-  
+  logger.apiRequest('GET', '/community', {
+    userId,
+    action: 'getAllCommunities',
+  });
+
   try {
     const lang = req.language as Language;
 
@@ -68,20 +71,32 @@ export const getAllCommunities = async (req: AuthRequest, res: Response) => {
       };
     });
 
-    res
-      .status(200)
-      .json(
-        makeSuccessResponse(
-          formattedCommunities,
-          'success.community.fetched',
-          lang,
-          200,
-          { 'X-Pagination': JSON.stringify({ page, pageSize, returned: formattedCommunities.length }) }
-        )
-      );
-    logger.apiSuccess('GET', '/community', 200, { userId, page, pageSize, count: formattedCommunities.length });
+    res.status(200).json(
+      makeSuccessResponse(
+        formattedCommunities,
+        'success.community.fetched',
+        lang,
+        200,
+        {
+          'X-Pagination': JSON.stringify({
+            page,
+            pageSize,
+            returned: formattedCommunities.length,
+          }),
+        }
+      )
+    );
+    logger.apiSuccess('GET', '/community', 200, {
+      userId,
+      page,
+      pageSize,
+      count: formattedCommunities.length,
+    });
   } catch (e: unknown) {
-    logger.apiError('GET', '/community', 500, e, { userId, action: 'getAllCommunities' });
+    logger.apiError('GET', '/community', 500, e, {
+      userId,
+      action: 'getAllCommunities',
+    });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -98,8 +113,11 @@ export const getAllCommunities = async (req: AuthRequest, res: Response) => {
 
 const myCommunities = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
-  logger.apiRequest('GET', '/community/my', { userId, action: 'myCommunities' });
-  
+  logger.apiRequest('GET', '/community/my', {
+    userId,
+    action: 'myCommunities',
+  });
+
   try {
     const lang = req.language as Language;
     if (!userId) {
@@ -134,7 +152,10 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
         err instanceof Prisma.PrismaClientKnownRequestError &&
         (err.code === 'P2022' || err.code === 'P2010')
       ) {
-        logger.warn('myCommunities: falling back order (missing isPinned column or raw query failure)', { error: err.message });
+        logger.warn(
+          'myCommunities: falling back order (missing isPinned column or raw query failure)',
+          { error: err.message }
+        );
         communities = await client.communityMember.findMany({
           where: { userId: user.id },
           include: {
@@ -178,9 +199,15 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
           200
         )
       );
-    logger.apiSuccess('GET', '/community/my', 200, { userId, count: formattedCommunities.length });
+    logger.apiSuccess('GET', '/community/my', 200, {
+      userId,
+      count: formattedCommunities.length,
+    });
   } catch (e: unknown) {
-    logger.apiError('GET', '/community/my', 500, e, { userId, action: 'myCommunities' });
+    logger.apiError('GET', '/community/my', 500, e, {
+      userId,
+      action: 'myCommunities',
+    });
     logger.error('Error in myCommunities', e, { userId });
     const lang = (req.language as Language) || 'eng';
     res
@@ -200,7 +227,11 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
   const lang = req.language as Language;
   const userId = req.user?.id;
   const communityId = req.params.communityId;
-  logger.apiRequest('GET', `/community/${communityId}`, { userId, communityId, action: 'specificCommunity' });
+  logger.apiRequest('GET', `/community/${communityId}`, {
+    userId,
+    communityId,
+    action: 'specificCommunity',
+  });
 
   try {
     const community = await client.community.findUnique({
@@ -234,14 +265,16 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
 
     if (community.isPrivate) {
       if (!userId) {
-        return res.status(401).json(
-          makeErrorResponse(
-            new Error('Not authenticated'),
-            'error.auth.not_authenticated',
-            lang,
-            401
-          )
-        );
+        return res
+          .status(401)
+          .json(
+            makeErrorResponse(
+              new Error('Not authenticated'),
+              'error.auth.not_authenticated',
+              lang,
+              401
+            )
+          );
       }
 
       const membership = await client.communityMember.findUnique({
@@ -272,9 +305,15 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
       .json(
         makeSuccessResponse(community, 'success.community.fetched', lang, 200)
       );
-    logger.apiSuccess('GET', `/community/${req.params.communityId}`, 200, { userId, communityId });
+    logger.apiSuccess('GET', `/community/${req.params.communityId}`, 200, {
+      userId,
+      communityId,
+    });
   } catch (e: unknown) {
-    logger.apiError('GET', `/community/${req.params.communityId}`, 500, e, { userId, communityId: req.params.communityId });
+    logger.apiError('GET', `/community/${req.params.communityId}`, 500, e, {
+      userId,
+      communityId: req.params.communityId,
+    });
     logger.error('Error in specificCommunity', e, { userId, communityId });
     const lang = (req.language as Language) || 'eng';
     res
@@ -293,8 +332,12 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
 const searchCommunities = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
   const searchQuery = req.query.q;
-  logger.apiRequest('GET', '/community/search', { userId, q: searchQuery, action: 'searchCommunities' });
-  
+  logger.apiRequest('GET', '/community/search', {
+    userId,
+    q: searchQuery,
+    action: 'searchCommunities',
+  });
+
   try {
     const lang = req.language as Language;
     const q = (req.query.q as string | undefined)?.trim() || '';
@@ -334,20 +377,27 @@ const searchCommunities = async (req: AuthRequest, res: Response) => {
       take: pageSize,
     });
 
-    res
-      .status(200)
-      .json(
-        makeSuccessResponse(
-          communities,
-          'success.community.fetched',
-          lang,
-          200,
-          { 'X-Pagination': JSON.stringify({ page, pageSize, returned: communities.length }) }
-        )
-      );
-    logger.apiSuccess('GET', '/community/search', 200, { userId, q: searchQuery, page, pageSize, count: communities.length });
+    res.status(200).json(
+      makeSuccessResponse(communities, 'success.community.fetched', lang, 200, {
+        'X-Pagination': JSON.stringify({
+          page,
+          pageSize,
+          returned: communities.length,
+        }),
+      })
+    );
+    logger.apiSuccess('GET', '/community/search', 200, {
+      userId,
+      q: searchQuery,
+      page,
+      pageSize,
+      count: communities.length,
+    });
   } catch (e: unknown) {
-    logger.apiError('GET', '/community/search', 500, e, { userId, q: searchQuery });
+    logger.apiError('GET', '/community/search', 500, e, {
+      userId,
+      q: searchQuery,
+    });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -366,7 +416,12 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
   const { communityName, memberLimit, isPrivate, description } = req.body;
   const lang = req.language as Language;
   const userId = req.user?.id;
-  logger.apiRequest('POST', '/community/create', { userId, communityName, isPrivate, action: 'createCommunity' });
+  logger.apiRequest('POST', '/community/create', {
+    userId,
+    communityName,
+    isPrivate,
+    action: 'createCommunity',
+  });
   try {
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -398,14 +453,16 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
       : 100;
 
     if (memberLimitNum < 1 || memberLimitNum > 50000) {
-      return res.status(400).json(
-        makeErrorResponse(
-          new Error('memberLimit must be between 1 and 50000'),
-          'error.community.failed_to_create_community',
-          lang,
-          400
-        )
-      );
+      return res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('memberLimit must be between 1 and 50000'),
+            'error.community.failed_to_create_community',
+            lang,
+            400
+          )
+        );
     }
 
     const isPrivateBool =
@@ -486,8 +543,12 @@ const joinPublicCommunity = async (req: AuthRequest, res: Response) => {
   const communityId = req.params.communityId;
   const lang = req.language as Language;
   const userId = req.user?.id;
-  logger.apiRequest('POST', `/community/${communityId}/join`, { userId, communityId, action: 'joinPublicCommunity' });
-  
+  logger.apiRequest('POST', `/community/${communityId}/join`, {
+    userId,
+    communityId,
+    action: 'joinPublicCommunity',
+  });
+
   try {
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -557,9 +618,20 @@ const joinPublicCommunity = async (req: AuthRequest, res: Response) => {
           200
         )
       );
-    logger.apiSuccess('POST', `/community/${req.params.communityId}/join`, 200, { userId, communityId: req.params.communityId });
+    logger.apiSuccess(
+      'POST',
+      `/community/${req.params.communityId}/join`,
+      200,
+      { userId, communityId: req.params.communityId }
+    );
   } catch (e: unknown) {
-    logger.apiError('POST', `/community/${req.params.communityId}/join`, 500, e, { userId, communityId: req.params.communityId });
+    logger.apiError(
+      'POST',
+      `/community/${req.params.communityId}/join`,
+      500,
+      e,
+      { userId, communityId: req.params.communityId }
+    );
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -579,8 +651,12 @@ const joinPrivateCommunity = async (req: AuthRequest, res: Response) => {
   const lang = req.language as Language;
   const joinCode = req.body.joinCode;
   const userId = req.user?.id;
-  logger.apiRequest('POST', '/community/join', { userId, joinCode: joinCode?.substring(0, 4) + '****', action: 'joinPrivateCommunity' });
-  
+  logger.apiRequest('POST', '/community/join', {
+    userId,
+    joinCode: joinCode?.substring(0, 4) + '****',
+    action: 'joinPrivateCommunity',
+  });
+
   try {
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -676,7 +752,10 @@ const joinPrivateCommunity = async (req: AuthRequest, res: Response) => {
           200
         )
       );
-    logger.apiSuccess('POST', '/community/join', 200, { userId, communityId: req.params.communityId });
+    logger.apiSuccess('POST', '/community/join', 200, {
+      userId,
+      communityId: req.params.communityId,
+    });
   } catch (e: unknown) {
     logger.apiError('POST', '/community/join', 500, e, { userId });
     const lang = (req.language as Language) || 'eng';
@@ -696,8 +775,12 @@ const joinPrivateCommunity = async (req: AuthRequest, res: Response) => {
 const leaveCommunity = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
   const communityId = req.params.communityId;
-  logger.apiRequest('POST', `/community/${communityId}/leave`, { userId, communityId, action: 'leaveCommunity' });
-  
+  logger.apiRequest('POST', `/community/${communityId}/leave`, {
+    userId,
+    communityId,
+    action: 'leaveCommunity',
+  });
+
   try {
     const lang = req.language as Language;
 
@@ -743,9 +826,15 @@ const leaveCommunity = async (req: AuthRequest, res: Response) => {
     await client.communityMember.delete({ where: { id: member.id } });
 
     res.json(makeSuccessResponse(null, 'success.community.left', lang, 200));
-    logger.apiSuccess('POST', `/community/${communityId}/leave`, 200, { userId, communityId });
+    logger.apiSuccess('POST', `/community/${communityId}/leave`, 200, {
+      userId,
+      communityId,
+    });
   } catch (e) {
-    logger.apiError('POST', `/community/${communityId}/leave`, 500, e, { userId, communityId });
+    logger.apiError('POST', `/community/${communityId}/leave`, 500, e, {
+      userId,
+      communityId,
+    });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -764,8 +853,13 @@ const transferOwnership = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
   const communityId = req.params.communityId;
   const { newOwnerId } = req.body;
-  logger.apiRequest('POST', `/community/${communityId}/transfer-ownership`, { userId, communityId, newOwnerId, action: 'transferOwnership' });
-  
+  logger.apiRequest('POST', `/community/${communityId}/transfer-ownership`, {
+    userId,
+    communityId,
+    newOwnerId,
+    action: 'transferOwnership',
+  });
+
   try {
     const lang = req.language as Language;
 
@@ -810,14 +904,14 @@ const transferOwnership = async (req: AuthRequest, res: Response) => {
     let isMember = await client.communityMember.findFirst({
       where: { communityId, userId: newOwnerId },
     });
-    
+
     // If not found by userId, try finding by CommunityMember ID
     if (!isMember) {
       isMember = await client.communityMember.findFirst({
         where: { communityId, id: newOwnerId },
       });
     }
-    
+
     if (!isMember) {
       return res
         .status(400)
@@ -867,9 +961,20 @@ const transferOwnership = async (req: AuthRequest, res: Response) => {
           200
         )
       );
-    logger.apiSuccess('POST', `/community/${communityId}/transfer-ownership`, 200, { userId, communityId, newOwnerId: actualNewOwnerId });
+    logger.apiSuccess(
+      'POST',
+      `/community/${communityId}/transfer-ownership`,
+      200,
+      { userId, communityId, newOwnerId: actualNewOwnerId }
+    );
   } catch (e) {
-    logger.apiError('POST', `/community/${communityId}/transfer-ownership`, 500, e, { userId, communityId, newOwnerId: req.body.newOwnerId });
+    logger.apiError(
+      'POST',
+      `/community/${communityId}/transfer-ownership`,
+      500,
+      e,
+      { userId, communityId, newOwnerId: req.body.newOwnerId }
+    );
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -889,8 +994,12 @@ const updateCommunity = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
   const communityId = req.params.communityId || req.body.communityId;
   const { name, memberLimit, description, isPrivate } = req.body;
-  logger.apiRequest('PATCH', `/community/${communityId}`, { userId, communityId, action: 'updateCommunity' });
-  
+  logger.apiRequest('PATCH', `/community/${communityId}`, {
+    userId,
+    communityId,
+    action: 'updateCommunity',
+  });
+
   try {
     // Check ownership
     const community = await client.community.findUnique({
@@ -918,10 +1027,16 @@ const updateCommunity = async (req: AuthRequest, res: Response) => {
     res.json(
       makeSuccessResponse(updated, 'success.community.updated', lang, 200)
     );
-    logger.apiSuccess('PATCH', `/community/${communityId}`, 200, { userId, communityId });
+    logger.apiSuccess('PATCH', `/community/${communityId}`, 200, {
+      userId,
+      communityId,
+    });
     return;
   } catch (e) {
-    logger.apiError('PATCH', `/community/${communityId}`, 500, e, { userId, communityId });
+    logger.apiError('PATCH', `/community/${communityId}`, 500, e, {
+      userId,
+      communityId,
+    });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -941,7 +1056,11 @@ const removeMember = async (req: AuthRequest, res: Response) => {
     const lang = req.language as Language;
     const userId = req.user?.id;
     const { communityId, memberId } = req.params;
-    logger.apiRequest('DELETE', `/community/${communityId}/members/${memberId}`, { userId, communityId, memberId, action: 'removeMember' });
+    logger.apiRequest(
+      'DELETE',
+      `/community/${communityId}/members/${memberId}`,
+      { userId, communityId, memberId, action: 'removeMember' }
+    );
 
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -992,12 +1111,12 @@ const removeMember = async (req: AuthRequest, res: Response) => {
     // Check if the target user is a member
     // memberId can be either the userId or the CommunityMember record ID
     let member = community.members.find((m) => m.userId === memberId);
-    
+
     // If not found by userId, try to find by CommunityMember ID
     if (!member) {
       member = community.members.find((m) => m.id === memberId);
     }
-    
+
     if (!member) {
       return res
         .status(404)
@@ -1035,9 +1154,28 @@ const removeMember = async (req: AuthRequest, res: Response) => {
       .json(
         makeSuccessResponse(null, 'success.community.member_removed', lang, 200)
       );
-    logger.apiSuccess('DELETE', `/community/${req.params.communityId}/members/${req.params.memberId}`, 200, { userId: req.user?.id, communityId: req.params.communityId, memberId: req.params.memberId });
+    logger.apiSuccess(
+      'DELETE',
+      `/community/${req.params.communityId}/members/${req.params.memberId}`,
+      200,
+      {
+        userId: req.user?.id,
+        communityId: req.params.communityId,
+        memberId: req.params.memberId,
+      }
+    );
   } catch (e) {
-    logger.apiError('DELETE', `/community/${req.params.communityId}/members/${req.params.memberId}`, 500, e, { userId: req.user?.id, communityId: req.params.communityId, memberId: req.params.memberId });
+    logger.apiError(
+      'DELETE',
+      `/community/${req.params.communityId}/members/${req.params.memberId}`,
+      500,
+      e,
+      {
+        userId: req.user?.id,
+        communityId: req.params.communityId,
+        memberId: req.params.memberId,
+      }
+    );
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -1058,7 +1196,17 @@ const changeMemberRole = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     const { communityId, memberId } = req.params;
     const { role } = req.body; // expected: 'ADMIN' | 'MEMBER'
-    logger.apiRequest('PATCH', `/community/${communityId}/members/${memberId}/role`, { userId, communityId, memberId, newRole: role, action: 'changeMemberRole' });
+    logger.apiRequest(
+      'PATCH',
+      `/community/${communityId}/members/${memberId}/role`,
+      {
+        userId,
+        communityId,
+        memberId,
+        newRole: role,
+        action: 'changeMemberRole',
+      }
+    );
 
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -1125,7 +1273,7 @@ const changeMemberRole = async (req: AuthRequest, res: Response) => {
       // Fallback: try to find by CommunityMember record ID
       member = community.members.find((m) => m.id === memberId);
     }
-    
+
     if (!member) {
       return res
         .status(404)
@@ -1169,9 +1317,29 @@ const changeMemberRole = async (req: AuthRequest, res: Response) => {
           200
         )
       );
-    logger.apiSuccess('PATCH', `/community/${req.params.communityId}/members/${req.params.memberId}/role`, 200, { userId: req.user?.id, communityId: req.params.communityId, memberId: req.params.memberId, newRole: req.body.role });
+    logger.apiSuccess(
+      'PATCH',
+      `/community/${req.params.communityId}/members/${req.params.memberId}/role`,
+      200,
+      {
+        userId: req.user?.id,
+        communityId: req.params.communityId,
+        memberId: req.params.memberId,
+        newRole: req.body.role,
+      }
+    );
   } catch (e) {
-    logger.apiError('PATCH', `/community/${req.params.communityId}/members/${req.params.memberId}/role`, 500, e, { userId: req.user?.id, communityId: req.params.communityId, memberId: req.params.memberId });
+    logger.apiError(
+      'PATCH',
+      `/community/${req.params.communityId}/members/${req.params.memberId}/role`,
+      500,
+      e,
+      {
+        userId: req.user?.id,
+        communityId: req.params.communityId,
+        memberId: req.params.memberId,
+      }
+    );
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -1189,7 +1357,11 @@ const changeMemberRole = async (req: AuthRequest, res: Response) => {
 const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
   const lang = (req.language as Language) || 'eng';
   const communityId = req.params.communityId;
-  logger.apiRequest('POST', `/community/${communityId}/upload-photo`, { userId: req.user?.id, communityId, action: 'uploadCommunityPhoto' });
+  logger.apiRequest('POST', `/community/${communityId}/upload-photo`, {
+    userId: req.user?.id,
+    communityId,
+    action: 'uploadCommunityPhoto',
+  });
 
   try {
     const userId = req.user?.id;
@@ -1301,10 +1473,24 @@ const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
           200
         )
       );
-    logger.apiSuccess('POST', `/community/${req.params.communityId}/upload-photo`, 200, { userId: req.user?.id, communityId: req.params.communityId });
+    logger.apiSuccess(
+      'POST',
+      `/community/${req.params.communityId}/upload-photo`,
+      200,
+      { userId: req.user?.id, communityId: req.params.communityId }
+    );
   } catch (error) {
-    logger.apiError('POST', `/community/${req.params.communityId}/upload-photo`, 500, error, { userId: req.user?.id, communityId: req.params.communityId });
-    logger.error('Error uploading community photo', error, { userId: req.user?.id, communityId });
+    logger.apiError(
+      'POST',
+      `/community/${req.params.communityId}/upload-photo`,
+      500,
+      error,
+      { userId: req.user?.id, communityId: req.params.communityId }
+    );
+    logger.error('Error uploading community photo', error, {
+      userId: req.user?.id,
+      communityId,
+    });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -1322,18 +1508,36 @@ const toggleMultipleCommunityPin = async (req: AuthRequest, res: Response) => {
   const { communityIds } = req.body; // array of IDs to pin
   const userId = req.user?.id;
   const lang = (req.headers['accept-language'] as Language) || 'eng';
-  logger.apiRequest('POST', '/community/toggle-pin', { userId, communityIds, action: 'toggleMultipleCommunityPin' });
+  logger.apiRequest('POST', '/community/toggle-pin', {
+    userId,
+    communityIds,
+    action: 'toggleMultipleCommunityPin',
+  });
 
   if (!userId) {
-    return res.status(401).json(
-      makeErrorResponse(new Error('Not authenticated'), 'error.auth.not_authenticated', lang, 401)
-    );
+    return res
+      .status(401)
+      .json(
+        makeErrorResponse(
+          new Error('Not authenticated'),
+          'error.auth.not_authenticated',
+          lang,
+          401
+        )
+      );
   }
 
   if (!Array.isArray(communityIds)) {
-    return res.status(400).json(
-      makeErrorResponse(new Error('Community IDs must be an array'), 'error.community.invalid_community_ids', lang, 400)
-    );
+    return res
+      .status(400)
+      .json(
+        makeErrorResponse(
+          new Error('Community IDs must be an array'),
+          'error.community.invalid_community_ids',
+          lang,
+          400
+        )
+      );
   }
 
   try {
@@ -1359,21 +1563,36 @@ const toggleMultipleCommunityPin = async (req: AuthRequest, res: Response) => {
       communityId: u.communityId,
       isPinned: u.isPinned,
     }));
-    res.status(200).json(
-      makeSuccessResponse(
-        { data: updatedMembers },
-        'success.community.pinned_updated',
-        lang,
-        200
-      )
-    );
-    logger.apiSuccess('POST', '/community/toggle-pin', 200, { userId, count: updatedMembers.length });
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { data: updatedMembers },
+          'success.community.pinned_updated',
+          lang,
+          200
+        )
+      );
+    logger.apiSuccess('POST', '/community/toggle-pin', 200, {
+      userId,
+      count: updatedMembers.length,
+    });
   } catch (err) {
-    logger.apiError('POST', '/community/toggle-pin', 500, err, { userId, communityIds: req.body.communityIds });
+    logger.apiError('POST', '/community/toggle-pin', 500, err, {
+      userId,
+      communityIds: req.body.communityIds,
+    });
     logger.error('Toggle pin error', err, { userId, communityIds });
-    res.status(500).json(
-      makeErrorResponse(new Error('Failed to update pinned communities'), 'error.community.failed_to_update_community', lang, 500)
-    );
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to update pinned communities'),
+          'error.community.failed_to_update_community',
+          lang,
+          500
+        )
+      );
   }
 };
 
@@ -1470,20 +1689,26 @@ const toggleMultipleCommunityPin = async (req: AuthRequest, res: Response) => {
 const getCommunityMembers = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
   const communityId = req.params.communityId;
-  logger.apiRequest('GET', `/community/${communityId}/members`, { userId, communityId, action: 'getCommunityMembers' });
+  logger.apiRequest('GET', `/community/${communityId}/members`, {
+    userId,
+    communityId,
+    action: 'getCommunityMembers',
+  });
 
   try {
     const lang = req.language as Language;
 
     if (!userId) {
-      return res.status(401).json(
-        makeErrorResponse(
-          new Error('Not authenticated'),
-          'error.auth.not_authenticated',
-          lang,
-          401
-        )
-      );
+      return res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
     }
 
     // Check if user is a member of the community
@@ -1497,14 +1722,16 @@ const getCommunityMembers = async (req: AuthRequest, res: Response) => {
     });
 
     if (!membership) {
-      return res.status(403).json(
-        makeErrorResponse(
-          new Error('Not a member of this community'),
-          'error.community.not_member',
-          lang,
-          403
-        )
-      );
+      return res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Not a member of this community'),
+            'error.community.not_member',
+            lang,
+            403
+          )
+        );
     }
 
     // Fetch all members
@@ -1536,26 +1763,37 @@ const getCommunityMembers = async (req: AuthRequest, res: Response) => {
       joinedAt: member.joinedAt,
     }));
 
-    res.status(200).json(
-      makeSuccessResponse(
-        { members: formattedMembers, count: formattedMembers.length },
-        'success.community.members_retrieved',
-        lang,
-        200
-      )
-    );
-    logger.apiSuccess('GET', `/community/${communityId}/members`, 200, { userId, communityId, count: formattedMembers.length });
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { members: formattedMembers, count: formattedMembers.length },
+          'success.community.members_retrieved',
+          lang,
+          200
+        )
+      );
+    logger.apiSuccess('GET', `/community/${communityId}/members`, 200, {
+      userId,
+      communityId,
+      count: formattedMembers.length,
+    });
   } catch (e: unknown) {
-    logger.apiError('GET', `/community/${communityId}/members`, 500, e, { userId, communityId });
+    logger.apiError('GET', `/community/${communityId}/members`, 500, e, {
+      userId,
+      communityId,
+    });
     const lang = (req.language as Language) || 'eng';
-    res.status(500).json(
-      makeErrorResponse(
-        new Error('Failed to fetch community members'),
-        'error.community.failed_to_fetch_members',
-        lang,
-        500
-      )
-    );
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to fetch community members'),
+          'error.community.failed_to_fetch_members',
+          lang,
+          500
+        )
+      );
   }
 };
 

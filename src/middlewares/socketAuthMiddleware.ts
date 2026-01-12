@@ -29,13 +29,16 @@ export const socketAuthMiddleware = async (
   try {
     // 1️⃣ Extract cookies from handshake
     const cookies = socket.handshake.headers.cookie;
-    logger.info('🔐 Socket auth attempt', { ...clientInfo, hasCookies: !!cookies });
+    logger.info('🔐 Socket auth attempt', {
+      ...clientInfo,
+      hasCookies: !!cookies,
+    });
 
     if (!cookies) {
       logger.warn('❌ Socket auth failed: No cookies provided', clientInfo);
       return next(new Error('Authentication required - no cookies'));
     }
-    
+
     // 2️⃣ Read session cookie
     const sessionId = lucia.readSessionCookie(cookies);
 
@@ -43,18 +46,25 @@ export const socketAuthMiddleware = async (
       logger.warn('❌ Socket auth failed: Invalid session cookie', clientInfo);
       return next(new Error('Invalid session cookie'));
     }
-    
+
     // 3️⃣ Validate session with database
     const { session, user } = await lucia.validateSession(sessionId);
     if (!session || !user) {
-      logger.warn('❌ Socket auth failed: Session expired or invalid', { ...clientInfo, sessionId });
+      logger.warn('❌ Socket auth failed: Session expired or invalid', {
+        ...clientInfo,
+        sessionId,
+      });
       return next(new Error('Session expired or invalid'));
     }
-    
+
     // 4️⃣ Attach user to socket
     socket.user = user;
-    logger.info('✅ Socket auth successful', { ...clientInfo, userId: user.id, username: user.UserName });
-    
+    logger.info('✅ Socket auth successful', {
+      ...clientInfo,
+      userId: user.id,
+      username: user.UserName,
+    });
+
     // 5️⃣ Allow connection to proceed
     next(); // ← Success! User authenticated
   } catch (error) {

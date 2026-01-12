@@ -9,7 +9,10 @@ import OpenAIChat from '../helpers/ai/aiHelper';
 import { getChatModerationPrompt } from '../helpers/ai/prompts';
 import env from '../helpers/config';
 import logger from '../helpers/logger';
-import { checkAuthentication, emitSocketError } from '../helpers/socketResponse';
+import {
+  checkAuthentication,
+  emitSocketError,
+} from '../helpers/socketResponse';
 import {
   consumeTokens,
   refundTokens,
@@ -74,27 +77,40 @@ async function saveChatHistory(
         responseTime,
       },
     });
-    logger.info('[AI Chat] History saved', { userId, sessionId, tokensUsed, responseTime });
+    logger.info('[AI Chat] History saved', {
+      userId,
+      sessionId,
+      tokensUsed,
+      responseTime,
+    });
   } catch (error) {
-    logger.error('[AI Chat] Failed to save chat history', error, { userId, sessionId });
+    logger.error('[AI Chat] Failed to save chat history', error, {
+      userId,
+      sessionId,
+    });
   }
 }
 
-export default function aiChatSocketHandler(io: Server, socket: AuthenticatedSocket) {
-  
+export default function aiChatSocketHandler(
+  io: Server,
+  socket: AuthenticatedSocket
+) {
   socket.on('ai-chat:check-tokens', async () => {
     try {
       if (!checkAuthentication(socket)) return;
 
       const tokenCheck = await checkUserTokens(socket.user.id);
-      
+
       socket.emit('ai-chat:token-status', {
         hasTokens: tokenCheck.hasTokens,
         currentTokens: tokenCheck.currentTokens,
         costPerMessage: tokenCheck.required,
       });
     } catch (error) {
-      logger.error('[AI Chat] Token check error', error, { socketId: socket.id, userId: socket.user?.id });
+      logger.error('[AI Chat] Token check error', error, {
+        socketId: socket.id,
+        userId: socket.user?.id,
+      });
       socket.emit('ai-chat:error', {
         code: 'TOKEN_CHECK_ERROR',
         message: 'Failed to check token balance',
@@ -159,7 +175,11 @@ export default function aiChatSocketHandler(io: Server, socket: AuthenticatedSoc
         timestamp: new Date().toISOString(),
       });
 
-      logger.info('[AI Chat] Prompt received', { username: socket.user.UserName, userId, promptPreview: prompt.substring(0, 50) });
+      logger.info('[AI Chat] Prompt received', {
+        username: socket.user.UserName,
+        userId,
+        promptPreview: prompt.substring(0, 50),
+      });
 
       const systemPrompt = getChatModerationPrompt(prompt);
 
@@ -173,7 +193,7 @@ export default function aiChatSocketHandler(io: Server, socket: AuthenticatedSoc
           chunk,
           index: Math.floor(i / chunkSize),
         });
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
 
       const remainingTokens = consumeResult.remainingTokens;
@@ -189,22 +209,38 @@ export default function aiChatSocketHandler(io: Server, socket: AuthenticatedSoc
       });
 
       // Save to history
-      await saveChatHistory(userId, prompt, responseText, tokenCost, sessionId, Date.now() - startTime);
+      await saveChatHistory(
+        userId,
+        prompt,
+        responseText,
+        tokenCost,
+        sessionId,
+        Date.now() - startTime
+      );
 
-      logger.info('[AI Chat] Response sent', { username: socket.user.UserName, userId, remainingTokens });
-
+      logger.info('[AI Chat] Response sent', {
+        username: socket.user.UserName,
+        userId,
+        remainingTokens,
+      });
     } catch (error: any) {
-      logger.error('[AI Chat] Error', error, { socketId: socket.id, userId: socket.user?.id, sessionId: data.sessionId });
+      logger.error('[AI Chat] Error', error, {
+        socketId: socket.id,
+        userId: socket.user?.id,
+        sessionId: data.sessionId,
+      });
       if (tokensDebited) {
         try {
           if (userId) {
             await refundTokens(userId, tokenCost);
           }
         } catch (refundError) {
-          logger.error('[AI Chat] Failed to refund tokens', refundError, { userId: socket.user?.id });
+          logger.error('[AI Chat] Failed to refund tokens', refundError, {
+            userId: socket.user?.id,
+          });
         }
       }
-      
+
       socket.emit('ai-chat:error', {
         code: 'CHAT_FAILED',
         message: error?.message || 'Failed to process AI chat',
@@ -229,7 +265,11 @@ export default function aiChatSocketHandler(io: Server, socket: AuthenticatedSoc
    * Cancel an ongoing AI chat request
    */
   socket.on('ai-chat:cancel', (data: { sessionId: string }) => {
-    logger.info('[AI Chat] Session cancelled', { username: socket.user?.UserName, userId: socket.user?.id, sessionId: data.sessionId });
+    logger.info('[AI Chat] Session cancelled', {
+      username: socket.user?.UserName,
+      userId: socket.user?.id,
+      sessionId: data.sessionId,
+    });
     socket.emit('ai-chat:cancelled', {
       sessionId: data.sessionId,
       timestamp: new Date().toISOString(),
@@ -251,7 +291,10 @@ export default function aiChatSocketHandler(io: Server, socket: AuthenticatedSoc
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      logger.error('[AI Chat] Failed to fetch tokens', error, { socketId: socket.id, userId: socket.user?.id });
+      logger.error('[AI Chat] Failed to fetch tokens', error, {
+        socketId: socket.id,
+        userId: socket.user?.id,
+      });
       socket.emit('ai-chat:error', {
         code: 'TOKEN_FETCH_ERROR',
         message: 'Failed to fetch token balance',
@@ -261,6 +304,10 @@ export default function aiChatSocketHandler(io: Server, socket: AuthenticatedSoc
 
   // Log AI chat connection
   if (socket.user) {
-    logger.info('[AI Chat] User connected', { username: socket.user.UserName, userId: socket.user.id, socketId: socket.id });
+    logger.info('[AI Chat] User connected', {
+      username: socket.user.UserName,
+      userId: socket.user.id,
+      socketId: socket.id,
+    });
   }
 }

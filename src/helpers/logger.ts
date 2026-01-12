@@ -37,14 +37,20 @@ class Logger {
   }
 
   error(message: string, error?: Error | unknown, context?: LogContext): void {
-    const errorDetails = error instanceof Error 
-      ? { error: error.message, stack: error.stack }
-      : { error: String(error) };
-    console.error(this.formatMessage('ERROR', message, { ...context, ...errorDetails }));
+    const errorDetails =
+      error instanceof Error
+        ? { error: error.message, stack: error.stack }
+        : { error: String(error) };
+    console.error(
+      this.formatMessage('ERROR', message, { ...context, ...errorDetails })
+    );
   }
 
   debug(message: string, context?: LogContext): void {
-    if (process.env.NODE_ENV === 'development' || process.env.DEBUG === 'true') {
+    if (
+      process.env.NODE_ENV === 'development' ||
+      process.env.DEBUG === 'true'
+    ) {
       console.debug(this.formatMessage('DEBUG', message, context));
     }
   }
@@ -54,11 +60,22 @@ class Logger {
     this.info(`API Request: ${method} ${path}`, context);
   }
 
-  apiSuccess(method: string, path: string, statusCode: number, context?: LogContext): void {
+  apiSuccess(
+    method: string,
+    path: string,
+    statusCode: number,
+    context?: LogContext
+  ): void {
     this.info(`API Success: ${method} ${path} - ${statusCode}`, context);
   }
 
-  apiError(method: string, path: string, statusCode: number, error?: Error | unknown, context?: LogContext): void {
+  apiError(
+    method: string,
+    path: string,
+    statusCode: number,
+    error?: Error | unknown,
+    context?: LogContext
+  ): void {
     this.error(`API Error: ${method} ${path} - ${statusCode}`, error, context);
   }
 }

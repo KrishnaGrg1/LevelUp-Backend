@@ -278,6 +278,7 @@ const oauthLogin = async (req: TranslationRequest, res: Response) => {
           isNewUser,
           actionTaken,
           provider,
+          accessToken: session.id, // For mobile apps to use in Authorization header
         },
         actionTaken === 'register'
           ? 'success.auth.oauth_register'
