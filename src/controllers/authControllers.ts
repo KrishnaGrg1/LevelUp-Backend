@@ -381,6 +381,8 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
     res.status(200).json(
       makeSuccessResponse(
         {
+          id: existingUser.id,
+          UserName: existingUser.UserName,
           isadmin: existingUser.isAdmin,
           expiredAt: session.expiresAt,
           authSession: session.id,
