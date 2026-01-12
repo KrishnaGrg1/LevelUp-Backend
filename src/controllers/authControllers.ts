@@ -378,12 +378,12 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
     const sessionCookie = lucia.createSessionCookie(session.id);
 
     res.setHeader('Set-Cookie', sessionCookie.serialize());
-
     res.status(200).json(
       makeSuccessResponse(
         {
           isadmin: existingUser.isAdmin,
           expiredAt: session.expiresAt,
+          authSession: session.id,
         },
         'success.auth.login',
         lang,
@@ -665,7 +665,7 @@ const me = async (req: AuthRequest, res: Response): Promise<void> => {
         hasOnboarded: true,
       },
     });
-    
+
     if (!user) {
       res
         .status(404)
@@ -899,7 +899,9 @@ const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
         )
       );
   } catch (error) {
-    logger.error('Error uploading profile picture', error, { userId: req.user?.id });
+    logger.error('Error uploading profile picture', error, {
+      userId: req.user?.id,
+    });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -1059,7 +1061,11 @@ const onBoarding = async (req: AuthRequest, res: Response): Promise<void> => {
       include: { categories: true },
     });
 
-    logger.debug('Onboarding created', { userId, onboardingId: onboarding.id, categories: onboarding.categories?.length });
+    logger.debug('Onboarding created', {
+      userId,
+      onboardingId: onboarding.id,
+      categories: onboarding.categories?.length,
+    });
 
     const updatedUser = await client.user.update({
       where: { id: userId },
@@ -1077,9 +1083,9 @@ const onBoarding = async (req: AuthRequest, res: Response): Promise<void> => {
       },
     });
 
-    logger.info('User onboarding completed and hasOnboarded set to true', { 
-      userId, 
-      hasOnboarded: updatedUser.hasOnboarded 
+    logger.info('User onboarding completed and hasOnboarded set to true', {
+      userId,
+      hasOnboarded: updatedUser.hasOnboarded,
     });
 
     res.status(200).json(
@@ -1104,7 +1110,9 @@ const onBoarding = async (req: AuthRequest, res: Response): Promise<void> => {
         .json(makeErrorResponse(e, 'error.auth.unexpected', lang, 500));
       return;
     } else {
-      logger.error('Unexpected error fetching categories', e, { userId: req.user?.id });
+      logger.error('Unexpected error fetching categories', e, {
+        userId: req.user?.id,
+      });
       res
         .status(500)
         .json(
@@ -1159,7 +1167,7 @@ const fetchCategories = async (
     return;
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-      logger.error('Error fetching categories', e, { userId: req.user?.id });
+    logger.error('Error fetching categories', e, { userId: req.user?.id });
     res
       .status(500)
       .json(

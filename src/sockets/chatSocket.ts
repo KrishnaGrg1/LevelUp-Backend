@@ -2,7 +2,12 @@ import { Server } from 'socket.io';
 import client from '../helpers/prisma';
 import { AuthenticatedSocket } from '../middlewares/socketAuthMiddleware';
 import logger from '../helpers/logger';
-import { checkAuthentication, validateMessageContent, emitSocketError, emitSocketSuccess } from '../helpers/socketResponse';
+import {
+  checkAuthentication,
+  validateMessageContent,
+  emitSocketError,
+  emitSocketSuccess,
+} from '../helpers/socketResponse';
 
 interface JoinCommunityData {
   communityId: string;
@@ -91,7 +96,11 @@ export default function chatSocketHandler(
 
       //join the community room
       socket.join(`community:${communityId}`);
-      logger.info('Community joined', { username: socket.user.UserName, userId: socket.user.id, communityId });
+      logger.info('Community joined', {
+        username: socket.user.UserName,
+        userId: socket.user.id,
+        communityId,
+      });
 
       emitSocketSuccess(socket, 'joined-community', {
         messageKey: 'success.community.joined_chat',
@@ -139,7 +148,10 @@ export default function chatSocketHandler(
         count: formattedMessages.length,
       });
     } catch (error) {
-      logger.error('Error joining community', error, { userId: socket.user?.id, communityId: data?.communityId });
+      logger.error('Error joining community', error, {
+        userId: socket.user?.id,
+        communityId: data?.communityId,
+      });
       emitSocketError(socket, 'error', {
         code: 'COMMUNITY_JOIN_FAILED',
         messageKey: 'error.community.failed_to_join_community',
@@ -150,7 +162,11 @@ export default function chatSocketHandler(
   socket.on('leave-community', (data: JoinCommunityData) => {
     const { communityId } = data;
     socket.leave(`community:${communityId}`);
-    logger.info('Community left', { username: socket.user?.UserName, userId: socket.user?.id, communityId });
+    logger.info('Community left', {
+      username: socket.user?.UserName,
+      userId: socket.user?.id,
+      communityId,
+    });
     socket.to(`community:${communityId}`).emit('user-left', {
       user: {
         id: socket.user?.id,
@@ -165,11 +181,17 @@ export default function chatSocketHandler(
     async (data: SendCommunityMessageData) => {
       const { communityId, content } = data;
 
-      logger.debug('📨 Received community:send-message', { communityId, contentPreview: content?.slice(0, 100), userId: socket.user?.id });
+      logger.debug('📨 Received community:send-message', {
+        communityId,
+        contentPreview: content?.slice(0, 100),
+        userId: socket.user?.id,
+      });
 
       try {
         if (!checkAuthentication(socket)) {
-          logger.error('❌ User not authenticated', undefined, { socketId: socket.id });
+          logger.error('❌ User not authenticated', undefined, {
+            socketId: socket.id,
+          });
           return;
         }
 
@@ -221,9 +243,17 @@ export default function chatSocketHandler(
           messagePayload
         );
 
-        logger.info('✅ Message sent to community', { username: socket.user.UserName, userId: socket.user.id, communityId, messageId: messagePayload.id });
+        logger.info('✅ Message sent to community', {
+          username: socket.user.UserName,
+          userId: socket.user.id,
+          communityId,
+          messageId: messagePayload.id,
+        });
       } catch (error) {
-        logger.error('Error sending community message', error, { userId: socket.user?.id, communityId });
+        logger.error('Error sending community message', error, {
+          userId: socket.user?.id,
+          communityId,
+        });
         emitSocketError(socket, 'error', {
           code: 'MESSAGE_SEND_FAILED',
           messageKey: 'error.message.send_failed',
@@ -249,7 +279,11 @@ export default function chatSocketHandler(
       }
 
       socket.join(`clan:${clanId}`);
-      logger.info('Clan joined', { username: socket.user.UserName, userId: socket.user.id, clanId });
+      logger.info('Clan joined', {
+        username: socket.user.UserName,
+        userId: socket.user.id,
+        clanId,
+      });
 
       emitSocketSuccess(socket, 'joined-clan', {
         messageKey: 'success.clan.joined_chat',
@@ -296,7 +330,10 @@ export default function chatSocketHandler(
         count: formattedMessages.length,
       });
     } catch (error) {
-      logger.error('Error joining clan', error, { userId: socket.user?.id, clanId: data?.clanId });
+      logger.error('Error joining clan', error, {
+        userId: socket.user?.id,
+        clanId: data?.clanId,
+      });
       emitSocketError(socket, 'error', {
         code: 'CLAN_JOIN_FAILED',
         messageKey: 'error.clan.failed_to_join_clan',
@@ -307,11 +344,17 @@ export default function chatSocketHandler(
   socket.on('clan:send-message', async (data: SendClanMessageData) => {
     const { clanId, content } = data;
 
-    logger.debug('📨 Received clan:send-message', { clanId, contentPreview: content?.slice(0, 100), userId: socket.user?.id });
+    logger.debug('📨 Received clan:send-message', {
+      clanId,
+      contentPreview: content?.slice(0, 100),
+      userId: socket.user?.id,
+    });
 
     try {
       if (!checkAuthentication(socket)) {
-        logger.error('❌ User not authenticated', undefined, { socketId: socket.id });
+        logger.error('❌ User not authenticated', undefined, {
+          socketId: socket.id,
+        });
         return;
       }
 
@@ -326,7 +369,11 @@ export default function chatSocketHandler(
         return;
       }
 
-      logger.debug('Membership verified for clan message', { userId: socket.user.id, clanId, isMember });
+      logger.debug('Membership verified for clan message', {
+        userId: socket.user.id,
+        clanId,
+        isMember,
+      });
 
       const message = await client.message.create({
         data: {
@@ -358,9 +405,17 @@ export default function chatSocketHandler(
 
       io.to(`clan:${clanId}`).emit('clan:new-message', messagePayload);
 
-      logger.info('✅ Message sent to clan', { username: socket.user.UserName, userId: socket.user.id, clanId, messageId: messagePayload.id });
+      logger.info('✅ Message sent to clan', {
+        username: socket.user.UserName,
+        userId: socket.user.id,
+        clanId,
+        messageId: messagePayload.id,
+      });
     } catch (error) {
-      logger.error('Error sending clan message', error, { userId: socket.user?.id, clanId });
+      logger.error('Error sending clan message', error, {
+        userId: socket.user?.id,
+        clanId,
+      });
       emitSocketError(socket, 'error', {
         code: 'MESSAGE_SEND_FAILED',
         messageKey: 'error.message.send_failed',
@@ -371,7 +426,11 @@ export default function chatSocketHandler(
   socket.on('leave-clan', (data: JoinClanData) => {
     const { clanId } = data;
     socket.leave(`clan:${clanId}`);
-    logger.info('Clan left', { username: socket.user?.UserName, userId: socket.user?.id, clanId });
+    logger.info('Clan left', {
+      username: socket.user?.UserName,
+      userId: socket.user?.id,
+      clanId,
+    });
     socket.to(`clan:${clanId}`).emit('user-left', {
       user: {
         id: socket.user?.id,
@@ -408,6 +467,10 @@ export default function chatSocketHandler(
   });
 
   socket.on('disconnect', () => {
-    logger.info('Chat socket disconnected', { username: socket.user?.UserName, userId: socket.user?.id, socketId: socket.id });
+    logger.info('Chat socket disconnected', {
+      username: socket.user?.UserName,
+      userId: socket.user?.id,
+      socketId: socket.id,
+    });
   });
 }

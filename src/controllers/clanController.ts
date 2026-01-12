@@ -458,7 +458,10 @@ const getClanMembers = async (req: AuthRequest, res: Response) => {
       );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    logger.error('Failed to get clan members', e, { userId: req.user?.id, clanId: req.params.clanId });
+    logger.error('Failed to get clan members', e, {
+      userId: req.user?.id,
+      clanId: req.params.clanId,
+    });
     return res
       .status(500)
       .json(
@@ -601,7 +604,10 @@ const updateClan = async (req: AuthRequest, res: Response) => {
       .json(makeSuccessResponse(updated, 'success.clan.updated', lang, 200));
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
-    logger.error('Failed to update clan', e, { userId: req.user?.id, clanId: req.params.clanId });
+    logger.error('Failed to update clan', e, {
+      userId: req.user?.id,
+      clanId: req.params.clanId,
+    });
     return res
       .status(500)
       .json(

@@ -45,7 +45,7 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'https://www.melevelup.me',
-      'https://level-up-olive-gamma.vercel.app', 
+      'https://level-up-olive-gamma.vercel.app',
       process.env.NEXT_PUBLIC_APP_URL,
       process.env.FRONTEND_URL,
     ].filter(Boolean);
@@ -93,11 +93,18 @@ app.use('/api/v1/', translationMiddeware, mainRoutes);
 initializeSocket(io);
 
 httpServer.listen(port, () => {
-  logger.info('🚀 LevelUp Backend Server Started', { port, environment: env.NODE_ENV });
+  logger.info('🚀 LevelUp Backend Server Started', {
+    port,
+    environment: env.NODE_ENV,
+  });
   logger.info('📍 HTTP Server', { url: `http://localhost:${port}` });
   logger.info('🔌 Socket.IO', { url: `ws://localhost:${port}/socket.io/` });
   logger.info('🔐 CORS allowed origins', {
-    origins: ['http://localhost:3000', 'https://www.melevelup.me', env.NEXT_PUBLIC_APP_URL].filter(Boolean),
+    origins: [
+      'http://localhost:3000',
+      'https://www.melevelup.me',
+      env.NEXT_PUBLIC_APP_URL,
+    ].filter(Boolean),
   });
 
   // Start AI quest cron jobs

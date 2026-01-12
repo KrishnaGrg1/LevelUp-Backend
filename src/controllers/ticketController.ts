@@ -22,7 +22,7 @@ const createTicket = async (req: AuthRequest, res: Response): Promise<void> => {
         updatedAt: new Date(),
       },
     });
-    
+
     res.status(201).json(
       makeSuccessResponse(
         {

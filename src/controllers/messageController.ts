@@ -16,7 +16,12 @@ const getCommunityMessages = async (req: AuthRequest, res: Response) => {
   try {
     const { communityId } = req.params;
     const { page, limit } = req.query;
-    logger.debug('Fetching community messages', { communityId, page, limit, userId: req.user?.id });
+    logger.debug('Fetching community messages', {
+      communityId,
+      page,
+      limit,
+      userId: req.user?.id,
+    });
 
     const lang = req.language as Language;
     const userId = req.user?.id;
@@ -105,7 +110,10 @@ const getCommunityMessages = async (req: AuthRequest, res: Response) => {
       .status(200)
       .json(makeSuccessResponse(data, 'success.message.fetched', lang, 200));
   } catch (e: unknown) {
-    logger.error('Error in getCommunityMessages', e, { communityId: req.params.communityId, userId: req.user?.id });
+    logger.error('Error in getCommunityMessages', e, {
+      communityId: req.params.communityId,
+      userId: req.user?.id,
+    });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -234,7 +242,10 @@ const getClanMessages = async (req: AuthRequest, res: Response) => {
       .status(200)
       .json(makeSuccessResponse(data, 'success.message.fetched', lang, 200));
   } catch (e: unknown) {
-    logger.error('Error in getClanMessages', e, { clanId: req.params.clanId, userId: req.user?.id });
+    logger.error('Error in getClanMessages', e, {
+      clanId: req.params.clanId,
+      userId: req.user?.id,
+    });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)

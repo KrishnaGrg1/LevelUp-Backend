@@ -47,7 +47,9 @@ export function emitSocketSuccess(
  */
 export function checkAuthentication(
   socket: AuthenticatedSocket
-): socket is AuthenticatedSocket & { user: NonNullable<AuthenticatedSocket['user']> } {
+): socket is AuthenticatedSocket & {
+  user: NonNullable<AuthenticatedSocket['user']>;
+} {
   if (!socket.user) {
     emitSocketError(socket, 'error', {
       code: 'NOT_AUTHENTICATED',

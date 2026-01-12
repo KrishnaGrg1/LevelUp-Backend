@@ -26,14 +26,51 @@ export const authMiddleware = async (
 ) => {
   logger.debug('Auth middleware invoked', {
     hasCookie: Boolean(req.headers.cookie),
+    hasAuthHeader: Boolean(req.headers.authorization),
     origin: req.headers.origin,
     nodeEnv: process.env.NODE_ENV,
   });
 
   // Try session-based auth first (Lucia)
-  const sessionId = lucia.readSessionCookie(req.headers.cookie ?? '');
+  let sessionId = lucia.readSessionCookie(req.headers.cookie ?? '');
   const lang = req.language as Language;
-  logger.debug('Auth middleware session lookup', { hasSessionId: Boolean(sessionId) });
+  logger.debug('Auth middleware session lookup', {
+    hasSessionId: Boolean(sessionId),
+  });
+  if (!sessionId) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      throw new Error('Authorization header requried!');
+    }
+    const sessionId = authHeader.replace('Bearer ', '');
+    const { session, user } = await lucia.validateSession(sessionId);
+    if (session) {
+      req.session = session;
+
+      req.user = user;
+      req.userID = user ? { id: user.id } : undefined;
+
+      if (session.fresh) {
+        res.appendHeader(
+          'Set-Cookie',
+          lucia.createSessionCookie(session.id).serialize()
+        );
+      }
+      return next();
+    }
+    res
+      .status(403)
+      .json(
+        makeErrorResponse(
+          new Error('Session expired. Please log in again.'),
+          'error.auth.session_expired',
+          lang,
+          403
+        )
+      );
+    return;
+  }
+
   if (sessionId) {
     try {
       const { session, user } = await lucia.validateSession(sessionId);
@@ -53,6 +90,26 @@ export const authMiddleware = async (
       } else {
         //session expired and delete from the db
         await lucia.invalidateSession(sessionId);
+
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          sessionId = authHeader.substring(7); // Remove 'Bearer ' prefix
+        }
+        const { session, user } = await lucia.validateSession(sessionId);
+        if (session) {
+          req.session = session;
+
+          req.user = user;
+          req.userID = user ? { id: user.id } : undefined;
+
+          if (session.fresh) {
+            res.appendHeader(
+              'Set-Cookie',
+              lucia.createSessionCookie(session.id).serialize()
+            );
+          }
+          return next();
+        }
         res
           .status(403)
           .json(

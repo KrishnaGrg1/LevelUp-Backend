@@ -8,6 +8,8 @@ export function startSessionCleanupJob() {
     const result = await client.session.deleteMany({
       where: { expiresAt: { lt: new Date() } },
     });
-    logger.info('[Session Cleanup] Deleted expired sessions', { deleted: result.count });
+    logger.info('[Session Cleanup] Deleted expired sessions', {
+      deleted: result.count,
+    });
   });
 }

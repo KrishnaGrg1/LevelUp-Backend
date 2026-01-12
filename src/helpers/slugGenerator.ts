@@ -6,4 +6,4 @@ const generateSlug = (name: string) => {
     .replace(/^-+|-+$/g, '');
 };
 
-export {generateSlug};
+export { generateSlug };

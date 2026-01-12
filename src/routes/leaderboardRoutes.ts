@@ -6,36 +6,36 @@ const leaderboardRoutes = Router();
 
 // Overall user leaderboard
 leaderboardRoutes.get(
-  '/', 
-  authMiddleware, 
+  '/',
+  authMiddleware,
   leaderboardController.getGlobalLeaderboard
 );
 
 // Community leaderboard (members ranked by community XP)
 leaderboardRoutes.get(
-  '/community/:communityId'
-  , authMiddleware, 
+  '/community/:communityId',
+  authMiddleware,
   leaderboardController.getCommunityLeaderboard
 );
 
 // Top communities (supports ?sortBy=xp|members|createdAt&order=asc|desc)
 leaderboardRoutes.get(
-  '/top-communities', 
-  authMiddleware, 
+  '/top-communities',
+  authMiddleware,
   leaderboardController.getTopCommunities
 );
 
 // Clan leaderboard (members ranked by clan XP)
 leaderboardRoutes.get(
-  '/clan/:clanId', 
-  authMiddleware, 
+  '/clan/:clanId',
+  authMiddleware,
   leaderboardController.getClanLeaderboard
 );
 
 // Top clans (supports ?communityId=&sortBy=xp|members|createdAt&order=asc|desc)
 leaderboardRoutes.get(
-  '/top-clans', 
-  authMiddleware, 
+  '/top-clans',
+  authMiddleware,
   leaderboardController.getTopClans
 );
 

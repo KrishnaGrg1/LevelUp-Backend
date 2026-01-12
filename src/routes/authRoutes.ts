@@ -9,22 +9,15 @@ import { uploadProfilePicture } from '../helpers/files/multer';
 const authRoutes = Router();
 
 //Fetch Caetegories
-authRoutes.get(
-  '/categories', 
-  authController.fetchCategories
-);
+authRoutes.get('/categories', authController.fetchCategories);
 
-  authRoutes.post(
+authRoutes.post(
   '/register',
   validate(authValidation.register),
   authController.register
 );
 
-authRoutes.post(
-  '/login', 
-  validate(authValidation.login), 
-  authController.login
-);
+authRoutes.post('/login', validate(authValidation.login), authController.login);
 
 authRoutes.post(
   '/forget-password',
@@ -38,11 +31,7 @@ authRoutes.post(
   authController.resetPassword
 );
 
-authRoutes.get(
-  '/me', 
-  authMiddleware, 
-  authController.me
-);
+authRoutes.get('/me', authMiddleware, authController.me);
 
 authRoutes.post(
   '/verify-email',
@@ -50,17 +39,9 @@ authRoutes.post(
   authController.verifyEmail
 );
 
-authRoutes.post(
-  '/logout', 
-  authMiddleware, 
-  authController.logout
-);
+authRoutes.post('/logout', authMiddleware, authController.logout);
 
-authRoutes.post(
-  '/deleteAccount', 
-  authMiddleware, 
-  authController.deleteAccount
-);
+authRoutes.post('/deleteAccount', authMiddleware, authController.deleteAccount);
 
 // Upload profile picture route
 authRoutes.post(
@@ -70,10 +51,7 @@ authRoutes.post(
   authController.uploadProfilePicture
 );
 
-authRoutes.post(
-  '/oauth/register', 
-  oauthController.oauthLogin
-);
+authRoutes.post('/oauth/register', oauthController.oauthLogin);
 
 authRoutes.post(
   '/change-password',
@@ -82,10 +60,6 @@ authRoutes.post(
   authController.changePassword
 );
 
-authRoutes.post(
-  '/onBoarding',
-  authMiddleware,
-  authController.onBoarding
-);
+authRoutes.post('/onBoarding', authMiddleware, authController.onBoarding);
 
 export default authRoutes;
