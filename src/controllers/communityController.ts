@@ -420,35 +420,40 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
       : undefined;
 
     let rawCode: string | undefined;
+    let cleanCode: string | undefined;
+
     if (isPrivateBool === true) {
-      rawCode = generateCode();
+      rawCode = generateCode(); // e.g. ABCD-9KX2
+      console.log('Generated community join code:', rawCode);
+      cleanCode = rawCode.replace(/-/g, ''); // Returns "ZM5KXEKD"
+      console.log('Clean community join code:', cleanCode);
     }
 
-    const community = await client.$transaction(async (tx) => {
-      return tx.community.create({
-        data: {
-          name: communityName,
-          description: descriptionStr,
-          ownerId: userId,
-          memberLimit: memberLimitNum,
-          isPrivate: isPrivateBool,
-          photo: photoPath,
-          ...(isPrivateBool && rawCode
-            ? {
-                joinCodeHash: rawCode,
-                codeUpdatedAt: new Date(),
-              }
-            : {}),
-          members: {
-            create: [
-              {
-                userId: user.id,
-                role: 'ADMIN',
-              },
-            ],
-          },
+    // create community
+    const community = await client.community.create({
+      data: {
+        name: communityName,
+        description: descriptionStr,
+        ownerId: userId,
+        memberLimit: memberLimitNum,
+        isPrivate: isPrivateBool,
+        photo: photoPath,
+        ...(isPrivateBool && cleanCode
+          ? {
+              joinCodeHash: cleanCode,
+              codeUpdatedAt: new Date(),
+            }
+          : {}),
+
+        members: {
+          create: [
+            {
+              userId: user.id,
+              role: 'ADMIN',
+            },
+          ],
         },
-      });
+      },
     });
 
     res
@@ -604,7 +609,12 @@ const joinPrivateCommunity = async (req: AuthRequest, res: Response) => {
       return res
         .status(400)
         .json(
-          makeErrorResponse(new Error('Community not found'), 'ss', lang, 400)
+          makeErrorResponse(
+            new Error('Community not found'),
+            'Community Not Found',
+            lang,
+            400
+          )
         );
     }
 
