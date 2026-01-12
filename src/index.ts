@@ -25,7 +25,7 @@ export const io = new Server(httpServer, {
       env.NEXT_PUBLIC_APP_URL,
     ].filter(Boolean) as string[],
     credentials: true,
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   },
   pingTimeout: 60000,
   pingInterval: 25000,
@@ -44,7 +44,7 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'https://www.melevelup.me',
-      'https://level-up-olive-gamma.vercel.app', 
+      'https://level-up-olive-gamma.vercel.app',
       process.env.NEXT_PUBLIC_APP_URL,
       process.env.FRONTEND_URL,
     ].filter(Boolean);
@@ -108,7 +108,7 @@ httpServer.listen(port, () => {
     console.log(`   - ${env.NEXT_PUBLIC_APP_URL}`);
   }
   console.log(`=====================================\n`);
-  
+
   // Start AI quest cron jobs
   startDailyAiQuestJob();
   startWeeklyAiQuestJob();

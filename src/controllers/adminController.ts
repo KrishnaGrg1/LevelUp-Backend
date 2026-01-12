@@ -17,7 +17,7 @@ const viewUserDetail = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
 
-    const userId = req.params.id; //from params -- this is user(costumer)
+    const userId = req.params.userId; //from params -- this is user(costumer)
 
     const user = await findUser(userId, res, lang);
     if (!user) return; // If user not found, findUser already sent the response
