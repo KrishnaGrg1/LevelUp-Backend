@@ -381,18 +381,32 @@ const getClansByCommunity = async (req: AuthRequest, res: Response) => {
   try {
     const lang = req.language as Language;
     const { communityId } = req.params;
+    const userId = req.user?.id;
 
     const clans = await client.clan.findMany({
       where: { communityId },
       include: {
         owner: { select: { id: true, UserName: true, profilePicture: true } },
         _count: { select: { members: true } },
+        members: {
+          where: { userId: userId },
+          select: { id: true },
+        },
       },
     });
 
+    const formattedClans = clans.map((clan) => {
+      const { members, ...clanData } = clan; // Extract members array
+      return {
+        ...clanData,
+        isMember: members.length > 0, // If array has 1 item, user is a member
+      };
+    });
     return res
       .status(200)
-      .json(makeSuccessResponse(clans, 'success.clan.retrieved', lang, 200));
+      .json(
+        makeSuccessResponse(formattedClans, 'success.clan.retrieved', lang, 200)
+      );
   } catch (e: unknown) {
     const lang = (req.language as Language) || 'eng';
     return res
