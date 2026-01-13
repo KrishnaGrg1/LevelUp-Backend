@@ -30,7 +30,7 @@ export const authMiddleware = async (
     origin: req.headers.origin,
     nodeEnv: process.env.NODE_ENV,
   });
-
+  console.log('cookie', req.headers.cookie);
   // Try session-based auth first (Lucia)
   let sessionId = lucia.readSessionCookie(req.headers.cookie ?? '');
   const lang = req.language as Language;
@@ -40,15 +40,28 @@ export const authMiddleware = async (
   if (!sessionId) {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      throw new Error('Authorization header requried!');
+      res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Authentication required'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
+      return;
     }
-    const sessionId = authHeader.replace('Bearer ', '');
-    const { session, user } = await lucia.validateSession(sessionId);
-    if (session) {
+    const bearerSessionId = authHeader.replace('Bearer ', '');
+    const { session, user } = await lucia.validateSession(bearerSessionId);
+    if (session && user) {
       req.session = session;
-
       req.user = user;
-      req.userID = user ? { id: user.id } : undefined;
+      req.userID = { id: user.id };
+
+      logger.debug('Auth successful via Bearer token', {
+        userId: user.id,
+      });
 
       if (session.fresh) {
         res.appendHeader(

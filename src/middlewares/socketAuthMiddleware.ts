@@ -36,7 +36,24 @@ export const socketAuthMiddleware = async (
 
     if (!cookies) {
       logger.warn('❌ Socket auth failed: No cookies provided', clientInfo);
-      return next(new Error('Authentication required - no cookies'));
+      const authHeader = socket.handshake.headers.authorization;
+      if (!authHeader) {
+        return next(
+          new Error('Authentication required - no credentials provided')
+        );
+      }
+      const sessionId = authHeader.replace('Bearer ', '');
+      const { session, user } = await lucia.validateSession(sessionId);
+      if (session && user) {
+        socket.user = user;
+        logger.info('✅ Socket auth successful (Bearer token)', {
+          ...clientInfo,
+          userId: user.id,
+          username: user.UserName,
+        });
+        return next();
+      }
+      return next(new Error('Invalid or expired session token'));
     }
 
     // 2️⃣ Read session cookie
