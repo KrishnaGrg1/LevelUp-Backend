@@ -1,3 +1,4 @@
+// DEPRECATED: Legacy weekly quest generator retained for reference. Not scheduled in current runtime.
 import cron from 'node-cron';
 import { startOfDay } from 'date-fns';
 import client from '../helpers/prisma';
@@ -10,15 +11,18 @@ import { MemberStatus, QuestSource, QuestType } from '@prisma/client';
 const locks = new Map<string, number>();
 let isRunning = false;
 
-async function acquireLock(key: string, timeoutSeconds: number): Promise<boolean> {
+async function acquireLock(
+  key: string,
+  timeoutSeconds: number
+): Promise<boolean> {
   const now = Date.now();
   const existingLock = locks.get(key);
-  
+
   if (existingLock && existingLock > now) {
     return false;
   }
-  
-  locks.set(key, now + (timeoutSeconds * 1000));
+
+  locks.set(key, now + timeoutSeconds * 1000);
   return true;
 }
 
@@ -27,25 +31,29 @@ async function releaseLock(key: string): Promise<void> {
 }
 
 // ==================== AI HELPERS ====================
-async function OpenAIChatWithTimeout(params: any, timeoutMs = 30000): Promise<any> {
+async function OpenAIChatWithTimeout(
+  params: any,
+  timeoutMs = 30000
+): Promise<any> {
   return Promise.race([
     OpenAIChat(params),
-    new Promise((_, reject) => 
+    new Promise((_, reject) =>
       setTimeout(() => reject(new Error('AI call timeout')), timeoutMs)
-    )
+    ),
   ]);
 }
 
 function validateQuestResponse(parsed: any): boolean {
   if (!parsed || typeof parsed !== 'object') return false;
   if (!Array.isArray(parsed.quests)) return false;
-  
-  return parsed.quests.every((q: any) => 
-    q && 
-    typeof q.description === 'string' && 
-    q.description.length > 0 &&
-    q.description.length < 500 &&
-    (q.xpReward === undefined || typeof q.xpReward === 'number')
+
+  return parsed.quests.every(
+    (q: any) =>
+      q &&
+      typeof q.description === 'string' &&
+      q.description.length > 0 &&
+      q.description.length < 500 &&
+      (q.xpReward === undefined || typeof q.xpReward === 'number')
   );
 }
 
@@ -73,7 +81,13 @@ function getUserLocalComponents(tz: string) {
     }).format(now);
 
     const weekdayMap: Record<string, number> = {
-      Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+      Sun: 0,
+      Mon: 1,
+      Tue: 2,
+      Wed: 3,
+      Thu: 4,
+      Fri: 5,
+      Sat: 6,
     };
 
     return {
@@ -91,7 +105,7 @@ function computeWeekKeyFromLocal(dateKey: string, weekday: number) {
   // convert Mon=1 → offset=0, Sun=0 → offset=6
   const daysToMonday = (weekday + 6) % 7;
 
-  const [y, m, d] = dateKey.split('-').map(n => parseInt(n, 10));
+  const [y, m, d] = dateKey.split('-').map((n) => parseInt(n, 10));
   const utc = new Date(Date.UTC(y, m - 1, d));
   const shift = utc.getTime() - daysToMonday * 86400000;
 
@@ -114,8 +128,10 @@ function ensureAIConfigured(): boolean {
 async function generateWeeklyQuestForUser(userId: string, force = false) {
   // ==================== LOCK ACQUISITION ====================
   const lockKey = `quest_gen_weekly:${userId}`;
-  if (!await acquireLock(lockKey, 300)) {
-    console.log(`[WeeklyQuest] Generation already in progress for user ${userId}`);
+  if (!(await acquireLock(lockKey, 300))) {
+    console.log(
+      `[WeeklyQuest] Generation already in progress for user ${userId}`
+    );
     return;
   }
 
@@ -130,7 +146,7 @@ async function generateWeeklyQuestForUser(userId: string, force = false) {
         },
       },
     });
-    
+
     if (!user) {
       console.warn(`[WeeklyQuest] User ${userId} not found`);
       return;
@@ -140,7 +156,9 @@ async function generateWeeklyQuestForUser(userId: string, force = false) {
       return;
     }
     if (!user.CommunityMember || user.CommunityMember.length === 0) {
-      console.warn(`[WeeklyQuest] User ${userId} has no community memberships - skipping`);
+      console.warn(
+        `[WeeklyQuest] User ${userId} has no community memberships - skipping`
+      );
       return;
     }
 
@@ -166,18 +184,22 @@ async function generateWeeklyQuestForUser(userId: string, force = false) {
     // ==================== DETERMINE IF NEW WEEK ====================
     // Key fix: Check if it's a NEW week, not if this week is already generated
     const isNewWeek = !currentThisWeek || currentThisWeek.periodKey !== weekKey;
-    
+
     // Skip if already generated this week (unless forced)
     if (!isNewWeek && !force) {
-      console.log(`[WeeklyQuest] Quests already generated for user ${userId} on ${weekKey}`);
+      console.log(
+        `[WeeklyQuest] Quests already generated for user ${userId} on ${weekKey}`
+      );
       return;
     }
 
     // ==================== SHIFT CYCLE (ONLY IF NEW WEEK) ====================
     // This ensures rotation only happens when transitioning to a new week
     if (isNewWeek) {
-      console.log(`[WeeklyQuest] New week detected for user ${userId}, rotating quests...`);
-      
+      console.log(
+        `[WeeklyQuest] New week detected for user ${userId}, rotating quests...`
+      );
+
       await client.$transaction(async (tx) => {
         // 1) Delete TWO_WEEKS_AGO
         await tx.quest.deleteMany({
@@ -214,20 +236,28 @@ async function generateWeeklyQuestForUser(userId: string, force = false) {
 
     // ==================== QUEST GENERATION PREP ====================
     // Use the quest that was just moved to LAST_WEEK for progressive check
-    const progressive = isNewWeek ? Boolean(currentThisWeek?.isCompleted) : false;
+    const progressive = isNewWeek
+      ? Boolean(currentThisWeek?.isCompleted)
+      : false;
     const effLevel = progressive ? Math.min(level + 1, 100) : level;
     const QUEST_COUNT = 5;
 
-    console.log(`[WeeklyQuest] Generating quests for user ${userId}: Level ${effLevel}, Progressive: ${progressive}`);
+    console.log(
+      `[WeeklyQuest] Generating quests for user ${userId}: Level ${effLevel}, Progressive: ${progressive}`
+    );
 
     // ==================== FALLBACK MODE ====================
     if (!ensureAIConfigured()) {
-      console.log(`[WeeklyQuest] AI not configured, using fallback mode for user ${userId}`);
-      
+      console.log(
+        `[WeeklyQuest] AI not configured, using fallback mode for user ${userId}`
+      );
+
       for (const membership of user.CommunityMember) {
         // Validate community exists
         if (!membership.community) {
-          console.warn(`[WeeklyQuest] Community not found for membership ${membership.id}`);
+          console.warn(
+            `[WeeklyQuest] Community not found for membership ${membership.id}`
+          );
           continue;
         }
 
@@ -243,14 +273,16 @@ async function generateWeeklyQuestForUser(userId: string, force = false) {
         });
 
         const skill =
-          user.category?.name ||
+          user.category?.[0]?.name ||
           membership.community.category?.name ||
           membership.community.name ||
           'Personal Development';
 
         // Validate skill name
         if (!skill || skill.trim() === '') {
-          console.warn(`[WeeklyQuest] Invalid skill name for user ${userId}, community ${membership.communityId}`);
+          console.warn(
+            `[WeeklyQuest] Invalid skill name for user ${userId}, community ${membership.communityId}`
+          );
           continue;
         }
 
@@ -290,7 +322,9 @@ async function generateWeeklyQuestForUser(userId: string, force = false) {
     for (const membership of user.CommunityMember) {
       // Validate community exists
       if (!membership.community) {
-        console.warn(`[WeeklyQuest] Community not found for membership ${membership.id}`);
+        console.warn(
+          `[WeeklyQuest] Community not found for membership ${membership.id}`
+        );
         continue;
       }
 
@@ -309,14 +343,16 @@ async function generateWeeklyQuestForUser(userId: string, force = false) {
         (membership.status as MemberStatus) || MemberStatus.Beginner;
 
       const skill =
-        user.category?.name ||
+        user.category?.[0]?.name ||
         membership.community.category?.name ||
         membership.community.name ||
         'Personal Development';
 
       // Validate skill name
       if (!skill || skill.trim() === '') {
-        console.warn(`[WeeklyQuest] Invalid skill name for user ${userId}, community ${membership.communityId}`);
+        console.warn(
+          `[WeeklyQuest] Invalid skill name for user ${userId}, community ${membership.communityId}`
+        );
         continue;
       }
 
@@ -324,17 +360,27 @@ async function generateWeeklyQuestForUser(userId: string, force = false) {
 
       // AI generation with timeout and validation
       try {
-        const prompt = getDailyQuestSetPrompt(skill, effLevel + 1, status, xp + 20);
+        const prompt = getDailyQuestSetPrompt(
+          skill,
+          effLevel + 1,
+          status,
+          xp + 20
+        );
         const res = await OpenAIChatWithTimeout({ prompt }, 30000); // 30s timeout
         const parsed = JSON.parse(res?.content ?? '{}');
-        
+
         if (validateQuestResponse(parsed)) {
           quests = parsed.quests;
         } else {
-          console.warn(`[WeeklyQuest] Invalid AI response for user ${userId}, using fallback`);
+          console.warn(
+            `[WeeklyQuest] Invalid AI response for user ${userId}, using fallback`
+          );
         }
       } catch (error) {
-        console.error(`[WeeklyQuest] AI failed for user ${userId}, community ${membership.communityId}:`, error);
+        console.error(
+          `[WeeklyQuest] AI failed for user ${userId}, community ${membership.communityId}:`,
+          error
+        );
       }
 
       // Fallback if AI failed or returned invalid data
@@ -380,7 +426,10 @@ async function generateWeeklyQuestForUser(userId: string, force = false) {
   }
 }
 
-async function runWeeklyQuestGenerationBatch(force = false, onlyUserId?: string) {
+async function runWeeklyQuestGenerationBatch(
+  force = false,
+  onlyUserId?: string
+) {
   const where: any = { isBanned: false };
   if (onlyUserId) where.id = onlyUserId;
 

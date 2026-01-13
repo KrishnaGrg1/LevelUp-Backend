@@ -3,6 +3,7 @@ import { lucia } from './lucia';
 import { TranslationRequest } from './translationMiddleware';
 import { makeErrorResponse } from '../helpers/standardResponse';
 import { Language } from '../translation/translation';
+import logger from '../helpers/logger';
 
 export interface AuthRequest extends TranslationRequest {
   user?: {
@@ -23,15 +24,66 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ) => {
-  console.log('🔍 Auth Debug:');
-  console.log('- Cookies:', req.headers.cookie);
-  console.log('- Origin:', req.headers.origin);
-  console.log('- NODE_ENV:', process.env.NODE_ENV);
-
+  logger.debug('Auth middleware invoked', {
+    hasCookie: Boolean(req.headers.cookie),
+    hasAuthHeader: Boolean(req.headers.authorization),
+    origin: req.headers.origin,
+    nodeEnv: process.env.NODE_ENV,
+  });
+  console.log('cookie', req.headers.cookie);
   // Try session-based auth first (Lucia)
-  const sessionId = lucia.readSessionCookie(req.headers.cookie ?? '');
+  let sessionId = lucia.readSessionCookie(req.headers.cookie ?? '');
   const lang = req.language as Language;
-  console.log('- Session ID from cookie:', sessionId);
+  logger.debug('Auth middleware session lookup', {
+    hasSessionId: Boolean(sessionId),
+  });
+  if (!sessionId) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Authentication required'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
+      return;
+    }
+    const bearerSessionId = authHeader.replace('Bearer ', '');
+    const { session, user } = await lucia.validateSession(bearerSessionId);
+    if (session && user) {
+      req.session = session;
+      req.user = user;
+      req.userID = { id: user.id };
+
+      logger.debug('Auth successful via Bearer token', {
+        userId: user.id,
+      });
+
+      if (session.fresh) {
+        res.appendHeader(
+          'Set-Cookie',
+          lucia.createSessionCookie(session.id).serialize()
+        );
+      }
+      return next();
+    }
+    res
+      .status(403)
+      .json(
+        makeErrorResponse(
+          new Error('Session expired. Please log in again.'),
+          'error.auth.session_expired',
+          lang,
+          403
+        )
+      );
+    return;
+  }
+
   if (sessionId) {
     try {
       const { session, user } = await lucia.validateSession(sessionId);
@@ -51,6 +103,26 @@ export const authMiddleware = async (
       } else {
         //session expired and delete from the db
         await lucia.invalidateSession(sessionId);
+
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          sessionId = authHeader.substring(7); // Remove 'Bearer ' prefix
+        }
+        const { session, user } = await lucia.validateSession(sessionId);
+        if (session) {
+          req.session = session;
+
+          req.user = user;
+          req.userID = user ? { id: user.id } : undefined;
+
+          if (session.fresh) {
+            res.appendHeader(
+              'Set-Cookie',
+              lucia.createSessionCookie(session.id).serialize()
+            );
+          }
+          return next();
+        }
         res
           .status(403)
           .json(
@@ -64,7 +136,7 @@ export const authMiddleware = async (
         return;
       }
     } catch (error) {
-      console.error('Session validation error:', error);
+      logger.error('Session validation error', error);
     }
   }
 

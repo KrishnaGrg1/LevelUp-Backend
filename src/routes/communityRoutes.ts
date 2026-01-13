@@ -23,31 +23,39 @@ communityRoutes.get(
 );
 
 //  Get my communities
-communityRoutes.get(
-  '/my',
-
-  communityController.myCommunities
-);
+communityRoutes.get('/my', communityController.myCommunities);
 
 //  Search communities
-communityRoutes.get(
-  '/search',
-
-  communityController.searchCommunities
-);
+communityRoutes.get('/search', communityController.searchCommunities);
 
 //  Get specific community details
-communityRoutes.get(
-  '/:communityId',
+communityRoutes.get('/:communityId', communityController.specificCommunity);
 
-  communityController.specificCommunity
+//  Get community owner (returns { ownerId })
+communityRoutes.get(
+  '/:communityId/owner',
+  validate(communityValidation.getCommunityOwner),
+  communityController.getCommunityOwner
 );
 
-//  Join a community
+//  Get community members (members only)
+communityRoutes.get(
+  '/:communityId/members',
+  communityController.getCommunityMembers
+);
+
+//  Join public community
 communityRoutes.post(
   '/:communityId/join',
-  validate(communityValidation.joinCommunity),
-  communityController.joinCommunity
+  validate(communityValidation.joinPublicCommunity),
+  communityController.joinPublicCommunity
+);
+
+//  Join private community
+communityRoutes.post(
+  '/join',
+  validate(communityValidation.joinPrivateCommunity),
+  communityController.joinPrivateCommunity
 );
 
 //  Leave a community

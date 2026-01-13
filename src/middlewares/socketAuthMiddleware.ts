@@ -1,6 +1,7 @@
 import { Socket } from 'socket.io';
 import { Lucia } from 'lucia';
 import { lucia } from './lucia';
+import logger from '../helpers/logger';
 
 export interface AuthenticatedSocket extends Socket {
   user?: {
@@ -28,50 +29,63 @@ export const socketAuthMiddleware = async (
   try {
     // 1️⃣ Extract cookies from handshake
     const cookies = socket.handshake.headers.cookie;
-    console.log(`🔐 Socket auth attempt:`, {
+    logger.info('🔐 Socket auth attempt', {
       ...clientInfo,
       hasCookies: !!cookies,
     });
 
     if (!cookies) {
-      console.warn('❌ Socket auth failed: No cookies provided', clientInfo);
-      return next(new Error('Authentication required - no cookies'));
+      logger.warn('❌ Socket auth failed: No cookies provided', clientInfo);
+      const authHeader = socket.handshake.headers.authorization;
+      if (!authHeader) {
+        return next(
+          new Error('Authentication required - no credentials provided')
+        );
+      }
+      const sessionId = authHeader.replace('Bearer ', '');
+      const { session, user } = await lucia.validateSession(sessionId);
+      if (session && user) {
+        socket.user = user;
+        logger.info('✅ Socket auth successful (Bearer token)', {
+          ...clientInfo,
+          userId: user.id,
+          username: user.UserName,
+        });
+        return next();
+      }
+      return next(new Error('Invalid or expired session token'));
     }
-    
+
     // 2️⃣ Read session cookie
     const sessionId = lucia.readSessionCookie(cookies);
 
     if (!sessionId) {
-      console.warn('❌ Socket auth failed: Invalid session cookie', clientInfo);
+      logger.warn('❌ Socket auth failed: Invalid session cookie', clientInfo);
       return next(new Error('Invalid session cookie'));
     }
-    
+
     // 3️⃣ Validate session with database
     const { session, user } = await lucia.validateSession(sessionId);
     if (!session || !user) {
-      console.warn('❌ Socket auth failed: Session expired or invalid', {
+      logger.warn('❌ Socket auth failed: Session expired or invalid', {
         ...clientInfo,
         sessionId,
       });
       return next(new Error('Session expired or invalid'));
     }
-    
+
     // 4️⃣ Attach user to socket
     socket.user = user;
-    
-    console.log('✅ Socket auth successful:', {
+    logger.info('✅ Socket auth successful', {
       ...clientInfo,
       userId: user.id,
       username: user.UserName,
     });
-    
+
     // 5️⃣ Allow connection to proceed
     next(); // ← Success! User authenticated
   } catch (error) {
-    console.error('💥 Socket authentication error:', {
-      ...clientInfo,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error('💥 Socket authentication error', error, { ...clientInfo });
     next(new Error('Authentication failed - server error'));
   }
 };

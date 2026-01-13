@@ -4,14 +4,26 @@
   - You are about to drop the column `clanId` on the `CommunityMember` table. All the data in the column will be lost.
 
 */
--- DropForeignKey
-ALTER TABLE "public"."CommunityMember" DROP CONSTRAINT "CommunityMember_clanId_fkey";
+-- DropForeignKey (only if exists)
+DO $$ BEGIN
+    ALTER TABLE "public"."CommunityMember" DROP CONSTRAINT IF EXISTS "CommunityMember_clanId_fkey";
+EXCEPTION
+    WHEN undefined_object THEN NULL;
+END $$;
 
--- DropForeignKey
-ALTER TABLE "public"."Message" DROP CONSTRAINT "Message_communityId_fkey";
+-- DropForeignKey (only if exists)
+DO $$ BEGIN
+    ALTER TABLE "public"."Message" DROP CONSTRAINT IF EXISTS "Message_communityId_fkey";
+EXCEPTION
+    WHEN undefined_object THEN NULL;
+END $$;
 
--- AlterTable
-ALTER TABLE "public"."CommunityMember" DROP COLUMN "clanId";
+-- AlterTable (drop column only if exists)
+DO $$ BEGIN
+    ALTER TABLE "public"."CommunityMember" DROP COLUMN IF EXISTS "clanId";
+EXCEPTION
+    WHEN undefined_column THEN NULL;
+END $$;
 
 -- AlterTable
 ALTER TABLE "public"."Message" ADD COLUMN     "clanId" TEXT,

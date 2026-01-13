@@ -11,18 +11,17 @@ import {
 } from '../sockets/chatSocket';
 import { Language } from '../translation/translation';
 import { Response } from 'express';
+import logger from '../helpers/logger';
 const getCommunityMessages = async (req: AuthRequest, res: Response) => {
   try {
     const { communityId } = req.params;
     const { page, limit } = req.query;
-    console.log(
-      'Fetching messages for communityId:',
+    logger.debug('Fetching community messages', {
       communityId,
-      'Page:',
       page,
-      'Limit:',
-      limit
-    );
+      limit,
+      userId: req.user?.id,
+    });
 
     const lang = req.language as Language;
     const userId = req.user?.id;
@@ -85,7 +84,7 @@ const getCommunityMessages = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    console.log('total messages are', totalMessages);
+    logger.debug('Community messages count', { communityId, totalMessages });
 
     // Format messages to match frontend Message interface
     const formattedMessages = messages.map((msg) => ({
@@ -111,7 +110,10 @@ const getCommunityMessages = async (req: AuthRequest, res: Response) => {
       .status(200)
       .json(makeSuccessResponse(data, 'success.message.fetched', lang, 200));
   } catch (e: unknown) {
-    console.error('Error in getCommunityMessages:', e);
+    logger.error('Error in getCommunityMessages', e, {
+      communityId: req.params.communityId,
+      userId: req.user?.id,
+    });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -166,10 +168,11 @@ const getClanMessages = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    console.log('Clan found:', clan);
-    console.log('Checking membership for user:', userId);
-    console.log('Clan communityId:', clan.communityId);
-    console.log('Clan ID:', clanId);
+    logger.debug('Clan messages membership check', {
+      userId,
+      clanId,
+      communityId: clan.communityId,
+    });
     //check clan membership
     const isClanMember = await checkClanMembership(userId, clanId);
 
@@ -206,7 +209,7 @@ const getClanMessages = async (req: AuthRequest, res: Response) => {
         },
       },
     });
-    console.log('message are', message);
+    logger.debug('Fetched clan messages', { clanId, count: message.length });
     //get total count
     const totalMessages = await client.message.count({
       where: {
@@ -214,7 +217,7 @@ const getClanMessages = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    console.log('total messages are', totalMessages);
+    logger.debug('Clan messages count', { clanId, totalMessages });
 
     //format messages
     const formattedMessages = message.map((msg) => ({
@@ -239,7 +242,10 @@ const getClanMessages = async (req: AuthRequest, res: Response) => {
       .status(200)
       .json(makeSuccessResponse(data, 'success.message.fetched', lang, 200));
   } catch (e: unknown) {
-    console.error('Error in getClanMessages:', e);
+    logger.error('Error in getClanMessages', e, {
+      clanId: req.params.clanId,
+      userId: req.user?.id,
+    });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)

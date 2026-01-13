@@ -2,6 +2,7 @@ import multer from 'multer';
 import { Request } from 'express';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import cloudinary from './cloudinary';
+import logger from '../logger';
 
 // Cloudinary storage for profile pictures
 const profileStorage = new CloudinaryStorage({
@@ -72,7 +73,7 @@ export const deleteFile = async (publicId: string) => {
       await cloudinary.uploader.destroy(publicId);
     }
   } catch (error) {
-    console.error('Error deleting file from Cloudinary:', error);
+    logger.error('Error deleting file from Cloudinary', error, { publicId });
   }
 };
 
@@ -92,7 +93,7 @@ export const extractPublicId = (url: string): string | null => {
     }
     return null;
   } catch (error) {
-    console.error('Error extracting public_id from URL:', error);
+    logger.error('Error extracting public_id from URL', error, { url });
     return null;
   }
 };

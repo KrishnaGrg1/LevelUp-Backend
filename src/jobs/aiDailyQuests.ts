@@ -7,13 +7,17 @@ import cron from 'node-cron';
 import client from '../helpers/prisma';
 import { getUserLocalComponents } from '../helpers/quest/timezone';
 import { generateQuestsWithLock } from '../helpers/quest/generator';
+import logger from '../helpers/logger';
 
 let isRunning = false;
 
 /**
  * Generate daily quests for a single user
  */
-async function generateDailyQuestForUser(userId: string, force = false): Promise<void> {
+async function generateDailyQuestForUser(
+  userId: string,
+  force = false
+): Promise<void> {
   const user = await client.user.findUnique({
     where: { id: userId },
     select: { id: true, timezone: true },
@@ -41,12 +45,15 @@ async function generateDailyQuestForUser(userId: string, force = false): Promise
 /**
  * Run daily quest generation for all eligible users
  */
-async function runDailyQuestGenerationBatch(force = false, onlyUserId?: string): Promise<void> {
+async function runDailyQuestGenerationBatch(
+  force = false,
+  onlyUserId?: string
+): Promise<void> {
   const where: any = { isBanned: false };
   if (onlyUserId) where.id = onlyUserId;
 
   const users = await client.user.findMany({ where, select: { id: true } });
-  
+
   for (const u of users) {
     await generateDailyQuestForUser(u.id, force);
   }
@@ -58,7 +65,7 @@ async function runDailyQuestGenerationBatch(force = false, onlyUserId?: string):
 export function startDailyAiQuestJob(): void {
   cron.schedule('0 * * * *', async () => {
     if (isRunning) {
-      console.warn('[DailyQuest] Previous run still in progress, skipping');
+      logger.warn('[DailyQuest] Previous run still in progress, skipping');
       return;
     }
 
@@ -66,12 +73,12 @@ export function startDailyAiQuestJob(): void {
     try {
       await runDailyQuestGenerationBatch(false);
     } catch (err) {
-      console.error('[DailyQuest] Error', err);
+      logger.error('[DailyQuest] Error', err);
     } finally {
       isRunning = false;
     }
   });
-  console.log('✅ Daily AI Quest cron job scheduled (hourly)');
+  logger.info('✅ Daily AI Quest cron job scheduled (hourly)');
 }
 
 /**
@@ -84,6 +91,9 @@ export async function runDailyAiQuestNow(): Promise<void> {
 /**
  * Force run daily quest generation for a specific user
  */
-export async function runDailyAiQuestForUser(userId: string, force = false): Promise<void> {
+export async function runDailyAiQuestForUser(
+  userId: string,
+  force = false
+): Promise<void> {
   await runDailyQuestGenerationBatch(force, userId);
 }

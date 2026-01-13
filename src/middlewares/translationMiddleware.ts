@@ -1,6 +1,7 @@
 import { NextFunction, Response, Request } from 'express';
 import { AuthRequest } from './authMiddleware';
 import { Language } from '../translation/translation';
+import logger from '../helpers/logger';
 export interface TranslationRequest extends Request {
   language?: string;
 }
@@ -24,7 +25,7 @@ const translationMiddeware = async (
 
     next(); // only call once
   } catch (error) {
-    console.error('Translation middleware error:', error);
+    logger.error('Translation middleware error', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };

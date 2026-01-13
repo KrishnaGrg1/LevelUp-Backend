@@ -10,12 +10,16 @@ ticketRoutes.post(
   validate(ticketValidation.createTicket),
   ticketController.createTicket
 );
+
 ticketRoutes.get('', ticketController.getAllTicketsByUser);
+
 ticketRoutes.get('/:id', ticketController.getTicketById);
+
 ticketRoutes.put(
   '/:id',
   validate(ticketValidation.updateTicket),
   ticketController.updateTicketById
 );
 ticketRoutes.delete('/:id', ticketController.deleteTicketById);
+
 export default ticketRoutes;

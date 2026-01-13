@@ -1,8 +1,9 @@
-import OpenAI from "openai";
-import env from "../config";
+import OpenAI from 'openai';
+import env from '../config';
+import logger from '../logger';
 
 const openai = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
+  baseURL: 'https://openrouter.ai/api/v1',
   apiKey: env.OPENAI_API_KEY as string,
   // Optional headers for OpenRouter rankings
   // defaultHeaders: {
@@ -16,15 +17,16 @@ export default async function OpenAIChat({ prompt }: { prompt: string }) {
     const debug = (env.NODE_ENV as string) !== 'production';
     const started = Date.now();
     if (debug) {
-      console.debug(
-        `[AI] chat.completions.create → model=${env.MODEL_NAME} promptChars=${prompt?.length ?? 0}`
-      );
+      logger.debug('[AI] chat.completions.create', {
+        model: env.MODEL_NAME,
+        promptChars: prompt?.length ?? 0,
+      });
     }
     const completion = await openai.chat.completions.create({
       model: env.MODEL_NAME as string,
       messages: [
         {
-          role: "user",
+          role: 'user',
           content: prompt,
         },
       ],
@@ -33,15 +35,20 @@ export default async function OpenAIChat({ prompt }: { prompt: string }) {
     const duration = Date.now() - started;
     const msg = completion.choices?.[0]?.message;
     if (debug) {
-      const contentPreview = (msg?.content ?? '').slice(0, 200).replace(/\s+/g, ' ');
+      const contentPreview = (msg?.content ?? '')
+        .slice(0, 200)
+        .replace(/\s+/g, ' ');
       const usage = (completion as any).usage || {};
-      console.debug(
-        `[AI] response ok in ${duration}ms chars=${(msg?.content ?? '').length} preview="${contentPreview}" tokens=${usage.total_tokens ?? 'n/a'}`
-      );
+      logger.debug('[AI] response ok', {
+        duration,
+        chars: (msg?.content ?? '').length,
+        preview: contentPreview,
+        tokens: usage.total_tokens ?? 'n/a',
+      });
     }
     return msg;
   } catch (error) {
-    console.error("[AI] OpenAIChat error:", error);
+    logger.error('[AI] OpenAIChat error', error);
     throw error;
   }
 }

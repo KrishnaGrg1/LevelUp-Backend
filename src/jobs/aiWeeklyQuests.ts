@@ -5,15 +5,22 @@
 
 import cron from 'node-cron';
 import client from '../helpers/prisma';
-import { getUserLocalComponentsWithWeekday, computeWeekKeyFromLocal } from '../helpers/quest/timezone';
+import {
+  getUserLocalComponentsWithWeekday,
+  computeWeekKeyFromLocal,
+} from '../helpers/quest/timezone';
 import { generateQuestsWithLock } from '../helpers/quest/generator';
+import logger from '../helpers/logger';
 
 let isRunning = false;
 
 /**
  * Generate weekly quests for a single user
  */
-async function generateWeeklyQuestForUser(userId: string, force = false): Promise<void> {
+async function generateWeeklyQuestForUser(
+  userId: string,
+  force = false
+): Promise<void> {
   const user = await client.user.findUnique({
     where: { id: userId },
     select: { id: true, timezone: true },
@@ -22,7 +29,10 @@ async function generateWeeklyQuestForUser(userId: string, force = false): Promis
   if (!user) return;
 
   const tz = (user as any).timezone || 'UTC';
-  const { weekday, hour, dateKey } = getUserLocalComponentsWithWeekday(tz, '[WeeklyQuest]');
+  const { weekday, hour, dateKey } = getUserLocalComponentsWithWeekday(
+    tz,
+    '[WeeklyQuest]'
+  );
   const weekKey = computeWeekKeyFromLocal(dateKey, weekday);
 
   await generateQuestsWithLock({
@@ -42,12 +52,15 @@ async function generateWeeklyQuestForUser(userId: string, force = false): Promis
 /**
  * Run weekly quest generation for all eligible users
  */
-async function runWeeklyQuestGenerationBatch(force = false, onlyUserId?: string): Promise<void> {
+async function runWeeklyQuestGenerationBatch(
+  force = false,
+  onlyUserId?: string
+): Promise<void> {
   const where: any = { isBanned: false };
   if (onlyUserId) where.id = onlyUserId;
 
   const users = await client.user.findMany({ where, select: { id: true } });
-  
+
   for (const u of users) {
     await generateWeeklyQuestForUser(u.id, force);
   }
@@ -59,7 +72,7 @@ async function runWeeklyQuestGenerationBatch(force = false, onlyUserId?: string)
 export function startWeeklyAiQuestJob(): void {
   cron.schedule('0 0 * * 1', async () => {
     if (isRunning) {
-      console.warn('[WeeklyQuest] Previous run still in progress, skipping');
+      logger.warn('[WeeklyQuest] Previous run still in progress, skipping');
       return;
     }
 
@@ -67,12 +80,12 @@ export function startWeeklyAiQuestJob(): void {
     try {
       await runWeeklyQuestGenerationBatch(false);
     } catch (e) {
-      console.error('[WeeklyQuest] Cron Error', e);
+      logger.error('[WeeklyQuest] Cron Error', e);
     } finally {
       isRunning = false;
     }
   });
-  console.log('✅ Weekly AI Quest cron job scheduled (Monday 00:00 UTC)');
+  logger.info('✅ Weekly AI Quest cron job scheduled (Monday 00:00 UTC)');
 }
 
 /**
@@ -85,6 +98,9 @@ export async function runWeeklyAiQuestNow(): Promise<void> {
 /**
  * Force run weekly quest generation for a specific user
  */
-export async function runWeeklyAiQuestForUser(userId: string, force = false): Promise<void> {
+export async function runWeeklyAiQuestForUser(
+  userId: string,
+  force = false
+): Promise<void> {
   await runWeeklyQuestGenerationBatch(force, userId);
 }

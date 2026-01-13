@@ -1,3 +1,4 @@
+// DEPRECATED: Legacy daily quest generator retained for reference. Not scheduled in current runtime.
 import cron from 'node-cron';
 import { startOfDay } from 'date-fns';
 import client from '../helpers/prisma';
@@ -5,20 +6,24 @@ import env from '../helpers/config';
 import OpenAIChat from '../helpers/ai/aiHelper';
 import { getDailyQuestSetPrompt } from '../helpers/ai/prompts';
 import { MemberStatus, QuestSource, QuestType } from '@prisma/client';
+import { logger } from '../helpers/logger';
 
 // ==================== LOCKS & GUARDS ====================
 const locks = new Map<string, number>();
 let isRunning = false;
 
-async function acquireLock(key: string, timeoutSeconds: number): Promise<boolean> {
+async function acquireLock(
+  key: string,
+  timeoutSeconds: number
+): Promise<boolean> {
   const now = Date.now();
   const existingLock = locks.get(key);
-  
+
   if (existingLock && existingLock > now) {
     return false; // Lock already held
   }
-  
-  locks.set(key, now + (timeoutSeconds * 1000));
+
+  locks.set(key, now + timeoutSeconds * 1000);
   return true;
 }
 
@@ -33,25 +38,29 @@ function ensureAIConfigured(): boolean {
 }
 
 // ==================== AI HELPERS ====================
-async function OpenAIChatWithTimeout(params: any, timeoutMs = 30000): Promise<any> {
+async function OpenAIChatWithTimeout(
+  params: any,
+  timeoutMs = 30000
+): Promise<any> {
   return Promise.race([
     OpenAIChat(params),
-    new Promise((_, reject) => 
+    new Promise((_, reject) =>
       setTimeout(() => reject(new Error('AI call timeout')), timeoutMs)
-    )
+    ),
   ]);
 }
 
 function validateQuestResponse(parsed: any): boolean {
   if (!parsed || typeof parsed !== 'object') return false;
   if (!Array.isArray(parsed.quests)) return false;
-  
-  return parsed.quests.every((q: any) => 
-    q && 
-    typeof q.description === 'string' && 
-    q.description.length > 0 &&
-    q.description.length < 500 && // Reasonable max length
-    (q.xpReward === undefined || typeof q.xpReward === 'number')
+
+  return parsed.quests.every(
+    (q: any) =>
+      q &&
+      typeof q.description === 'string' &&
+      q.description.length > 0 &&
+      q.description.length < 500 && // Reasonable max length
+      (q.xpReward === undefined || typeof q.xpReward === 'number')
   );
 }
 
@@ -74,7 +83,7 @@ function getUserLocalComponents(tz: string) {
     return { dateKey, hour: parseInt(hourStr, 10) };
   } catch (error) {
     // Invalid timezone - fallback to UTC
-    console.warn(`[DailyQuest] Invalid timezone "${tz}", using UTC`);
+    logger.warn(`[DailyQuest] Invalid timezone "${tz}", using UTC`);
     return getUserLocalComponents('UTC');
   }
 }
@@ -83,8 +92,10 @@ function getUserLocalComponents(tz: string) {
 async function generateQuestForUser(userId: string, force = false) {
   // ==================== LOCK ACQUISITION ====================
   const lockKey = `quest_gen:${userId}`;
-  if (!await acquireLock(lockKey, 300)) {
-    console.log(`[DailyQuest] Generation already in progress for user ${userId}`);
+  if (!(await acquireLock(lockKey, 300))) {
+    console.log(
+      `[DailyQuest] Generation already in progress for user ${userId}`
+    );
     return;
   }
 
@@ -99,7 +110,7 @@ async function generateQuestForUser(userId: string, force = false) {
         },
       },
     });
-    
+
     if (!user) {
       console.warn(`[DailyQuest] User ${userId} not found`);
       return;
@@ -109,7 +120,9 @@ async function generateQuestForUser(userId: string, force = false) {
       return;
     }
     if (!user.CommunityMember || user.CommunityMember.length === 0) {
-      console.warn(`[DailyQuest] User ${userId} has no community memberships - skipping`);
+      console.warn(
+        `[DailyQuest] User ${userId} has no community memberships - skipping`
+      );
       return;
     }
 
@@ -138,18 +151,22 @@ async function generateQuestForUser(userId: string, force = false) {
     // ==================== DETERMINE IF NEW DAY ====================
     // Key fix: Check if it's a NEW day, not if today is already generated
     const isNewDay = !currentToday || currentToday.periodKey !== dateKey;
-    
+
     // Skip if already generated today (unless forced)
     if (!isNewDay && !force) {
-      console.log(`[DailyQuest] Quests already generated for user ${userId} on ${dateKey}`);
+      console.log(
+        `[DailyQuest] Quests already generated for user ${userId} on ${dateKey}`
+      );
       return;
     }
 
     // ==================== SHIFT CYCLE (ONLY IF NEW DAY) ====================
     // This ensures rotation only happens when transitioning to a new day
     if (isNewDay) {
-      console.log(`[DailyQuest] New day detected for user ${userId}, rotating quests...`);
-      
+      console.log(
+        `[DailyQuest] New day detected for user ${userId}, rotating quests...`
+      );
+
       await client.$transaction(async (tx) => {
         // 1) Delete DAY-BEFORE-YESTERDAY
         await tx.quest.deleteMany({
@@ -194,16 +211,22 @@ async function generateQuestForUser(userId: string, force = false) {
     const effLevel = progressive ? Math.min(level + 1, 100) : level;
     const QUEST_COUNT = 5;
 
-    console.log(`[DailyQuest] Generating quests for user ${userId}: Level ${effLevel}, Progressive: ${progressive}`);
+    console.log(
+      `[DailyQuest] Generating quests for user ${userId}: Level ${effLevel}, Progressive: ${progressive}`
+    );
 
     // ==================== FALLBACK MODE ====================
     if (!ensureAIConfigured()) {
-      console.log(`[DailyQuest] AI not configured, using fallback mode for user ${userId}`);
-      
+      console.log(
+        `[DailyQuest] AI not configured, using fallback mode for user ${userId}`
+      );
+
       for (const membership of user.CommunityMember) {
         // Validate community exists
         if (!membership.community) {
-          console.warn(`[DailyQuest] Community not found for membership ${membership.id}`);
+          console.warn(
+            `[DailyQuest] Community not found for membership ${membership.id}`
+          );
           continue;
         }
 
@@ -219,14 +242,16 @@ async function generateQuestForUser(userId: string, force = false) {
         });
 
         const skillName =
-          user.category?.name ||
+          user.category?.[0]?.name ||
           membership.community.category?.name ||
           membership.community.name ||
           'Personal Development';
 
         // Validate skillName
         if (!skillName || skillName.trim() === '') {
-          console.warn(`[DailyQuest] Invalid skill name for user ${userId}, community ${membership.communityId}`);
+          console.warn(
+            `[DailyQuest] Invalid skill name for user ${userId}, community ${membership.communityId}`
+          );
           continue;
         }
 
@@ -259,7 +284,9 @@ async function generateQuestForUser(userId: string, force = false) {
           }
         });
 
-        console.log(`[DailyQuest] Created ${QUEST_COUNT} fallback quests for user ${userId}, community ${membership.communityId}`);
+        console.log(
+          `[DailyQuest] Created ${QUEST_COUNT} fallback quests for user ${userId}, community ${membership.communityId}`
+        );
       }
       return;
     }
@@ -268,7 +295,9 @@ async function generateQuestForUser(userId: string, force = false) {
     for (const membership of user.CommunityMember) {
       // Validate community exists
       if (!membership.community) {
-        console.warn(`[DailyQuest] Community not found for membership ${membership.id}`);
+        console.warn(
+          `[DailyQuest] Community not found for membership ${membership.id}`
+        );
         continue;
       }
 
@@ -286,14 +315,16 @@ async function generateQuestForUser(userId: string, force = false) {
       const status: MemberStatus =
         (membership.status as MemberStatus) || MemberStatus.Beginner;
       const skillName =
-        user.category?.name ||
+        user.category?.[0]?.name ||
         membership.community.category?.name ||
         membership.community.name ||
         'Personal Development';
 
       // Validate skillName
       if (!skillName || skillName.trim() === '') {
-        console.warn(`[DailyQuest] Invalid skill name for user ${userId}, community ${membership.communityId}`);
+        console.warn(
+          `[DailyQuest] Invalid skill name for user ${userId}, community ${membership.communityId}`
+        );
         continue;
       }
 
@@ -301,26 +332,37 @@ async function generateQuestForUser(userId: string, force = false) {
 
       // AI generation with timeout and validation
       try {
-        console.log(`[DailyQuest] Calling AI for user ${userId}, community ${membership.communityId}, skill: ${skillName}`);
-        
+        console.log(
+          `[DailyQuest] Calling AI for user ${userId}, community ${membership.communityId}, skill: ${skillName}`
+        );
+
         const prompt = getDailyQuestSetPrompt(skillName, effLevel, status, xp);
         const res = await OpenAIChatWithTimeout({ prompt }, 30000); // 30s timeout
         const parsed = JSON.parse(res?.content ?? '{}');
-        
+
         if (validateQuestResponse(parsed)) {
           quests = parsed.quests;
-          console.log(`[DailyQuest] AI generated ${quests.length} quests for user ${userId}`);
+          console.log(
+            `[DailyQuest] AI generated ${quests.length} quests for user ${userId}`
+          );
         } else {
-          console.warn(`[DailyQuest] Invalid AI response structure for user ${userId}, using fallback`);
+          console.warn(
+            `[DailyQuest] Invalid AI response structure for user ${userId}, using fallback`
+          );
         }
       } catch (error) {
-        console.error(`[DailyQuest] AI failed for user ${userId}, community ${membership.communityId}:`, error);
+        console.error(
+          `[DailyQuest] AI failed for user ${userId}, community ${membership.communityId}:`,
+          error
+        );
       }
 
       // Fallback if AI failed or returned invalid data
       if (!quests.length) {
-        console.log(`[DailyQuest] Using fallback quests for user ${userId}, community ${membership.communityId}`);
-        
+        console.log(
+          `[DailyQuest] Using fallback quests for user ${userId}, community ${membership.communityId}`
+        );
+
         quests = Array.from({ length: QUEST_COUNT }, (_, i) => ({
           description: progressive
             ? `(${i + 1}/5) Level up ${skillName}: attempt a slightly harder 20–40 min task.`
@@ -355,13 +397,19 @@ async function generateQuestForUser(userId: string, force = false) {
         }
       });
 
-      console.log(`[DailyQuest] Created ${quests.length} quests for user ${userId}, community ${membership.communityId}`);
+      console.log(
+        `[DailyQuest] Created ${quests.length} quests for user ${userId}, community ${membership.communityId}`
+      );
     }
 
-    console.log(`[DailyQuest] ✅ Quest generation completed for user ${userId}`);
-    
+    console.log(
+      `[DailyQuest] ✅ Quest generation completed for user ${userId}`
+    );
   } catch (error) {
-    console.error(`[DailyQuest] ❌ Generation failed for user ${userId}:`, error);
+    console.error(
+      `[DailyQuest] ❌ Generation failed for user ${userId}:`,
+      error
+    );
   } finally {
     await releaseLock(lockKey);
   }
@@ -371,16 +419,19 @@ async function generateQuestForUser(userId: string, force = false) {
 // BATCH HANDLERS + CRON
 // ====================================================================
 
-async function runDailyQuestGenerationBatch(force = false, onlyUserId?: string) {
+async function runDailyQuestGenerationBatch(
+  force = false,
+  onlyUserId?: string
+) {
   const startTime = Date.now();
   console.log(`[DailyQuest] Starting batch generation... (force: ${force})`);
-  
+
   const where: any = { isBanned: false };
   if (onlyUserId) where.id = onlyUserId;
 
   const users = await client.user.findMany({ where, select: { id: true } });
   console.log(`[DailyQuest] Found ${users.length} users to process`);
-  
+
   let successCount = 0;
   let errorCount = 0;
 
@@ -395,7 +446,9 @@ async function runDailyQuestGenerationBatch(force = false, onlyUserId?: string) 
   }
 
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-  console.log(`[DailyQuest] Batch completed: ${successCount} succeeded, ${errorCount} failed, ${duration}s total`);
+  console.log(
+    `[DailyQuest] Batch completed: ${successCount} succeeded, ${errorCount} failed, ${duration}s total`
+  );
 }
 
 export function startDailyAiQuestJob() {
@@ -407,7 +460,7 @@ export function startDailyAiQuestJob() {
 
     console.log('[DailyQuest] Cron job triggered');
     isRunning = true;
-    
+
     try {
       await runDailyQuestGenerationBatch(false);
     } catch (err) {
@@ -416,7 +469,7 @@ export function startDailyAiQuestJob() {
       isRunning = false;
     }
   });
-  
+
   console.log('✅ Daily AI Quest cron job scheduled (runs hourly at :00)');
 }
 

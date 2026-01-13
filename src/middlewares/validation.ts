@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { ObjectSchema } from 'joi';
+import logger from '../helpers/logger';
 
 interface IvalidatonSchema {
   body?: ObjectSchema;
@@ -43,16 +44,21 @@ const validate = (validateSchema: IvalidatonSchema = {}) => {
         req.headers = validateResult as any;
       }
       next();
-    } catch (e) {
-      if (e instanceof Error) {
-        res.status(500).json({
-          message: e.message,
-        });
-      } else {
-        res.status(500).json({
-          message: 'Unexpected error has occurred',
-        });
-      }
+    } catch (e: any) {
+      const details = Array.isArray(e?.details)
+        ? e.details.map((d: any) => d.message)
+        : undefined;
+
+      logger.warn('Request validation failed', {
+        path: req.path,
+        method: req.method,
+        details,
+      });
+
+      res.status(400).json({
+        message: 'Validation error',
+        details,
+      });
     }
   };
 };

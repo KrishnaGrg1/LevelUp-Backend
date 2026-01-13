@@ -59,10 +59,6 @@ clanRoutes.get(
   clanController.getUserClans
 );
 
-clanRoutes.get(
-  '/checkMembership/:clanId',
-
-  clanController.checkClanMembership
-);
+clanRoutes.get('/checkMembership/:clanId', clanController.checkClanMembership);
 
 export default clanRoutes;

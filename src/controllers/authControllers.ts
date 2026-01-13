@@ -13,6 +13,8 @@ import { EmailTopic } from '../helpers/emailMessage';
 import { lucia } from '../middlewares/lucia';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { deleteFile, extractPublicId } from '../helpers/files/multer';
+import { findUser } from '../helpers/auth/userHelper';
+import logger from '../helpers/logger';
 
 const register = async (
   req: TranslationRequest,
@@ -56,15 +58,14 @@ const register = async (
           EmailTopic.VerifyEmail,
           user.id
         );
-        console.log('OTP sent:', otp);
-        const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
+        logger.debug('OTP sent for verification email');
+        const hashedOTP = await bcrypt.hash(otp, 10);
 
-        //create new otp
         await client.otp.create({
           data: {
             otp_code: hashedOTP,
             userId: user.id,
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
           },
         });
 
@@ -88,15 +89,13 @@ const register = async (
       return;
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    //create new user
     const newUser = await client.user.create({
       data: {
         email: email,
-        UserName: username, // temporary unique username
-        password: hashedPassword, // placeholder password
+        UserName: username,
+        password: hashedPassword,
         isVerified: false,
       },
     });
@@ -105,16 +104,15 @@ const register = async (
       email,
       EmailTopic.VerifyEmail,
       newUser?.id
-    ); //send otp to email
+    );
 
-    const hashedOTP = await bcrypt.hash(otp, 10); //hash the otp
+    const hashedOTP = await bcrypt.hash(otp, 10);
 
-    //create new otp
     await client.otp.create({
       data: {
         otp_code: hashedOTP,
         userId: newUser.id,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       },
     });
 
@@ -156,7 +154,6 @@ const verifyEmail = async (
   const { userId, otp } = req.body;
   try {
     await client.$transaction(async (tx: any) => {
-      // Find user
       const user = await tx.user.findUnique({
         where: { id: userId },
       });
@@ -194,7 +191,6 @@ const verifyEmail = async (
         return;
       }
 
-      // Check expiry
       if (otpDoc.expiresAt < new Date()) {
         res
           .status(400)
@@ -242,7 +238,6 @@ const verifyEmail = async (
         data: { isVerified: true },
       });
       await tx.otp.delete({ where: { id: otpDoc.id } });
-      // Delete all OTPs for this user
       await tx.otp.deleteMany({ where: { userId: user.id } });
       const session = await lucia.createSession(user.id, {});
       const sessionCookie = lucia.createSessionCookie(session.id);
@@ -383,12 +378,14 @@ const login = async (req: TranslationRequest, res: Response): Promise<void> => {
     const sessionCookie = lucia.createSessionCookie(session.id);
 
     res.setHeader('Set-Cookie', sessionCookie.serialize());
-
     res.status(200).json(
       makeSuccessResponse(
         {
+          id: existingUser.id,
+          UserName: existingUser.UserName,
           isadmin: existingUser.isAdmin,
           expiredAt: session.expiresAt,
+          authSession: session.id,
         },
         'success.auth.login',
         lang,
@@ -477,7 +474,6 @@ const forgetPassword = async (
       return;
     }
 
-    // For verified users → send password reset OTP
     await client.otp.deleteMany({ where: { userId: existingUser.id } });
 
     const otp = await sendEmailToken(
@@ -651,7 +647,41 @@ const me = async (req: AuthRequest, res: Response): Promise<void> => {
     }
     const user = await client.user.findUnique({
       where: { id: req.user.id },
+      select: {
+        id: true,
+        UserName: true,
+        email: true,
+        xp: true,
+        level: true,
+        createdAt: true,
+        updatedAt: true,
+        isVerified: true,
+        provider: true,
+        providerId: true,
+        isAdmin: true,
+        isBanned: true,
+        banUntil: true,
+        profilePicture: true,
+        timezone: true,
+        tokens: true,
+        hasOnboarded: true,
+      },
     });
+
+    if (!user) {
+      res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('User not found'),
+            'error.auth.user_not_found',
+            lang,
+            404
+          )
+        );
+      return;
+    }
+
     res
       .status(200)
       .json(
@@ -681,9 +711,8 @@ const logout = async (req: AuthRequest, res: Response): Promise<void> => {
 
     const sessionId = req.session.id;
 
-    await lucia.invalidateSession(sessionId); // Invalidate session in DB
+    await lucia.invalidateSession(sessionId);
 
-    //clear session cookie onclient side
     const blankCookie = lucia.createBlankSessionCookie();
     res.setHeader('Set-Cookie', blankCookie.serialize());
 
@@ -711,7 +740,7 @@ const deleteAccount = async (
   try {
     const lang = req.language as Language;
     const userId = req.user?.id;
-    console.log('user id is', userId);
+    logger.debug('Delete account requested', { userId });
 
     if (!userId) {
       res
@@ -727,14 +756,14 @@ const deleteAccount = async (
       return;
     }
 
-    console.log('deleting account for user id:', userId);
+    logger.debug('Deleting account', { userId });
 
     // delete user → sessions cascade automatically
     const check = await client.user.delete({
       where: { id: userId },
     });
 
-    console.log('deleted user is', check);
+    logger.debug('Account deletion completed', { userId: check?.id });
 
     if (!check) {
       res
@@ -805,7 +834,11 @@ const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    console.log('Uploaded file details:', JSON.stringify(req.file, null, 2));
+    logger.debug('Profile picture upload received', {
+      userId,
+      fileSize: (req.file as any)?.size,
+      mimeType: (req.file as any)?.mimetype,
+    });
 
     const user = await client.user.findUnique({
       where: { id: userId },
@@ -868,7 +901,9 @@ const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
         )
       );
   } catch (error) {
-    console.error('Error uploading profile picture:', error);
+    logger.error('Error uploading profile picture', error, {
+      userId: req.user?.id,
+    });
     const lang = (req.language as Language) || 'eng';
     res
       .status(500)
@@ -890,7 +925,7 @@ const changePassword = async (
   const { confirmNewPassword, currentPassword, newPassword } = req.body;
 
   const userId = req.user?.id;
-  console.log('User id:', userId);
+  logger.debug('Change password requested', { userId });
   const lang = (req.language as Language) || 'eng';
   try {
     await client.$transaction(async (tx: any) => {
@@ -927,7 +962,6 @@ const changePassword = async (
         return;
       }
 
-      // Verify current password
       const isCurrentPasswordValid = await bcrypt.compare(
         currentPassword,
         existingUser.password
@@ -945,10 +979,9 @@ const changePassword = async (
           );
         return;
       }
-      // Hash the new password
+
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      // Only updates
       await client.$transaction([
         client.user.update({
           where: { id: userId },
@@ -979,6 +1012,177 @@ const changePassword = async (
   }
 };
 
+const onBoarding = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const lang = req.language as Language;
+    const userId = req.user?.id;
+    const { goal, heardAboutUs, experience } = req.body;
+
+    if (!userId) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('User ID is required'),
+            'error.auth.user_id_required',
+            lang,
+            400
+          )
+        );
+      return;
+    }
+
+    const user = await findUser(userId, res, lang);
+    if (!user) return;
+
+    const categoryNames: string[] = Array.isArray(req.body.categoriesNames)
+      ? req.body.categoriesNames
+      : [];
+
+    logger.debug('Onboarding request received', {
+      userId,
+      categoryCount: categoryNames.length,
+    });
+
+    const onboarding = await client.userOnboarding.create({
+      data: {
+        userId,
+        goal: goal,
+        heardAboutUs: heardAboutUs,
+        experience: experience,
+        categories:
+          categoryNames.length > 0
+            ? {
+                connectOrCreate: categoryNames.map((name) => ({
+                  where: { name },
+                  create: { name },
+                })),
+              }
+            : undefined,
+      },
+      include: { categories: true },
+    });
+
+    logger.debug('Onboarding created', {
+      userId,
+      onboardingId: onboarding.id,
+      categories: onboarding.categories?.length,
+    });
+
+    const updatedUser = await client.user.update({
+      where: { id: userId },
+      data: { hasOnboarded: true },
+      select: {
+        id: true,
+        UserName: true,
+        email: true,
+        hasOnboarded: true,
+        xp: true,
+        level: true,
+        tokens: true,
+        profilePicture: true,
+        isVerified: true,
+      },
+    });
+
+    logger.info('User onboarding completed and hasOnboarded set to true', {
+      userId,
+      hasOnboarded: updatedUser.hasOnboarded,
+    });
+
+    res.status(200).json(
+      makeSuccessResponse(
+        {
+          onboarding,
+          user: updatedUser,
+        },
+        'success.auth.onboarding_complete',
+        lang,
+        200
+      )
+    );
+    return;
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+
+    if (e instanceof Error) {
+      logger.error('Error fetching categories', e, { userId: req.user?.id });
+      res
+        .status(500)
+        .json(makeErrorResponse(e, 'error.auth.unexpected', lang, 500));
+      return;
+    } else {
+      logger.error('Unexpected error fetching categories', e, {
+        userId: req.user?.id,
+      });
+      res
+        .status(500)
+        .json(
+          makeErrorResponse(
+            new Error('Unexpected error'),
+            'error.auth.unexpected',
+            lang,
+            500
+          )
+        );
+      return;
+    }
+  }
+};
+
+const fetchCategories = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const lang = req.language as Language;
+
+    // Check which categories already exist
+    const existingCategories = await client.category.findMany();
+
+    // Validate input
+    if (existingCategories.length === 0) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('No category found'),
+            'error.admin.no_category_found',
+            lang,
+            400
+          )
+        );
+      return;
+    }
+
+    res.status(200).json(
+      makeSuccessResponse(
+        {
+          count: existingCategories.length,
+          categories: existingCategories.map((c) => c.name),
+        },
+        'success.admin.fetched_category',
+        lang,
+        200
+      )
+    );
+    return;
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    logger.error('Error fetching categories', e, { userId: req.user?.id });
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Fetch category failed'),
+          'error.admin.fetch_category_failed',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const authController = {
   register,
   login,
@@ -990,6 +1194,8 @@ const authController = {
   deleteAccount,
   uploadProfilePicture,
   changePassword,
+  onBoarding,
+  fetchCategories,
 };
 
 export default authController;
