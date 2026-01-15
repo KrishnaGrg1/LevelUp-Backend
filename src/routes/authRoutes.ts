@@ -41,7 +41,11 @@ authRoutes.post(
 
 authRoutes.post('/logout', authMiddleware, authController.logout);
 
-authRoutes.post('/deleteAccount', authMiddleware, authController.deleteAccount);
+authRoutes.delete(
+  '/deleteAccount',
+  authMiddleware,
+  authController.deleteAccount
+);
 
 // Upload profile picture route
 authRoutes.post(
@@ -61,5 +65,10 @@ authRoutes.post(
 );
 
 authRoutes.post('/onBoarding', authMiddleware, authController.onBoarding);
-
+authRoutes.patch(
+  '/editProfile',
+  authMiddleware,
+  validate(authValidation.editProfile),
+  authController.editProfile
+);
 export default authRoutes;

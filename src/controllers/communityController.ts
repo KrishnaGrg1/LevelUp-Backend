@@ -994,11 +994,6 @@ const updateCommunity = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
   const communityId = req.params.communityId || req.body.communityId;
   const { name, memberLimit, description, isPrivate } = req.body;
-  logger.apiRequest('PATCH', `/community/${communityId}`, {
-    userId,
-    communityId,
-    action: 'updateCommunity',
-  });
 
   try {
     // Check ownership
