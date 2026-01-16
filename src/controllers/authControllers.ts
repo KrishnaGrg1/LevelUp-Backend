@@ -1182,7 +1182,88 @@ const fetchCategories = async (
       );
   }
 };
+const editProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    logger.apiRequest('PATCH', `/auth/editProfile`, {
+      action: 'editProfile',
+    });
+    console.log(req.body);
+    const userId = req.user?.id;
+    const lang = req.language as Language;
+    if (!userId) {
+      res
+        .status(400)
+        .json(
+          makeErrorResponse(
+            new Error('User ID is required'),
+            'error.auth.user_id_required',
+            lang,
+            400
+          )
+        );
+      return;
+    }
+    const { username } = req.body;
+    const user = await client.user.findUnique({
+      where: { id: userId },
+    });
 
+    if (!user) {
+      res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('User not found'),
+            'error.auth.user_not_found',
+            lang,
+            404
+          )
+        );
+      return;
+    }
+    const exisitingUsername = await client.user.findUnique({
+      where: { UserName: username },
+    });
+    if (exisitingUsername) {
+      res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Username already exist'),
+            'error.auth.user_already_exist',
+            lang,
+            404
+          )
+        );
+      return;
+    }
+    await client.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        UserName: username,
+      },
+    });
+    logger.apiSuccess('PATCH', `/auth/editProfile`, 200, {
+      username,
+    });
+    res.status(201).json(makeSuccessResponse(null, 'success.auth.editProfile'));
+  } catch (e: unknown) {
+    const lang = (req.language as Language) || 'eng';
+    logger.error('Error editing profile', e, { userId: req.user?.id });
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          e instanceof Error ? e : new Error('Edit Profile failed'),
+          'error.auth.editProfile',
+          lang,
+          500
+        )
+      );
+  }
+};
 const authController = {
   register,
   login,
@@ -1196,6 +1277,7 @@ const authController = {
   changePassword,
   onBoarding,
   fetchCategories,
+  editProfile,
 };
 
 export default authController;
