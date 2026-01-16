@@ -92,7 +92,7 @@ model Community {
   photo         String?
   xp            Int               @default(0)
   codeUpdatedAt DateTime?
-  joinCodeHash  String?           @unique
+  inviteCode  String?           @unique
   level         Int               @default(1)
   clans         Clan[]
   category      Category?         @relation(fields: [categoryId], references: [id])
