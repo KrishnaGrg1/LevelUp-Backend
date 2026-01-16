@@ -238,12 +238,52 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
       select: {
         id: true,
         name: true,
-
         description: true,
         photo: true,
         isPrivate: true,
         memberLimit: true,
         ownerId: true,
+        owner: {
+          select: {
+            UserName: true,
+          },
+        },
+        members: {
+          orderBy: {
+            joinedAt: 'desc',
+          },
+          select: {
+            user: {
+              select: {
+                UserName: true,
+              },
+            },
+            joinedAt: true,
+          },
+        },
+        clans: {
+          orderBy: {
+            members: {
+              _count: 'desc',
+            },
+          },
+          select: {
+            id: true,
+            name: true,
+            isPrivate: true,
+            createdAt: true,
+            owner: {
+              select: {
+                UserName: true,
+              },
+            },
+            _count: {
+              select: {
+                members: true,
+              },
+            },
+          },
+        },
         _count: {
           select: { members: true, clans: true },
         },
@@ -639,8 +679,7 @@ const joinPublicCommunity = async (req: AuthRequest, res: Response) => {
   }
 };
 
-const joinPrivateCommunity = async (req: AuthRequest, res: Response) => {
-  const communityId = req.params.communityId;
+const joinWithCodeCommunity = async (req: AuthRequest, res: Response) => {
   const lang = req.language as Language;
   const joinCode = req.body.joinCode;
   const userId = req.user?.id;
@@ -2049,7 +2088,7 @@ const regenerateInviteCode = async (req: AuthRequest, res: Response) => {
 const communityController = {
   createCommunity,
   joinPublicCommunity,
-  joinPrivateCommunity,
+  joinWithCodeCommunity,
   myCommunities,
   getAllCommunities,
   leaveCommunity,

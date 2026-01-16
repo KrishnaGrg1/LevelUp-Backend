@@ -51,11 +51,11 @@ communityRoutes.post(
   communityController.joinPublicCommunity
 );
 
-//  Join private community
+//  Join With Code  community
 communityRoutes.post(
   '/join',
-  validate(communityValidation.joinPrivateCommunity),
-  communityController.joinPrivateCommunity
+  validate(communityValidation.joinWithCodeCommunity),
+  communityController.joinWithCodeCommunity
 );
 
 //  Leave a community

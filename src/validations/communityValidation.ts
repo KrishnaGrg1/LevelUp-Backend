@@ -30,7 +30,7 @@ const communityValidation = {
     }),
   },
 
-  joinPrivateCommunity: {
+  joinWithCodeCommunity: {
     body: Joi.object().keys({
       joinCode: Joi.string().min(3).max(150).required().messages({
         'string.empty': 'Join code is required',
