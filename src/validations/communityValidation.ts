@@ -30,7 +30,7 @@ const communityValidation = {
     }),
   },
 
-  joinWithCodeCommunity: {
+  joinPrivateCommunity: {
     body: Joi.object().keys({
       joinCode: Joi.string().min(3).max(150).required().messages({
         'string.empty': 'Join code is required',
@@ -57,16 +57,6 @@ const communityValidation = {
   },
 
   getCommunityOwner: {
-    params: Joi.object().keys({
-      communityId: Joi.string().min(3).max(150).required().messages({
-        'string.empty': 'Community ID is required',
-        'string.min': 'Community ID must contain at least 3 characters long',
-        'string.max': 'Community ID must not exceed 150 characters long',
-      }),
-    }),
-  },
-
-  getInviteCode: {
     params: Joi.object().keys({
       communityId: Joi.string().min(3).max(150).required().messages({
         'string.empty': 'Community ID is required',

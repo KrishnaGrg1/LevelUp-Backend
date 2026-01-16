@@ -9,7 +9,6 @@ import { Language } from '../translation/translation';
 import { findUser } from '../helpers/auth/userHelper';
 import { generateSlug } from '../helpers/slugGenerator';
 import logger from '../helpers/logger';
-import { generateCode } from '../helpers/generateCode';
 
 /**
  * Create a new Clan inside a Community
@@ -71,15 +70,6 @@ const createClan = async (req: AuthRequest, res: Response) => {
       counter++;
     }
 
-    let rawCode: string | undefined;
-    let cleanCode: string | undefined;
-    if (isPrivate === true) {
-      rawCode = generateCode(); // e.g. ABCD-9KX2
-      console.log('Generated community join code:', rawCode);
-      cleanCode = rawCode.replace(/-/g, ''); // Returns "ZM5KXEKD"
-      console.log('Clean community join code:', cleanCode);
-    }
-
     // Create clan and assign owner in a transaction
     const clan = await client.$transaction(async (tx) => {
       const newClan = await tx.clan.create({
@@ -92,7 +82,6 @@ const createClan = async (req: AuthRequest, res: Response) => {
           xp: 0,
           ownerId: user.id,
           communityId,
-          joinCodeHash: cleanCode || null,
           welcomeMessage: 'Welcome to the clan!',
           stats: { memberCount: 1, battlesWon: 0 },
         },
@@ -141,118 +130,6 @@ const joinClan = async (req: AuthRequest, res: Response) => {
     const { clanId } = req.body;
 
     if (!userId) return res.status(401).json({ error: 'Not authenticated' });
-    console.log('User idddddddddddddd', userId);
-
-    const user = await findUser(userId, res, lang);
-    if (!user) return;
-
-    const clan = await client.clan.findUnique({
-      where: { id: clanId },
-      include: {
-        _count: { select: { members: true } },
-      },
-    });
-
-    if (!clan) {
-      return res
-        .status(404)
-        .json(
-          makeErrorResponse(
-            new Error('Clan not found'),
-            'error.clan.not_found',
-            lang,
-            404
-          )
-        );
-    }
-
-    // Check if clan is full
-    if ((clan._count?.members ?? 0) >= clan.limit) {
-      return res
-        .status(400)
-        .json(
-          makeErrorResponse(
-            new Error('Clan is full'),
-            'error.clan.clan_full',
-            lang,
-            400
-          )
-        );
-    }
-
-    // Check if user is in community
-    const member = await client.communityMember.findFirst({
-      where: { userId, communityId: clan.communityId },
-    });
-
-    if (!member) {
-      return res
-        .status(400)
-        .json(
-          makeErrorResponse(
-            new Error('User must be in community before joining clan'),
-            'error.clan.not_in_community',
-            lang,
-            400
-          )
-        );
-    }
-    console.log('membersdddddddddd', member);
-    // Check if user is already in a clan in this community
-    const existingClanMember = await client.clanMember.findFirst({
-      where: { userId, clanId: clanId },
-    });
-
-    if (existingClanMember) {
-      return res
-        .status(400)
-        .json(
-          makeErrorResponse(
-            new Error('User already in a clan'),
-            'error.clan.already_in_clan',
-            lang,
-            400
-          )
-        );
-    }
-
-    // Create ClanMember record
-    const clanMember = await client.clanMember.create({
-      data: {
-        userId,
-        clanId,
-        communityId: clan.communityId,
-      },
-    });
-
-    return res
-      .status(200)
-      .json(makeSuccessResponse(clanMember, 'success.clan.joined', lang, 200));
-  } catch (e: unknown) {
-    const lang = (req.language as Language) || 'eng';
-    return res
-      .status(500)
-      .json(
-        makeErrorResponse(
-          new Error('Failed to join clan'),
-          'error.clan.failed_to_join',
-          lang,
-          500
-        )
-      );
-  }
-};
-
-/**
- * Join Private Clan
- */
-const joinPrivateClan = async (req: AuthRequest, res: Response) => {
-  try {
-    const lang = req.language as Language;
-    const userId = req.user?.id;
-    const { clanId, joinCode } = req.body;
-
-    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
 
     const user = await findUser(userId, res, lang);
     if (!user) return;
@@ -311,7 +188,7 @@ const joinPrivateClan = async (req: AuthRequest, res: Response) => {
 
     // Check if user is already in a clan in this community
     const existingClanMember = await client.clanMember.findFirst({
-      where: { userId, clanId: clanId },
+      where: { userId, communityId: clan.communityId },
     });
 
     if (existingClanMember) {
@@ -321,21 +198,6 @@ const joinPrivateClan = async (req: AuthRequest, res: Response) => {
           makeErrorResponse(
             new Error('User already in a clan'),
             'error.clan.already_in_clan',
-            lang,
-            400
-          )
-        );
-    }
-    console.log('Invite code llllllllllll', joinCode);
-    //check inivite code
-    if (clan.joinCodeHash !== joinCode) {
-      return res
-
-        .status(400)
-        .json(
-          makeErrorResponse(
-            new Error('Invalid invite code'),
-            'error.clan.invalid_invite_code',
             lang,
             400
           )
@@ -368,6 +230,7 @@ const joinPrivateClan = async (req: AuthRequest, res: Response) => {
       );
   }
 };
+
 /**
  * Leave a Clan
  */
@@ -876,136 +739,6 @@ const checkClanMembership = async (req: AuthRequest, res: Response) => {
   }
 };
 
-//get joined clan
-const getJoinedClans = async (req: AuthRequest, res: Response) => {
-  try {
-    const lang = req.language as Language;
-    const userId = req.user?.id;
-    const communityId = req.params.communityId;
-
-    // Check if user exists
-    const user = await client.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      return res
-        .status(404)
-        .json(
-          makeErrorResponse(
-            new Error('User not found'),
-            'error.clan.user_not_found',
-            lang,
-            404
-          )
-        );
-    }
-
-    const clans = await client.clan.findMany({
-      where: {
-        communityId: communityId as string, // Cast to fix the TS error we discussed
-        members: {
-          some: {
-            userId: userId, // Filter out clans where this user is a member
-          },
-        },
-      },
-      include: {
-        owner: { select: { id: true, UserName: true, profilePicture: true } },
-        _count: { select: { members: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // Return empty array if no clans (not an error)
-    return res
-      .status(200)
-      .json(
-        makeSuccessResponse(
-          clans,
-          'success.clan.user_clans_retrieved',
-          lang,
-          200
-        )
-      );
-  } catch (e: unknown) {
-    const lang = (req.language as Language) || 'eng';
-    logger.error('Failed to fetch user clans', e, { userId: req.user?.id });
-    return res
-      .status(500)
-      .json(
-        makeErrorResponse(
-          new Error('Failed to fetch user clans'),
-          'error.clan.failed_to_get_user_clans',
-          lang,
-          500
-        )
-      );
-  }
-};
-
-//get not joined clans
-const getAvailableClans = async (req: AuthRequest, res: Response) => {
-  try {
-    const lang = req.language as Language;
-    const userId = req.user?.id;
-    const communityId = req.params.communityId;
-
-    // Check if user exists
-    const user = await client.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      return res
-        .status(404)
-        .json(
-          makeErrorResponse(
-            new Error('User not found'),
-            'error.clan.user_not_found',
-            lang,
-            404
-          )
-        );
-    }
-
-    const clans = await client.clan.findMany({
-      where: {
-        communityId: communityId as string, // Cast to fix the TS error we discussed
-        members: {
-          none: {
-            userId: userId, // Filter out clans where this user is a member
-          },
-        },
-      },
-      include: {
-        owner: { select: { id: true, UserName: true, profilePicture: true } },
-        _count: { select: { members: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // Return empty array if no clans (not an error)
-    return res
-      .status(200)
-      .json(
-        makeSuccessResponse(
-          clans,
-          'success.clan.user_clans_retrieved',
-          lang,
-          200
-        )
-      );
-  } catch (e: unknown) {
-    const lang = (req.language as Language) || 'eng';
-    logger.error('Failed to fetch user clans', e, { userId: req.user?.id });
-    return res
-      .status(500)
-      .json(
-        makeErrorResponse(
-          new Error('Failed to fetch user clans'),
-          'error.clan.failed_to_get_user_clans',
-          lang,
-          500
-        )
-      );
-  }
-};
-
 const clanController = {
   createClan,
   joinClan,
@@ -1017,9 +750,6 @@ const clanController = {
   updateClan,
   getUserClans,
   checkClanMembership,
-  getJoinedClans,
-  getAvailableClans,
-  joinPrivateClan,
 };
 
 export default clanController;

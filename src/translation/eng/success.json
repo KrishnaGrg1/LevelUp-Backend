@@ -9,23 +9,14 @@
     "email_verified": "Email verified successfully",
     "user_retrieved": "User retrieved successfully",
     "retrieved_all_users": "All users retrieved successfully",
-    "change_password": "Password changed successfully",
-    "account_deleted": "Account deleted successfully",
-    "oauth_account_linked": "OAuth account linked successfully",
-    "oauth_login": "Logged in with OAuth successfully",
-    "oauth_register": "Registered with OAuth successfully",
-    "onboarding_complete": "Onboarding completed successfully",
-    "password_updated": "Password updated successfully"
+    "change_password": "Password changed successfully"
   },
   "admin": {
     "updated_details": "User details updated successfully",
     "view_user_details": "User details retrieved successfully",
     "deleted_user": "User deleted successfully",
     "get_overview": "Admin overview retrieved successfully",
-    "user_growth_fetched": "User growth analytics retrieved successfully",
-    "fetched_category": "Category fetched successfully",
-    "user_banned": "User banned successfully",
-    "user_unbanned": "User unbanned successfully"
+    "user_growth_fetched": "User growth analytics retrieved successfully"
   },
   "community": {
     "created": "Community created successfully",
@@ -38,18 +29,7 @@
     "retrieved_all_communities": "All communities retrieved successfully",
     "retrieved_all_community_members": "Community members retrieved successfully",
     "joined_chat": "Successfully joined community chat",
-    "pinned_updated": "Updated pinned communities successfully",
-    "fetched": "Community fetched successfully",
-    "invite_code_regenerated": "Invite code regenerated successfully",
-    "invite_code_retrieved": "Invite code retrieved successfully",
-    "left": "Left community successfully",
-    "member_removed": "Member removed successfully",
-    "members_retrieved": "Members retrieved successfully",
-    "memberships_fetched": "Community memberships fetched successfully",
-    "ownership_transferred": "Ownership transferred successfully",
-    "pinned": "Community pinned successfully",
-    "role_changed": "Member role changed successfully",
-    "updated": "Community updated successfully"
+    "pinned_updated": "Updated pinned communities successfully"
   },
   "category": {
     "added_category": "Category added successfully",
@@ -108,30 +88,6 @@
     "daily_quests_forced": "Daily quests regenerated successfully",
     "weekly_quests_forced": "Weekly quests regenerated successfully",
     "quest_rotation_success": "Quest rotation completed successfully",
-    "quest_period_updated": "Quest period status updated",
-    "admin_quests_deleted": "Admin quests deleted successfully",
-    "admin_quests_generated": "Admin quests generated successfully",
-    "admin_stats_fetched": "Admin stats fetched successfully",
-    "config": "Configuration retrieved successfully",
-    "health": "Health check passed",
-    "quest_started": "Quest started successfully",
-    "quests_force_generated": "Quests force generated successfully"
-  },
-  "leaderboard": {
-    "clan": "Clan leaderboard retrieved successfully",
-    "community": "Community leaderboard retrieved successfully",
-    "global": "Global leaderboard retrieved successfully",
-    "top_clans": "Top clans retrieved successfully",
-    "top_communities": "Top communities retrieved successfully"
-  },
-  "message": {
-    "fetched": "Messages fetched successfully"
-  },
-  "subscriptionPlan": {
-    "added_subscriptionPlan": "Subscription plan added successfully",
-    "fetched_subscriptionPlans": "Subscription plans fetched successfully"
-  },
-  "user": {
-    "retrieved_all_users": "All users retrieved successfully"
+    "quest_period_updated": "Quest period status updated"
   }
 }

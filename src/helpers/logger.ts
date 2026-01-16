@@ -81,5 +81,5 @@ class Logger {
 }
 
 // Export singleton instance
-const logger = new Logger();
+export const logger = new Logger();
 export default logger;
