@@ -33,6 +33,19 @@ const clanValidation = {
     }),
   },
 
+  joinPrivateClan: {
+    body: Joi.object().keys({
+      clanId: Joi.string().required().messages({
+        'string.empty': 'Clan ID is required',
+      }),
+      joinCode: Joi.string().min(3).max(150).required().messages({
+        'string.empty': 'Join code is required',
+        'string.min': 'Join code must contain at least 3 characters long',
+        'string.max': 'Join code must not exceed 150 characters long',
+      }),
+    }),
+  },
+
   leaveClan: {
     body: Joi.object().keys({
       clanId: Joi.string().required().messages({

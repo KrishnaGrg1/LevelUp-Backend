@@ -13,7 +13,25 @@
     "logout_failed": "Logout failed. Try again.",
     "session_expired": "Session expired. Please log in again.",
     "failed_to_fetch_all_users": "Failed to fetch all users",
-    "not_authenticated": "Not authenticated"
+    "not_authenticated": "Not authenticated",
+    "account_deletion_failed": "Failed to delete account. Please try again.",
+    "account_exists_different_provider": "An account with this email already exists using a different login method",
+    "admin_only": "This action is restricted to administrators only",
+    "forbidden": "You do not have permission to perform this action",
+    "github_oauth_failed": "GitHub authentication failed. Please try again.",
+    "google_oauth_failed": "Google authentication failed. Please try again.",
+    "incorrect_current_password": "Current password is incorrect",
+    "missing_provider_or_code": "Authentication provider or code is missing",
+    "no_email_from_provider": "No email address was provided by the authentication provider",
+    "not_authorized": "You are not authorized to perform this action",
+    "not_owner": "Only the owner can perform this action",
+    "oauth_failed": "OAuth authentication failed. Please try again.",
+    "oauth_provider_error": "Authentication provider error. Please try again.",
+    "password_not_set": "Password is not set for this account",
+    "passwords_do_not_match": "Passwords do not match",
+    "role_check_failed": "Failed to verify user role. Please try again.",
+    "unsupported_provider": "Unsupported authentication provider",
+    "user_id_required": "User ID is required"
   },
   "admin": {
     "forbidden": "You do not have permission to perform this action",
@@ -22,7 +40,14 @@
     "failed_to_get_overview": "Failed to retrieve overview. Try again.",
     "user_growth_failed": "Failed to retrieve user growth analytics. Try again.",
     "invalid_privacy_value": "Invalid value for privacy setting",
-    "member_not_found": "Member not found in community"
+    "member_not_found": "Member not found in community",
+    "ban_user_failed": "Failed to ban user. Please try again.",
+    "unban_user_failed": "Failed to unban user. Please try again.",
+    "delete_user_details_failed": "Failed to delete user details. Please try again.",
+    "fetch_category_failed": "Failed to fetch category information",
+    "invalid_ban_unit": "Invalid ban duration unit. Use 'minutes', 'hours', or 'days'.",
+    "no_category_found": "No category found with the specified criteria",
+    "no_fields_to_update": "No fields provided to update"
   },
   "community": {
     "community_not_found": "Community not found",
@@ -40,14 +65,42 @@
     "failed_to_fetch_community_members": "Failed to fetch community members. Try again.",
     "failed_to_change_community_category": "Failed to change community category. Try again.",
     "not_member": "You are not a member of this community",
-    "invalid_community_ids": "Community IDs must be an array"
+    "invalid_community_ids": "Community IDs must be an array",
+    "owner_cannot_leave": "Admin cannot leave the community unless they transfer ownership",
+    "access_denied": "Access denied. You do not have permission to view this community.",
+    "cannot_change_owner_role": "Cannot change the role of the community owner",
+    "cannot_remove_owner": "Cannot remove the community owner",
+    "failed_to_change_role": "Failed to change member role. Please try again.",
+    "failed_to_fetch_communities": "Failed to fetch communities. Please try again.",
+    "failed_to_fetch_invite_code": "Failed to fetch invite code. Please try again.",
+    "failed_to_fetch_members": "Failed to fetch community members. Please try again.",
+    "failed_to_fetch_my_communities": "Failed to fetch your communities. Please try again.",
+    "failed_to_leave": "Failed to leave community. Please try again.",
+    "failed_to_pin": "Failed to pin community. Please try again.",
+    "failed_to_unpin": "Failed to unpin community. Please try again.",
+    "failed_to_regenerate_invite_code": "Failed to regenerate invite code. Please try again.",
+    "failed_to_remove_member": "Failed to remove member from community. Please try again.",
+    "failed_to_transfer_ownership": "Failed to transfer ownership. Please try again.",
+    "failed_to_update": "Failed to update community. Please try again.",
+    "invalid_join_code": "Invalid join code. Please check and try again.",
+    "invalid_role": "Invalid role specified",
+    "join_code_required": "Join code is required for private communities",
+    "member_not_found": "Member not found in this community",
+    "memberships_failed": "Failed to fetch community memberships",
+    "missing_id": "Community ID is required",
+    "new_owner_not_member": "New owner must be a member of the community",
+    "not_a_member": "You are not a member of this community",
+    "not_authorized": "You are not authorized to perform this action",
+    "not_found": "Community not found",
+    "not_owner": "Only the community owner can perform this action"
   },
   "category": {
     "category_not_found": "Category not found",
     "category_exists": "Category already exists",
     "failed_to_delete_category": "Failed to delete category. Try again.",
     "failed_to_change_category_name": "Failed to change category name. Try again.",
-    "failed_to_get_category_overview": "Failed to get category statistics. Try again."
+    "failed_to_get_category_overview": "Failed to get category statistics. Try again.",
+    "failed_to_add_category": "Failed to add category. Please try again."
   },
   "clan": {
     "clan_not_found": "Clan not found",
@@ -72,7 +125,13 @@
     "failed_to_get_members": "Failed to fetch clan members. Try again.",
     "failed_to_get_info": "Failed to fetch clan info. Try again.",
     "user_not_found": "User not found in the system",
-    "not_member_general": "You are not a member of this clan"
+    "not_member_general": "You are not a member of this clan",
+    "failed_to_delete": "Failed to delete clan. Please try again.",
+    "failed_to_join": "Failed to join clan. Please try again.",
+    "failed_to_leave": "Failed to leave clan. Please try again.",
+    "failed_to_update": "Failed to update clan. Please try again.",
+    "invalid_invite_code": "Invalid clan invite code",
+    "not_found": "Clan not found"
   },
   "ticket": {
     "failed_to_create": "Failed to create ticket. Please try again.",
@@ -113,11 +172,57 @@
     "no_community_memberships": "You must join a community to get quests",
     "force_generation_failed": "Failed to force quest generation",
     "health_check_failed": "Health check failed",
-    "config_fetch_failed": "Failed to fetch configuration"
+    "config_fetch_failed": "Failed to fetch configuration",
+    "admin_delete_failed": "Failed to delete AI data. Please try again.",
+    "admin_generate_failed": "Failed to generate AI content. Please try again.",
+    "admin_stats_failed": "Failed to fetch AI statistics",
+    "chat_history_failed": "Failed to fetch chat history",
+    "chat_not_found": "Chat session not found",
+    "complete_quest_failed": "Failed to complete quest. Please try again.",
+    "delete_chat_failed": "Failed to delete chat. Please try again.",
+    "delete_quest_failed": "Failed to delete quest. Please try again.",
+    "fetch_completed_failed": "Failed to fetch completed quests",
+    "fetch_quest_failed": "Failed to fetch quest details",
+    "filter_required": "Filter parameter is required",
+    "force_generate_failed": "Failed to force generate quests. Please try again.",
+    "invalid_request": "Invalid request. Please check your input.",
+    "quest_already_started": "Quest has already been started",
+    "quest_id_required": "Quest ID is required",
+    "quest_min_time_not_met": "Minimum time requirement for quest completion not met",
+    "quest_not_started": "Quest has not been started yet",
+    "start_quest_failed": "Failed to start quest. Please try again.",
+    "token_balance_failed": "Failed to fetch token balance",
+    "user_banned": "User is banned from AI features",
+    "user_id_required": "User ID is required"
   },
   "message": {
     "empty": "Message cannot be empty.",
     "too_long": "Message too long. Max 2000 characters.",
-    "send_failed": "Failed to send message"
+    "send_failed": "Failed to send message",
+    "clan_not_found": "Clan not found",
+    "get_clan_messages_failed": "Failed to fetch clan messages",
+    "get_community_messages_failed": "Failed to fetch community messages",
+    "not_a_clan_member": "You are not a member of this clan",
+    "not_a_member": "You are not a member of this community"
+  },
+  "leaderboard": {
+    "clan_failed": "Failed to fetch clan leaderboard",
+    "clan_id_required": "Clan ID is required",
+    "clan_not_found": "Clan not found",
+    "community_failed": "Failed to fetch community leaderboard",
+    "community_id_required": "Community ID is required",
+    "community_not_found": "Community not found",
+    "global_failed": "Failed to fetch global leaderboard",
+    "top_clans_failed": "Failed to fetch top clans",
+    "top_communities_failed": "Failed to fetch top communities"
+  },
+  "subscriptionPlan": {
+    "subscriptionPlan_exists": "Subscription plan already exists",
+    "subscriptionPlan_not_found": "Subscription plan not found",
+    "failed_to_add_subscriptionPlan": "Failed to add subscription plan. Please try again.",
+    "failed_to_fetch_subscriptionPlans": "Failed to fetch subscription plans"
+  },
+  "user": {
+    "not_found": "User not found"
   }
 }

@@ -51,11 +51,11 @@ communityRoutes.post(
   communityController.joinPublicCommunity
 );
 
-//  Join private community
+//  Join With Code  community
 communityRoutes.post(
   '/join',
-  validate(communityValidation.joinPrivateCommunity),
-  communityController.joinPrivateCommunity
+  validate(communityValidation.joinWithCodeCommunity),
+  communityController.joinWithCodeCommunity
 );
 
 //  Leave a community
@@ -105,6 +105,20 @@ communityRoutes.post(
   '/toggle-pin',
   communityController.toggleMultipleCommunityPin
 );
+
+//Get invite code for a community
+communityRoutes.get(
+  '/:communityId/invite-code',
+  validate(communityValidation.getInviteCode),
+  communityController.getInviteCode
+);
+
+//  Regenerate invite code for a community
+communityRoutes.post(
+  '/:communityId/regenerate-invite-code',
+  communityController.regenerateInviteCode
+);
+
 //pin the community
 //  Create a community with optional photo upload
 // communityRoutes.post(

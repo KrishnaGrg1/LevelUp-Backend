@@ -6,7 +6,7 @@ import env from '../helpers/config';
 import OpenAIChat from '../helpers/ai/aiHelper';
 import { getDailyQuestSetPrompt } from '../helpers/ai/prompts';
 import { MemberStatus, QuestSource, QuestType } from '@prisma/client';
-import { logger } from '../helpers/logger';
+import logger from '../helpers/logger';
 
 // ==================== LOCKS & GUARDS ====================
 const locks = new Map<string, number>();
