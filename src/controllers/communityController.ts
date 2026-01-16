@@ -1918,6 +1918,134 @@ const getInviteCode = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Regenerate Invite Code
+const regenerateInviteCode = async (req: AuthRequest, res: Response) => {
+  const communityId = req.params.communityId;
+  const lang = req.language as Language;
+  const userId = req.user?.id;
+
+  logger.apiRequest(
+    'POST',
+    `/community/${communityId}/regenerate-invite-code`,
+    {
+      userId,
+      communityId,
+      action: 'regenerateInviteCode',
+    }
+  );
+
+  try {
+    if (!userId) {
+      return res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
+    }
+
+    //  Find community and check ownership/role
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+      select: { ownerId: true },
+    });
+
+    if (!community) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.community.community_not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    // 2. Check permissions (Only owner or admin can regenerate)
+    const membership = await client.communityMember.findUnique({
+      where: {
+        userId_communityId: { userId, communityId },
+      },
+    });
+
+    if (
+      !membership ||
+      (membership.role !== 'ADMIN' && community.ownerId !== userId)
+    ) {
+      return res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Unauthorized'),
+            'error.community.not_authorized',
+            lang,
+            403
+          )
+        );
+    }
+
+    //  Generate New Code
+    const rawCode = generateCode(); // e.g. "XJ92-LM10"
+    const cleanCode = rawCode.replace(/-/g, ''); // "XJ92LM10"
+
+    // 4. Update the database
+    const updatedCommunity = await client.community.update({
+      where: { id: communityId },
+      data: { inviteCode: cleanCode },
+      select: { inviteCode: true },
+    });
+
+    logger.apiSuccess(
+      'POST',
+      `/community/${communityId}/regenerate-invite-code`,
+      200,
+      {
+        userId,
+        communityId,
+      }
+    );
+
+    return res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { inviteCode: updatedCommunity.inviteCode },
+          'success.community.invite_code_regenerated',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    logger.apiError(
+      'POST',
+      `/community/${communityId}/regenerate-invite-code`,
+      500,
+      e,
+      {
+        userId,
+        communityId,
+      }
+    );
+
+    return res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to regenerate invite code'),
+          'error.community.failed_to_regenerate_invite_code',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const communityController = {
   createCommunity,
   joinPublicCommunity,
@@ -1937,6 +2065,7 @@ const communityController = {
   getCommunityOwner,
   getCommunityMembers,
   getInviteCode,
+  regenerateInviteCode,
 };
 
 export default communityController;

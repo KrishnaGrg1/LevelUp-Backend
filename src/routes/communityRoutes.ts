@@ -107,12 +107,18 @@ communityRoutes.post(
 );
 
 //Get invite code for a community
-
 communityRoutes.get(
   '/:communityId/invite-code',
   validate(communityValidation.getInviteCode),
   communityController.getInviteCode
 );
+
+//  Regenerate invite code for a community
+communityRoutes.post(
+  '/:communityId/regenerate-invite-code',
+  communityController.regenerateInviteCode
+);
+
 //pin the community
 //  Create a community with optional photo upload
 // communityRoutes.post(
