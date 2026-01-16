@@ -239,6 +239,7 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
       select: {
         id: true,
         name: true,
+
         description: true,
         photo: true,
         isPrivate: true,
@@ -479,12 +480,10 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
     let rawCode: string | undefined;
     let cleanCode: string | undefined;
 
-    if (isPrivateBool === true) {
-      rawCode = generateCode(); // e.g. ABCD-9KX2
-      console.log('Generated community join code:', rawCode);
-      cleanCode = rawCode.replace(/-/g, ''); // Returns "ZM5KXEKD"
-      console.log('Clean community join code:', cleanCode);
-    }
+    rawCode = generateCode(); // e.g. ABCD-9KX2
+    console.log('Generated community join code:', rawCode);
+    cleanCode = rawCode.replace(/-/g, ''); // Returns "ZM5KXEKD"
+    console.log('Clean community join code:', cleanCode);
 
     // create community
     const community = await client.community.create({
@@ -494,13 +493,8 @@ const createCommunity = async (req: AuthRequest, res: Response) => {
         ownerId: userId,
         memberLimit: memberLimitNum,
         isPrivate: isPrivateBool,
+        inviteCode: cleanCode,
         photo: photoPath,
-        ...(isPrivateBool && cleanCode
-          ? {
-              joinCodeHash: cleanCode,
-              codeUpdatedAt: new Date(),
-            }
-          : {}),
 
         members: {
           create: [
@@ -678,7 +672,7 @@ const joinPrivateCommunity = async (req: AuthRequest, res: Response) => {
     if (!user) return;
 
     const community = await client.community.findUnique({
-      where: { joinCodeHash: joinCode },
+      where: { inviteCode: joinCode },
     });
 
     if (!community) {
@@ -695,7 +689,7 @@ const joinPrivateCommunity = async (req: AuthRequest, res: Response) => {
     }
 
     //checlk join code
-    if (community.joinCodeHash !== joinCode) {
+    if (community.inviteCode !== joinCode) {
       return res
         .status(400)
         .json(
@@ -1801,9 +1795,7 @@ const getCommunityMembers = async (req: AuthRequest, res: Response) => {
 const getCommunityOwner = async (req: AuthRequest, res: Response) => {
   try {
     const communityId = req.params.communityId;
-    if (!communityId) {
-      return res.status(400).json({ error: 'Community ID is required' });
-    }
+    const lang = req.language as Language;
 
     const community = await client.community.findUnique({
       where: { id: communityId },
@@ -1811,12 +1803,119 @@ const getCommunityOwner = async (req: AuthRequest, res: Response) => {
     });
 
     if (!community) {
-      return res.status(404).json({ error: 'Community not found' });
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.community.community_not_found',
+            lang,
+            404
+          )
+        );
     }
-
     return res.status(200).json({ ownerId: community.ownerId });
   } catch (e) {
     return res.status(500).json({ error: 'Failed to fetch owner' });
+  }
+};
+
+// Get invite code
+const getInviteCode = async (req: AuthRequest, res: Response) => {
+  try {
+    const communityId = req.params.communityId;
+    const lang = req.language as Language;
+    const userId = req.user?.id;
+
+    logger.apiRequest('GET', `/community/${communityId}/invite-code`, {
+      userId,
+      communityId,
+      action: 'getInviteCode',
+    });
+    if (!userId) {
+      return res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
+    }
+
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+      select: { inviteCode: true },
+    });
+    if (!community) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.community.community_not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    // Check if user is a member of the community
+    const membership = await client.communityMember.findUnique({
+      where: {
+        userId_communityId: {
+          userId,
+          communityId,
+        },
+      },
+    });
+
+    if (!membership) {
+      return res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Not a member of this community'),
+            'error.community.not_member',
+            lang,
+            403
+          )
+        );
+    }
+    return res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          { inviteCode: community.inviteCode },
+          'success.community.invite_code_retrieved',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    logger.apiError(
+      'GET',
+      `/community/${req.params.communityId}/invite-code`,
+      500,
+      e,
+      {
+        userId: req.user?.id,
+        communityId: req.params.communityId,
+      }
+    );
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to fetch invite code'),
+          'error.community.failed_to_fetch_invite_code',
+          lang,
+          500
+        )
+      );
   }
 };
 
@@ -1838,6 +1937,7 @@ const communityController = {
   specificCommunity,
   getCommunityOwner,
   getCommunityMembers,
+  getInviteCode,
 };
 
 export default communityController;

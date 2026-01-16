@@ -105,6 +105,14 @@ communityRoutes.post(
   '/toggle-pin',
   communityController.toggleMultipleCommunityPin
 );
+
+//Get invite code for a community
+
+communityRoutes.get(
+  '/:communityId/invite-code',
+  validate(communityValidation.getInviteCode),
+  communityController.getInviteCode
+);
 //pin the community
 //  Create a community with optional photo upload
 // communityRoutes.post(
