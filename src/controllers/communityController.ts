@@ -8,7 +8,6 @@ import {
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { Language } from '../translation/translation';
 import { findUser } from '../helpers/auth/userHelper';
-import authorizeAdmin from '../helpers/auth/adminHelper';
 import { deleteFile, extractPublicId } from '../helpers/files/multer';
 import { generateCode } from '../helpers/generateCode';
 import logger from '../helpers/logger';
