@@ -40,7 +40,8 @@
     "failed_to_fetch_community_members": "Failed to fetch community members. Try again.",
     "failed_to_change_community_category": "Failed to change community category. Try again.",
     "not_member": "You are not a member of this community",
-    "invalid_community_ids": "Community IDs must be an array"
+    "invalid_community_ids": "Community IDs must be an array",
+    "owner_cannot_leave": "Admin cannot leave the community unless they transfer ownership"
   },
   "category": {
     "category_not_found": "Category not found",

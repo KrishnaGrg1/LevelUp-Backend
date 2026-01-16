@@ -10,11 +10,18 @@ clanRoutes.post(
   validate(clanValidation.createClan),
   clanController.createClan
 );
-
+// for public clan
 clanRoutes.post(
   '/join',
   validate(clanValidation.joinClan),
   clanController.joinClan
+);
+
+// for private clan
+clanRoutes.post(
+  '/requestJoin',
+  validate(clanValidation.joinPrivateClan),
+  clanController.joinPrivateClan
 );
 
 clanRoutes.get(
@@ -60,5 +67,19 @@ clanRoutes.get(
 );
 
 clanRoutes.get('/checkMembership/:clanId', clanController.checkClanMembership);
+
+//get joined clans
+clanRoutes.get(
+  '/:communityId/joined',
+
+  clanController.getJoinedClans
+);
+
+//get available not joined clans
+clanRoutes.get(
+  '/:communityId/available',
+
+  clanController.getAvailableClans
+);
 
 export default clanRoutes;

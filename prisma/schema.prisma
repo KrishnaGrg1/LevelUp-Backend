@@ -92,7 +92,7 @@ model Community {
   photo         String?
   xp            Int               @default(0)
   codeUpdatedAt DateTime?
-  joinCodeHash  String?           @unique
+  inviteCode  String?           @unique
   level         Int               @default(1)
   clans         Clan[]
   category      Category?         @relation(fields: [categoryId], references: [id])
@@ -118,6 +118,7 @@ model Clan {
   stats          Json?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  joinCodeHash  String?           @unique
 
   community Community    @relation(fields: [communityId], references: [id])
   owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
