@@ -58,10 +58,35 @@ export async function generateQuestsForAllCommunities(
 
   const user = await client.user.findUnique({
     where: { id: userId },
-    include: {
-      category: true,
+    select: {
+      id: true,
+      UserName: true,
+      xp: true,
+      level: true,
+      tokens: true,
+      isBanned: true,
+      category: { select: { name: true } },
       CommunityMember: {
-        include: { community: { include: { category: true } } },
+        select: {
+          id: true,
+          userId: true,
+          communityId: true,
+          joinedAt: true,
+          totalXP: true,
+          status: true,
+          role: true,
+          isPinned: true,
+          level: true,
+          community: {
+            select: {
+              id: true,
+              name: true,
+              isPrivate: true,
+              category: { select: { name: true } },
+              // omit inviteCode to avoid schema drift errors
+            },
+          },
+        },
       },
     },
   });
@@ -246,12 +271,38 @@ export async function generateQuestsWithLock(
 
   try {
     // Fetch user
+    // Select only fields needed to avoid hitting missing columns (e.g., Community.inviteCode on some DBs)
     const user = await client.user.findUnique({
       where: { id: userId },
-      include: {
-        category: true,
+      select: {
+        id: true,
+        UserName: true,
+        level: true,
+        xp: true,
+        tokens: true,
+        isBanned: true,
+        category: { select: { name: true } },
         CommunityMember: {
-          include: { community: { include: { category: true } } },
+          select: {
+            id: true,
+            userId: true,
+            communityId: true,
+            joinedAt: true,
+            totalXP: true,
+            status: true,
+            role: true,
+            isPinned: true,
+            level: true,
+            community: {
+              select: {
+                id: true,
+                name: true,
+                isPrivate: true,
+                category: { select: { name: true } },
+                // omit inviteCode to prevent schema drift errors
+              },
+            },
+          },
         },
       },
     });

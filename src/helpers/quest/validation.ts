@@ -2,23 +2,29 @@
  * Common validation utilities for quest generation
  */
 
-import { Prisma } from '@prisma/client';
 import logger from '../logger';
 
-type UserWithRelations = Prisma.UserGetPayload<{
-  include: {
-    category: true;
-    CommunityMember: {
-      include: {
-        community: {
-          include: {
-            category: true;
-          };
-        };
-      };
-    };
-  };
-}>;
+// Minimal shape needed for quest validation (avoids strict coupling to full Prisma payloads)
+type UserWithRelations = {
+  id: string;
+  isBanned?: boolean | null;
+  xp?: number | null;
+  level?: number | null;
+  category?: Array<{ name?: string | null }>;
+  CommunityMember?: Array<{
+    id: string;
+    communityId: string;
+    status?: any;
+    role?: any;
+    isPinned?: boolean;
+    community?: {
+      id: string;
+      name?: string | null;
+      isPrivate?: boolean;
+      category?: { name?: string | null } | null;
+    } | null;
+  }>;
+};
 
 /**
  * Validate user for quest generation

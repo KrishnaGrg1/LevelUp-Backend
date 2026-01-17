@@ -133,7 +133,14 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
         where: { userId: user.id },
         include: {
           community: {
-            include: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              photo: true,
+              isPrivate: true,
+              memberLimit: true,
+              ownerId: true,
               _count: {
                 select: { members: true },
               },
@@ -159,7 +166,14 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
           where: { userId: user.id },
           include: {
             community: {
-              include: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                photo: true,
+                isPrivate: true,
+                memberLimit: true,
+                ownerId: true,
                 _count: {
                   select: { members: true },
                 },

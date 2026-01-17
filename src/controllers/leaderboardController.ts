@@ -86,8 +86,14 @@ const getCommunityLeaderboard = async (req: Request, res: Response) => {
 
     const { page, limit, skip } = parsePagination(req);
 
+    // Select only fields we truly need to avoid schema drift issues (e.g., missing xp column)
     const community = await client.community.findUnique({
       where: { id: communityId },
+      select: {
+        id: true,
+        name: true,
+        // xp is omitted deliberately to avoid failures on environments missing the column
+      },
     });
     if (!community) {
       return res
@@ -124,7 +130,6 @@ const getCommunityLeaderboard = async (req: Request, res: Response) => {
           community: {
             id: community.id,
             name: community.name,
-            xp: community.xp,
           },
           results: members,
           pagination: {
