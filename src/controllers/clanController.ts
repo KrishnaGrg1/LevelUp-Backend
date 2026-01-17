@@ -662,6 +662,185 @@ const getClanInfo = async (req: AuthRequest, res: Response) => {
 };
 
 /**
+ * Get specific clan details with proper authentication and membership checks
+ */
+const specificClan = async (req: AuthRequest, res: Response) => {
+  const lang = req.language as Language;
+  const userId = req.user?.id;
+  const clanId = req.params.clanId;
+  logger.apiRequest('GET', `/clan/${clanId}`, {
+    userId,
+    clanId,
+    action: 'specificClan',
+  });
+
+  try {
+    const clan = await client.clan.findUnique({
+      where: { id: clanId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        isPrivate: true,
+        limit: true,
+        xp: true,
+        stats: true,
+        welcomeMessage: true,
+        createdAt: true,
+        ownerId: true,
+        communityId: true,
+        owner: {
+          select: {
+            id: true,
+            UserName: true,
+          },
+        },
+        community: {
+          select: {
+            id: true,
+            name: true,
+            isPrivate: true,
+          },
+        },
+        members: {
+          orderBy: {
+            joinedAt: 'desc',
+          },
+          select: {
+            userId: true,
+            joinedAt: true,
+            user: {
+              select: {
+                id: true,
+                UserName: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: { members: true },
+        },
+      },
+    });
+
+    if (!clan) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Clan not found'),
+            'error.clan.not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    // Check if community is private
+    if (clan.community.isPrivate) {
+      if (!userId) {
+        return res
+          .status(401)
+          .json(
+            makeErrorResponse(
+              new Error('Not authenticated'),
+              'error.auth.not_authenticated',
+              lang,
+              401
+            )
+          );
+      }
+
+      const communityMembership = await client.communityMember.findUnique({
+        where: {
+          userId_communityId: {
+            userId,
+            communityId: clan.communityId,
+          },
+        },
+      });
+
+      if (!communityMembership) {
+        return res
+          .status(403)
+          .json(
+            makeErrorResponse(
+              new Error('Access Denied: Not a community member'),
+              'error.community.access_denied',
+              lang,
+              403
+            )
+          );
+      }
+    }
+
+    // Check if clan is private
+    if (clan.isPrivate) {
+      if (!userId) {
+        return res
+          .status(401)
+          .json(
+            makeErrorResponse(
+              new Error('Not authenticated'),
+              'error.auth.not_authenticated',
+              lang,
+              401
+            )
+          );
+      }
+
+      const clanMembership = await client.clanMember.findUnique({
+        where: {
+          userId_clanId: {
+            userId,
+            clanId: clan.id,
+          },
+        },
+      });
+
+      if (!clanMembership) {
+        return res
+          .status(403)
+          .json(
+            makeErrorResponse(
+              new Error('Access Denied: Not a clan member'),
+              'error.clan.access_denied',
+              lang,
+              403
+            )
+          );
+      }
+    }
+
+    res
+      .status(200)
+      .json(makeSuccessResponse(clan, 'success.clan.fetched', lang, 200));
+    logger.apiSuccess('GET', `/clan/${req.params.clanId}`, 200, {
+      userId,
+      clanId,
+    });
+  } catch (e: unknown) {
+    logger.apiError('GET', `/clan/${req.params.clanId}`, 500, e, {
+      userId,
+      clanId: req.params.clanId,
+    });
+    logger.error('Error in specificClan', e, { userId, clanId });
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to fetch clan'),
+          'error.clan.failed_to_get_info',
+          lang,
+          500
+        )
+      );
+  }
+};
+
+/**
  * Update Clan info (only owner) — now handles slug
  */
 const updateClan = async (req: AuthRequest, res: Response) => {
@@ -1014,6 +1193,7 @@ const clanController = {
   getClansByCommunity,
   getClanMembers,
   getClanInfo,
+  specificClan,
   updateClan,
   getUserClans,
   checkClanMembership,
