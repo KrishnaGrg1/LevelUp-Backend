@@ -146,6 +146,14 @@ const communityValidation = {
       }),
     }),
   },
+
+  uploadCommunityPhoto: {
+    params: Joi.object().keys({
+      communityId: Joi.string().required().messages({
+        'string.empty': 'Community ID is required',
+      }),
+    }),
+  },
 };
 
 export default communityValidation;

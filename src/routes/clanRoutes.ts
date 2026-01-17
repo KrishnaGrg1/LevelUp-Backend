@@ -53,6 +53,12 @@ clanRoutes.get(
   validate(clanValidation.getClanInfo),
   clanController.getClanInfo
 );
+// for mobile App (maybe using for web may create issues so)
+clanRoutes.get(
+  '/specific/:clanId',
+  validate(clanValidation.specificClan),
+  clanController.specificClan
+);
 
 clanRoutes.put(
   '/:clanId',

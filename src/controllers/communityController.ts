@@ -270,6 +270,7 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
           select: {
             user: {
               select: {
+                id: true,
                 UserName: true,
               },
             },
@@ -1155,14 +1156,14 @@ const removeMember = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Check if the target user is a member
-    // memberId can be either the userId or the CommunityMember record ID
-    let member = community.members.find((m) => m.userId === memberId);
-
-    // If not found by userId, try to find by CommunityMember ID
-    if (!member) {
-      member = community.members.find((m) => m.id === memberId);
-    }
+    const member = await client.communityMember.findUnique({
+      where: {
+        userId_communityId: {
+          userId: memberId,
+          communityId: community.id,
+        },
+      },
+    });
 
     if (!member) {
       return res
@@ -1462,15 +1463,29 @@ const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Check if user is owner or admin of the community
+    // Check if user is a member of the community
     const member = community.members.find((m) => m.userId === user.id);
-    if (!member || (member.role !== 'ADMIN' && community.ownerId !== user.id)) {
+    if (!member) {
       return res
         .status(403)
         .json(
           makeErrorResponse(
-            new Error('Only community owner or admin can upload photo'),
-            'error.community.not_authorized',
+            new Error('You must be a member of this community'),
+            'error.community.not_member',
+            lang,
+            403
+          )
+        );
+    }
+
+    // Check if user is the owner of the community
+    if (community.ownerId !== user.id) {
+      return res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Only community owner can upload photo'),
+            'error.community.not_owner',
             lang,
             403
           )
