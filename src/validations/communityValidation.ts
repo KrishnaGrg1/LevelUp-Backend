@@ -39,6 +39,7 @@ const communityValidation = {
       }),
     }),
   },
+
   getAllCommunities: {
     query: Joi.object().keys({
       page: Joi.number().integer().min(1).optional().messages({
@@ -110,6 +111,7 @@ const communityValidation = {
         }),
     }),
   },
+
   updateCommunity: {
     params: Joi.object().keys({
       communityId: Joi.string().min(3).max(150).required().messages({
@@ -119,7 +121,7 @@ const communityValidation = {
       }),
     }),
     body: Joi.object().keys({
-      name: Joi.string().min(3).max(150).optional().messages({
+      communityName: Joi.string().min(3).max(150).optional().messages({
         'string.min': 'Community Name must contain at least 3 characters long',
         'string.max': 'Community Name must not exceed 150 characters long',
       }),
@@ -133,6 +135,14 @@ const communityValidation = {
         'number.base': 'Member limit must be a number',
         'number.min': 'Member limit must be at least 1',
         'number.max': 'Member limit cannot exceed 1000',
+      }),
+    }),
+  },
+
+  deleteCommunity: {
+    params: Joi.object().keys({
+      communityId: Joi.string().required().messages({
+        'string.empty': 'Community ID is required',
       }),
     }),
   },

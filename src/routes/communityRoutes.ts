@@ -119,6 +119,13 @@ communityRoutes.post(
   communityController.regenerateInviteCode
 );
 
+// Delete community (owner only)
+communityRoutes.delete(
+  '/:communityId',
+  validate(communityValidation.deleteCommunity),
+  communityController.deleteCommunity
+);
+
 //pin the community
 //  Create a community with optional photo upload
 // communityRoutes.post(
