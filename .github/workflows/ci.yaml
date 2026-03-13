@@ -3,10 +3,12 @@ name: CI
 on:
   push:
     branches:
-      - main,release
+      - main
+      - release
   pull_request:
     branches:
-      - main,release
+      - main
+      - release
 
 jobs:
   ci:
@@ -14,20 +16,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Nodejs Setup
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
-          cache: 'pnpm'
+          node-version: '22'
 
       - name: Installation dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          pnpm install --frozen-lockfile 
+          pnpm install @prisma/client
 
       - name: Build Prisma
-        run: |
-          pnpm db:generate
-          pnpm db:push
+        run: pnpm db:generate
         env:
           DATABASE_URL: 'postgresql://fake:fake@localhost:5432/fake'
 
