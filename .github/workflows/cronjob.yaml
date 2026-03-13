@@ -1,0 +1,45 @@
+name: CronJobs Daily
+
+on:
+  schedule:
+    # 12:00 AM (00:00) NPT
+    # - cron: '15 18 * * *'
+    - cron: '21 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-cron:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Prisma
+        run: pnpm db:generate
+        env:
+          DATABASE_URL: 'postgresql://fake:fake@localhost:5432/fake'
+
+      - name: Build
+        run: pnpm build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Run daily script
+        run: node dist/jobs/runDailyNow.js
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
