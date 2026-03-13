@@ -26,7 +26,7 @@ jobs:
 
       - name: Installation dependencies
         run: |
-          pnpm install --frozen-lockfile --ignore-workspace
+          pnpm install --frozen-lockfile 
           pnpm install @prisma/client
 
       - name: Build Prisma
