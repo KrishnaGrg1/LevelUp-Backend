@@ -25,7 +25,9 @@ jobs:
           node-version: '22'
 
       - name: Installation dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          pnpm install --frozen-lockfile --ignore-workspace
+          pnpm install @prisma/client
 
       - name: Build Prisma
         run: pnpm db:generate
