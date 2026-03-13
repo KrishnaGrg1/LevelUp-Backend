@@ -4,13 +4,12 @@ node_modules
 /src/generated/prisma
 dist/*
 dist
-pnpm-lock.yaml
+
 package-lock.json
 .DS_Store
 
 .DS_Store/*
 
-pnpm-lock.yaml
 tsconfig.build.json
 
 package-lock.json
