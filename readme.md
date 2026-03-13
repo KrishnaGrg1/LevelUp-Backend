@@ -58,22 +58,6 @@ cp .env.example .env
 
 Then edit the `.env` file with your configuration:
 
-```env
-# Database connection string
-DATABASE_URL="postgresql://username:password@host:port/database?sslmode=require"
-
-
-
-# Port for the application
-PORT=8080
-
-# SMTP configuration for email notifications
-SMTP_HOST="smtp.example.com"
-SMTP_PORT=587
-SMTP_USERNAME="example_user"
-SMTP_PASSWORD="example_password"
-```
-
 4. **Prisma & Development Workflow:**
 
 Generate Prisma client:

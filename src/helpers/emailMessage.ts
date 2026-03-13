@@ -114,10 +114,6 @@ const html = ({ token, topic, username, userId }: HtmlProps): string => {
               <td style="padding:30px; color:#555; font-size:16px; line-height:1.6;">
                 <p>Dear ${username},</p>
                 <p>${message(topic)}</p>
-
-               
-               
-                
                        
                  <div style="margin:30px 0; text-align:center;">
                     ${verifyEmailButton(topic, token, userId)}

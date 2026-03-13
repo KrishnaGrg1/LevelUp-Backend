@@ -1,5 +1,3 @@
-import nodemailer from 'nodemailer';
-import SMTPTransport from 'nodemailer/lib/smtp-transport'; // 👈 add this
 import env from './config';
 import html, { EmailTopic } from './emailMessage';
 import { Resend } from 'resend';
