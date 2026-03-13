@@ -3,7 +3,8 @@ name: CronJobs Daily
 on:
   schedule:
     # 12:00 AM (00:00) NPT
-    - cron: '15 18 * * *'
+    # - cron: '15 18 * * *'
+    - cron: '21 4 * * *'
   workflow_dispatch:
 
 jobs:
