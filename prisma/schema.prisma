@@ -120,7 +120,7 @@ model Clan {
   updatedAt      DateTime     @updatedAt
   joinCodeHash  String?           @unique
 
-  community Community    @relation(fields: [communityId], references: [id])
+  community Community    @relation(fields: [communityId], references: [id], onDelete: Cascade)
   owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   members   ClanMember[]
   messages  Message[]

@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main,release
+  pull_request:
+    branches:
+      - main,release
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+
+      - name: Nodejs Setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Installation dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Prisma
+        run: |
+          pnpm db:generate
+          pnpm db:push
+        env:
+          DATABASE_URL: 'postgresql://fake:fake@localhost:5432/fake'
+
+      - name: Main Build
+        run: pnpm build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

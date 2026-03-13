@@ -118,6 +118,14 @@ const clanValidation = {
       }),
     }),
   },
+
+  specificClan: {
+    params: Joi.object().keys({
+      clanId: Joi.string().required().messages({
+        'string.empty': 'Clan ID is required',
+      }),
+    }),
+  },
 };
 
 export default clanValidation;

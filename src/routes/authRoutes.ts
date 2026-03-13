@@ -61,5 +61,10 @@ authRoutes.post(
 );
 
 authRoutes.post('/onBoarding', authMiddleware, authController.onBoarding);
-
+authRoutes.patch(
+  '/editProfile',
+  authMiddleware,
+  validate(authValidation.editProfile),
+  authController.editProfile
+);
 export default authRoutes;

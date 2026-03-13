@@ -133,7 +133,14 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
         where: { userId: user.id },
         include: {
           community: {
-            include: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              photo: true,
+              isPrivate: true,
+              memberLimit: true,
+              ownerId: true,
               _count: {
                 select: { members: true },
               },
@@ -159,7 +166,14 @@ const myCommunities = async (req: AuthRequest, res: Response) => {
           where: { userId: user.id },
           include: {
             community: {
-              include: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                photo: true,
+                isPrivate: true,
+                memberLimit: true,
+                ownerId: true,
                 _count: {
                   select: { members: true },
                 },
@@ -242,6 +256,7 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
         photo: true,
         isPrivate: true,
         memberLimit: true,
+        createdAt: true,
         ownerId: true,
         owner: {
           select: {
@@ -255,6 +270,7 @@ const specificCommunity = async (req: AuthRequest, res: Response) => {
           select: {
             user: {
               select: {
+                id: true,
                 UserName: true,
               },
             },
@@ -1024,8 +1040,8 @@ const transferOwnership = async (req: AuthRequest, res: Response) => {
 const updateCommunity = async (req: AuthRequest, res: Response) => {
   const lang = req.language as Language;
   const userId = req.user?.id;
-  const communityId = req.params.communityId || req.body.communityId;
-  const { name, memberLimit, description, isPrivate } = req.body;
+  const communityId = req.params.communityId;
+  const { communityName, memberLimit, description, isPrivate } = req.body;
   logger.apiRequest('PATCH', `/community/${communityId}`, {
     userId,
     communityId,
@@ -1053,7 +1069,7 @@ const updateCommunity = async (req: AuthRequest, res: Response) => {
 
     const updated = await client.community.update({
       where: { id: communityId },
-      data: { name, description, memberLimit, isPrivate },
+      data: { name: communityName, description, memberLimit, isPrivate },
     });
 
     res.json(
@@ -1140,14 +1156,14 @@ const removeMember = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Check if the target user is a member
-    // memberId can be either the userId or the CommunityMember record ID
-    let member = community.members.find((m) => m.userId === memberId);
-
-    // If not found by userId, try to find by CommunityMember ID
-    if (!member) {
-      member = community.members.find((m) => m.id === memberId);
-    }
+    const member = await client.communityMember.findUnique({
+      where: {
+        userId_communityId: {
+          userId: memberId,
+          communityId: community.id,
+        },
+      },
+    });
 
     if (!member) {
       return res
@@ -1447,15 +1463,29 @@ const uploadCommunityPhoto = async (req: AuthRequest, res: Response) => {
         );
     }
 
-    // Check if user is owner or admin of the community
+    // Check if user is a member of the community
     const member = community.members.find((m) => m.userId === user.id);
-    if (!member || (member.role !== 'ADMIN' && community.ownerId !== user.id)) {
+    if (!member) {
       return res
         .status(403)
         .json(
           makeErrorResponse(
-            new Error('Only community owner or admin can upload photo'),
-            'error.community.not_authorized',
+            new Error('You must be a member of this community'),
+            'error.community.not_member',
+            lang,
+            403
+          )
+        );
+    }
+
+    // Check if user is the owner of the community
+    if (community.ownerId !== user.id) {
+      return res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Only community owner can upload photo'),
+            'error.community.not_owner',
             lang,
             403
           )
@@ -2085,6 +2115,126 @@ const regenerateInviteCode = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Delete Community
+const deleteCommunity = async (req: AuthRequest, res: Response) => {
+  const communityId = req.params.communityId;
+  const lang = req.language as Language;
+  const userId = req.user?.id;
+
+  logger.apiRequest('DELETE', `/community/${communityId}`, {
+    userId,
+    communityId,
+    action: 'deleteCommunity',
+  });
+
+  try {
+    if (!userId) {
+      return res
+        .status(401)
+        .json(
+          makeErrorResponse(
+            new Error('Not authenticated'),
+            'error.auth.not_authenticated',
+            lang,
+            401
+          )
+        );
+    }
+
+    // Find the community
+    const community = await client.community.findUnique({
+      where: { id: communityId },
+      include: {
+        _count: {
+          select: { members: true, clans: true },
+        },
+      },
+    });
+
+    if (!community) {
+      return res
+        .status(404)
+        .json(
+          makeErrorResponse(
+            new Error('Community not found'),
+            'error.community.not_found',
+            lang,
+            404
+          )
+        );
+    }
+
+    // Check if the user is the owner
+    if (community.ownerId !== userId) {
+      return res
+        .status(403)
+        .json(
+          makeErrorResponse(
+            new Error('Only the community owner can delete this community'),
+            'error.community.not_owner',
+            lang,
+            403
+          )
+        );
+    }
+
+    // Delete community photo from Cloudinary if exists
+    if (community.photo) {
+      const publicId = extractPublicId(community.photo);
+      if (publicId) {
+        try {
+          await deleteFile(publicId);
+        } catch (error) {
+          logger.warn('Failed to delete community photo from Cloudinary', {
+            publicId,
+            error,
+          });
+        }
+      }
+    }
+
+    // Delete the community (cascade will handle members, clans, etc.)
+    await client.community.delete({
+      where: { id: communityId },
+    });
+
+    logger.apiSuccess('DELETE', `/community/${communityId}`, 200, {
+      userId,
+      communityId,
+      memberCount: community._count.members,
+      clanCount: community._count.clans,
+    });
+
+    res
+      .status(200)
+      .json(
+        makeSuccessResponse(
+          null,
+          'success.community.deleted_community',
+          lang,
+          200
+        )
+      );
+  } catch (e: unknown) {
+    logger.apiError('DELETE', `/community/${communityId}`, 500, e, {
+      userId,
+      communityId,
+    });
+    logger.error('Error in deleteCommunity', e, { userId, communityId });
+    const lang = (req.language as Language) || 'eng';
+    res
+      .status(500)
+      .json(
+        makeErrorResponse(
+          new Error('Failed to delete community'),
+          'error.community.failed_to_delete_community',
+          lang,
+          500
+        )
+      );
+  }
+};
+
 const communityController = {
   createCommunity,
   joinPublicCommunity,
@@ -2105,6 +2255,7 @@ const communityController = {
   getCommunityMembers,
   getInviteCode,
   regenerateInviteCode,
+  deleteCommunity,
 };
 
 export default communityController;

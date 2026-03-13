@@ -30,7 +30,6 @@ communityRoutes.get('/search', communityController.searchCommunities);
 
 //  Get specific community details
 communityRoutes.get('/:communityId', communityController.specificCommunity);
-
 //  Get community owner (returns { ownerId })
 communityRoutes.get(
   '/:communityId/owner',
@@ -93,9 +92,10 @@ communityRoutes.patch(
   communityController.changeMemberRole
 );
 
-// Upload community photo (owner or admin only)
+// Upload community photo (owner only)
 communityRoutes.post(
   '/:communityId/upload-photo',
+  validate(communityValidation.uploadCommunityPhoto),
   uploadCommunityPhoto.single('photo'),
   communityController.uploadCommunityPhoto
 );
@@ -117,6 +117,13 @@ communityRoutes.get(
 communityRoutes.post(
   '/:communityId/regenerate-invite-code',
   communityController.regenerateInviteCode
+);
+
+// Delete community (owner only)
+communityRoutes.delete(
+  '/:communityId',
+  validate(communityValidation.deleteCommunity),
+  communityController.deleteCommunity
 );
 
 //pin the community
